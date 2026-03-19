@@ -503,7 +503,7 @@ body {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 15px;
+        padding: 8px 0px;
         gap: 8px;
         min-height: 80px;
         margin-bottom: 10px;
@@ -525,7 +525,7 @@ body {
     .logo-section-mobile {
         position: absolute;
         left: 50%;
-        top: 8px;
+        top: 5px;
         transform: translateX(-50%);
         display: flex;
         flex-direction: column;
@@ -542,7 +542,7 @@ body {
     .logo-text-mobile {
         font-size: 14px;
         font-weight: bold;
-        margin-top: -2px;
+        margin-top: -8px;
     }
 
     /* Search bar below */
