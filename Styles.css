@@ -331,7 +331,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
     justify-content: center;
 }
 
@@ -398,10 +398,13 @@ body {
         flex-direction: column;
     }
 
-    /* Move icons to the very top */
+    /* Move icons to the very top with order */
     .header-icons-mobile {
-        order: -1;
-        margin-bottom: 12px;
+        order: -3;
+        width: 100%;
+        padding: 10px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 0;
     }
 
     .header-flex {
@@ -478,12 +481,16 @@ body {
 
     .mobile-header {
         display: flex;
+        flex-direction: column;
     }
 
     /* Move icons to the very top on small mobile */
     .header-icons-mobile {
-        order: -1;
-        margin-bottom: 12px;
+        order: -3;
+        width: 100%;
+        padding: 10px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 0;
     }
 
     .header-flex {
