@@ -503,29 +503,34 @@ body {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 0px;
+        padding: 8px 0;
         gap: 8px;
         min-height: 80px;
         margin-bottom: 10px;
+        box-sizing: border-box;
     }
 
     .header-icons-mobile .icon-link {
         flex: 0;
+        padding: 0;
+        margin: 0;
     }
 
     .header-icons-mobile .icon-link:first-child {
         justify-content: flex-start;
+        padding-left: 15px;
     }
 
     .header-icons-mobile .icon-link:last-child {
         justify-content: flex-end;
+        padding-right: 15px;
     }
 
     /* Logo section centered between icons */
     .logo-section-mobile {
         position: absolute;
         left: 50%;
-        top: 5px;
+        top: 8px;
         transform: translateX(-50%);
         display: flex;
         flex-direction: column;
@@ -542,7 +547,7 @@ body {
     .logo-text-mobile {
         font-size: 14px;
         font-weight: bold;
-        margin-top: -8px;
+        margin-top: -2px;
     }
 
     /* Search bar below */
