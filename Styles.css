@@ -340,8 +340,8 @@ body {
 }
 
 .logo-img-mobile {
-    width: 70px;
-    height: 70px;
+    width: 90px;
+    height: 90px;
     object-fit: cover;
     border-radius: 4px;
 }
@@ -395,6 +395,13 @@ body {
 
     .mobile-header {
         display: flex;
+        flex-direction: column;
+    }
+
+    /* Move icons to the very top */
+    .header-icons-mobile {
+        order: -1;
+        margin-bottom: 12px;
     }
 
     .header-flex {
@@ -471,6 +478,12 @@ body {
 
     .mobile-header {
         display: flex;
+    }
+
+    /* Move icons to the very top on small mobile */
+    .header-icons-mobile {
+        order: -1;
+        margin-bottom: 12px;
     }
 
     .header-flex {
