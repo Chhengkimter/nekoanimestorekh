@@ -21,6 +21,17 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* TOPMOST BAR: Cart and User Icons */
+.header-icons-top {
+    background: white;
+    padding: 10px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
+
 .header-top {
     padding: 15px 0;
     display: flex;
@@ -94,7 +105,7 @@ body {
     white-space: nowrap;
 }
 
-/* RIGHT SECTION: Icons only (moved from having search) */
+/* RIGHT SECTION: Search only */
 .right-section {
     display: flex;
     align-items: center;
@@ -341,9 +352,19 @@ body {
 .mobile-header {
     display: none;
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
     align-items: center;
     width: 100%;
+}
+
+/* Top icons row for mobile */
+.mobile-header-icons-top {
+    width: 100%;
+    padding: 10px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
 }
 
 .logo-section-mobile {
