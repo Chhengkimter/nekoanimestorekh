@@ -30,6 +30,7 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 15px;
+    width: 100%;
 }
 
 /* SOCIAL ICONS (LEFT) */
@@ -88,7 +89,7 @@ body {
     white-space: nowrap;
 }
 
-/* RIGHT SECTION: Search + Icons (NO GAP) */
+/* RIGHT SECTION: Icons only (moved from having search) */
 .right-section {
     display: flex;
     align-items: center;
@@ -96,7 +97,7 @@ body {
     flex-shrink: 0;
 }
 
-/* SEARCH BOX */
+/* SEARCH BOX - Now in its own section below header */
 .search-box {
     flex-shrink: 0;
 }
@@ -115,7 +116,7 @@ body {
     color: #999;
 }
 
-/* HEADER ICONS (RIGHT) */
+/* HEADER ICONS (CART & USER - NOW IN TOP RIGHT) */
 .header-icons {
     display: flex;
     gap: 12px;
@@ -139,6 +140,18 @@ body {
     height: 37px;
     object-fit: cover;
     border-radius: 4px;
+}
+
+/* SEARCH BAR ROW (SEPARATE ROW BELOW HEADER) */
+.header-search-row {
+    background: white;
+    padding: 10px 0;
+    border-top: 1px solid #e0e0e0;
+}
+
+.header-search-row .container {
+    display: flex;
+    justify-content: center;
 }
 
 /* CAROUSEL SECTION */
@@ -515,8 +528,8 @@ body {
     }
 
     .logo-img-mobile {
-        width: 65px;
-        height: 65px;
+        width: 85px;
+        height: 85px;
     }
 
     .logo-text-mobile {
