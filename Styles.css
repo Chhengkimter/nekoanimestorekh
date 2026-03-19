@@ -23,6 +23,11 @@ body {
 
 .header-top {
     padding: 15px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
 }
 
 .header-flex {
@@ -97,7 +102,18 @@ body {
     flex-shrink: 0;
 }
 
-/* SEARCH BOX - Now in its own section below header */
+/* SEARCH BAR ROW (SEPARATE ROW BELOW TOP HEADER) */
+.header-search-row {
+    background: white;
+    padding: 12px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.header-search-row .container {
+    display: flex;
+    justify-content: center;
+}
+
 .search-box {
     flex-shrink: 0;
 }
@@ -142,17 +158,7 @@ body {
     border-radius: 4px;
 }
 
-/* SEARCH BAR ROW (SEPARATE ROW BELOW HEADER) */
-.header-search-row {
-    background: white;
-    padding: 10px 0;
-    border-top: 1px solid #e0e0e0;
-}
 
-.header-search-row .container {
-    display: flex;
-    justify-content: center;
-}
 
 /* CAROUSEL SECTION */
 .carousel-section {
