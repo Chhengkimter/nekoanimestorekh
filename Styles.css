@@ -32,7 +32,7 @@ body {
     gap: 15px;
 }
 
-/* SOCIAL ICONS (LEFT) - SMALLER */
+/* SOCIAL ICONS (LEFT) */
 .header-socials {
     display: flex;
     gap: 6px;
@@ -58,33 +58,14 @@ body {
     border-radius: 4px;
 }
 
-/* SEARCH BOX */
-.search-box {
-    flex: 1;
-    min-width: 150px;
-    max-width: 300px;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    font-size: 14px;
-    background-color: #E5D9F2;
-    color: #333;
-}
-
-.search-box input::placeholder {
-    color: #999;
-}
-
 /* LOGO SECTION (CENTER) - BIGGER */
 .logo-section {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
+    flex: 1;
+    justify-content: center;
 }
 
 .logo-section a {
@@ -105,6 +86,33 @@ body {
     font-weight: bold;
     color: #333;
     white-space: nowrap;
+}
+
+/* RIGHT SECTION: Search + Icons (NO GAP) */
+.right-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* SEARCH BOX */
+.search-box {
+    flex-shrink: 0;
+}
+
+.search-box input {
+    width: 200px;
+    padding: 10px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #E5D9F2;
+    color: #333;
+}
+
+.search-box input::placeholder {
+    color: #999;
 }
 
 /* HEADER ICONS (RIGHT) */
@@ -316,9 +324,13 @@ body {
         gap: 10px;
     }
 
-    /* Hide social icons on mobile */
+    /* Hide social icons on tablet */
     .header-socials {
         display: none;
+    }
+
+    .logo-section {
+        flex: none;
     }
 
     .logo-text {
@@ -330,12 +342,12 @@ body {
         height: 40px;
     }
 
-    .search-box {
-        min-width: 120px;
-        max-width: 200px;
+    .right-section {
+        gap: 6px;
     }
 
     .search-box input {
+        width: 150px;
         padding: 8px 12px;
         font-size: 13px;
     }
@@ -373,12 +385,12 @@ body {
         height: 38px;
     }
 
-    .search-box {
-        min-width: 100px;
-        max-width: 150px;
+    .right-section {
+        gap: 6px;
     }
 
     .search-box input {
+        width: 120px;
         padding: 8px 10px;
         font-size: 12px;
     }
