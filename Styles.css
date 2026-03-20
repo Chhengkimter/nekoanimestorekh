@@ -409,11 +409,11 @@ body {
     }
 
     .header-icons-mobile .icon-link:first-child {
-        margin-left: -15px;
+        margin-left: -10px;
     }
 
     .header-icons-mobile .icon-link:last-child {
-        margin-right: -15px;
+        margin-right: -10px;
     }
 
     /* Logo section centered in the same row */
@@ -423,7 +423,7 @@ body {
         left: 50%;
         transform: translateX(-50%);
         gap: 1px;
-        top: 10px;
+        top: -14px;
     }
 
     .logo-img-mobile {
@@ -439,7 +439,7 @@ body {
     .search-box-mobile {
         order: 1;
         width: 100%;
-        padding: 0px 10px;
+        padding: 0px 20px;
         margin-top: 0;
     }
 
@@ -528,13 +528,13 @@ body {
 
     .header-icons-mobile .icon-link:first-child {
         justify-content: flex-start;
-        padding-left: 5px;
+        padding-left: 0px;
         margin-left: 0;
     }
 
     .header-icons-mobile .icon-link:last-child {
         justify-content: flex-end;
-        padding-right: 5px;
+        padding-right: 0px;
         margin-right: 0;
     }
 
@@ -542,7 +542,7 @@ body {
     .logo-section-mobile {
         position: absolute;
         left: 50%;
-        top: 0px;
+        top: 14px;
         transform: translateX(-50%);
         display: flex;
         flex-direction: column;
@@ -559,7 +559,7 @@ body {
     .logo-text-mobile {
         font-size: 14px;
         font-weight: bold;
-        margin-top: -10px;
+        margin-top: -12px;
     }
 
     /* Search bar below */
