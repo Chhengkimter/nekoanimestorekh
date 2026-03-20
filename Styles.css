@@ -408,14 +408,6 @@ body {
         gap: 15px;
     }
 
-    .header-icons-mobile .icon-link:first-child {
-        margin-left: -10px;
-    }
-
-    .header-icons-mobile .icon-link:last-child {
-        margin-right: -10px;
-    }
-
     /* Logo section centered in the same row */
     .logo-section-mobile {
         order: 0;
@@ -439,7 +431,7 @@ body {
     .search-box-mobile {
         order: 1;
         width: 100%;
-        padding: 0px 20px;
+        padding: 0px 0px;
         margin-top: 0;
     }
 
@@ -528,13 +520,13 @@ body {
 
     .header-icons-mobile .icon-link:first-child {
         justify-content: flex-start;
-        padding-left: 5px;
+        padding-left: -5px;
         margin-left: 0;
     }
 
     .header-icons-mobile .icon-link:last-child {
         justify-content: flex-end;
-        padding-right: 5px;
+        padding-right: -5px;
         margin-right: 0;
     }
 
@@ -559,14 +551,14 @@ body {
     .logo-text-mobile {
         font-size: 14px;
         font-weight: bold;
-        margin-top: -2px;
+        margin-top: -10px;
     }
 
     /* Search bar below */
     .search-box-mobile {
         order: 1;
         width: 100%;
-        padding: 12px 0;
+        padding: 0;
         margin-top: 0;
     }
 
