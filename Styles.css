@@ -409,11 +409,11 @@ body {
     }
 
     .header-icons-mobile .icon-link:first-child {
-        margin-left: -10px;
+        margin-left: -15px;
     }
 
     .header-icons-mobile .icon-link:last-child {
-        margin-right: -10px;
+        margin-right: -15px;
     }
 
     /* Logo section centered in the same row */
@@ -439,7 +439,7 @@ body {
     .search-box-mobile {
         order: 1;
         width: 100%;
-        padding: 0px 20px;
+        padding: 0px 10px;
         margin-top: 0;
     }
 
@@ -542,7 +542,7 @@ body {
     .logo-section-mobile {
         position: absolute;
         left: 50%;
-        top: -14px;
+        top: 0px;
         transform: translateX(-50%);
         display: flex;
         flex-direction: column;
@@ -566,7 +566,7 @@ body {
     .search-box-mobile {
         order: 1;
         width: 100%;
-        padding: 12px 0;
+        padding: 5px 0;
         margin-top: 0;
     }
 
