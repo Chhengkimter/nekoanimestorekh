@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neko Admin — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Logo">
+      <span>Neko_Animestore</span>
+    </div>
+    <p class="login-tag">Admin Portal</p>
+    <h1>Welcome back</h1>
+    <form id="login-form">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn">Sign in →</button>
+      <p class="login-error" id="login-err">Incorrect credentials</p>
+    </form>
+    <p class="login-hint">demo: admin / neko2024</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Logo">
+      <span>Neko Admin</span>
+    </div>
+    <p class="sidebar-label">Menu</p>
+    <div class="nav-item active" data-section="products" onclick="switchSection('products')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Products</span>
+    </div>
+    <div class="nav-item" data-section="inventory" onclick="switchSection('inventory')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18l-2 13H5L3 3z"/><path d="M3 3H1"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>
+      <span>Inventory</span>
+    </div>
+    <div class="nav-item" data-section="categories" onclick="switchSection('categories')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
+      <span>Categories</span>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="logout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Logout</span>
+      </button>
+      <p class="admin-badge" id="logged-as">@admin</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- PRODUCTS -->
+    <section id="sec-products" class="section active">
+      <div class="topbar">
+        <div class="topbar-title">Products</div>
+        <div class="topbar-actions">
+          <input class="search-input" placeholder="Search products…" id="prod-search" oninput="renderProducts()">
+          <button class="add-btn" onclick="openModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add product
+          </button>
+        </div>
+      </div>
+      <div style="padding:28px 32px">
+        <div class="stats-row" id="stats-row"></div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <span class="table-head-title">All products</span>
+            <div class="table-filters" id="table-filters"></div>
+          </div>
+          <div id="product-table-body"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section id="sec-inventory" class="section">
+      <div class="topbar"><div class="topbar-title">Inventory</div></div>
+      <div style="padding:28px 32px">
+        <div class="cat-row" id="inv-cat-row"></div>
+        <div class="inv-grid" id="inv-grid"></div>
+      </div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section id="sec-categories" class="section">
+      <div class="topbar">
+        <div class="topbar-title">Categories</div>
+        <div class="topbar-actions">
+          <button class="add-btn" onclick="addCategory()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add category
+          </button>
+        </div>
+      </div>
+      <div style="padding:28px 32px">
+        <div class="table-wrap"><div id="cat-table-body"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add product</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Product name *</label>
+        <input type="text" id="f-name" placeholder="e.g. Naruto Hokage Figure">
+      </div>
+      <div class="form-group form-full">
+        <label>Categories * (select one or more)</label>
+        <div class="cat-picker" id="f-cat-picker"></div>
+      </div>
+      <div class="form-group">
+        <label>Original price ($) *</label>
+        <input type="number" id="f-price" placeholder="0.00" min="0" step="0.01" oninput="updateSalePreview()">
+      </div>
+      <div class="form-group">
+        <label>Discount</label>
+        <div class="discount-row">
+          <input type="number" id="f-discount" placeholder="0" min="0" max="100" step="1" oninput="updateSalePreview()">
+          <label class="discount-toggle"><input type="checkbox" id="f-discount-type" onchange="updateSalePreview()"> flat $ (unchecked = %)</label>
+        </div>
+        <div class="sale-price" id="sale-preview"></div>
+      </div>
+      <div class="form-group">
+        <label>Inventory qty *</label>
+        <input type="number" id="f-inv" placeholder="0" min="0">
+      </div>
+      <div class="form-group form-full">
+        <label>Description</label>
+        <textarea id="f-desc" rows="3" placeholder="Product description…"></textarea>
+      </div>
+      <div class="form-group form-full">
+        <label>Options (sizes, colors, variants)</label>
+        <div class="options-row" id="options-tags"></div>
+        <div class="option-add-row">
+          <input type="text" id="opt-input" placeholder="e.g. Red / Size M" onkeydown="if(event.key==='Enter'){event.preventDefault();addOption()}">
+          <button onclick="addOption()">Add</button>
+        </div>
+      </div>
+      <div class="form-group form-full">
+        <label>Product images</label>
+        <div class="img-upload" id="img-upload-zone">
+          <input type="file" id="img-file-input" accept="image/*" multiple onchange="handleImageUpload(event)">
+          <div class="img-upload-icon">🖼</div>
+          <p><span>Click to upload</span> or drag & drop</p>
+          <p style="font-size:10px;margin-top:4px">PNG, JPG, WEBP (max 5MB each)</p>
+        </div>
+        <div class="img-preview-row" id="img-preview-row"></div>
+        <p style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:10px">Or paste Cloudinary / image URL:</p>
+        <div class="option-add-row" style="margin-top:4px">
+          <input type="text" id="url-input" placeholder="https://res.cloudinary.com/...">
+          <button onclick="addImageUrl()">Add URL</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveProduct()">Save product</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3>Delete product?</h3>
+    <p>This action cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-confirm-del" id="confirm-del-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><div class="toast-dot" id="toast-dot"></div><span id="toast-msg"></span></div>
+
+<script src="../js/admin.js"></script>
+</body>
+</html>

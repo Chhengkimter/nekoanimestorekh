@@ -1,0 +1,318 @@
+/* =====================
+   PAGE BANNER
+   ===================== */
+.page-banner {
+    width: 100%;
+    min-height: 200px;
+    background: #C8C0F0;   /* placeholder colour – replace when you design the banner */
+    margin-bottom: 0;
+}
+
+/* =====================
+   MAIN CONTENT
+   ===================== */
+.main-content {
+    padding: 24px 0 40px;
+}
+
+/* =====================
+   PRODUCT GRID
+   ===================== */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+}
+
+/* =====================
+   PRODUCT CARD
+   ===================== */
+.product-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #f0e8f5;
+    cursor: pointer;
+    transition: box-shadow 0.22s, transform 0.22s;
+}
+
+.product-card:hover {
+    box-shadow: 0 6px 20px rgba(130, 101, 157, 0.14);
+    transform: translateY(-3px);
+}
+
+/* Square image wrapper */
+.card-img-wrapper {
+    width: 100%;
+    padding-top: 100%;
+    position: relative;
+    background: #F5E8E2;
+    overflow: hidden;
+}
+
+.card-img-wrapper img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .card-img-wrapper img {
+    transform: scale(1.04);
+}
+
+/* Card body */
+.card-body {
+    padding: 10px 12px 12px;
+}
+
+.card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.card-price {
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+}
+
+/* Wishlist button */
+.card-wishlist {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid #e0e0e0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.card-wishlist:hover {
+    border-color: #e05c7a;
+}
+
+.card-wishlist i {
+    font-size: 13px;
+    color: #ccc;
+    font-family: "Font Awesome 6 Free";
+    font-style: normal;
+    font-weight: 400;
+    transition: color 0.2s, font-weight 0.1s;
+    pointer-events: none;
+}
+
+.card-wishlist i::before {
+    content: "\f004";
+}
+
+.card-wishlist.active {
+    border-color: #e05c7a;
+    background: #fff0f3;
+}
+
+.card-wishlist.active i {
+    color: #e05c7a;
+    font-weight: 900;
+}
+
+/* =====================
+   EMPTY STATE
+   ===================== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+    font-size: 15px;
+}
+
+/* =====================
+   TOAST
+   ===================== */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #82659D;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 9999;
+    white-space: nowrap;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* =====================
+   FOOTER  (matches homepage)
+   ===================== */
+.footer {
+    background: linear-gradient(135deg, #82659D, #9d7ab8);
+    color: white;
+    padding: 40px 0;
+    margin-top: 40px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+}
+
+.footer-section h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.footer-section p {
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.footer-section ul { list-style: none; }
+
+.footer-section ul li {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.footer-section a {
+    color: white;
+    text-decoration: none;
+}
+
+.footer-section a:hover { opacity: 0.8; }
+
+.footer-logo {
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-logo img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.newsletter {
+    display: flex;
+    margin: 15px 0;
+    gap: 5px;
+}
+
+.newsletter input {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.newsletter button {
+    padding: 8px 20px;
+    background: rgba(255,255,255,0.3);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.newsletter button:hover { background: rgba(255,255,255,0.5); }
+
+.social-icons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+    text-decoration: none;
+}
+
+.social-icons img {
+    width: 28px;
+    height: 28px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.social-icons a:hover { opacity: 0.7; }
+
+/* =====================
+   TABLET  (≤ 768px)
+   ===================== */
+@media (max-width: 768px) {
+    .page-banner {
+        min-height: 160px;
+    }
+
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* =====================
+   MOBILE  (≤ 480px)
+   ===================== */
+@media (max-width: 480px) {
+    .page-banner {
+        min-height: 130px;
+    }
+
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .card-name { font-size: 12px; }
+    .card-price { font-size: 12px; }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+}
