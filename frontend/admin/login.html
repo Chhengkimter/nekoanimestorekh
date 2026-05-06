@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – Neko Animestore</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="auth-page">
+
+        <!-- LEFT PANEL -->
+        <div class="auth-panel left-panel">
+            <a href="index.html" class="panel-logo">
+                <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo">
+                <span>Neko_Animestore</span>
+            </a>
+            <div class="panel-text">
+                <h2>Welcome back!</h2>
+                <p>Log in to track your orders,<br>manage your wishlist, and more.</p>
+            </div>
+            <div class="panel-decoration">
+                <div class="deco-circle c1"></div>
+                <div class="deco-circle c2"></div>
+                <div class="deco-circle c3"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL — FORM -->
+        <div class="auth-panel right-panel">
+            <div class="form-card">
+
+                <h1 class="form-title">Log In</h1>
+                <p class="form-subtitle">Don't have an account? <a href="signup.html">Sign up</a></p>
+
+                <!-- Error banner -->
+                <div class="auth-error" id="auth-error" style="display:none;">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span id="auth-error-msg">Invalid email or password.</span>
+                </div>
+
+                <form id="login-form" novalidate>
+
+                    <div class="field-group">
+                        <label for="email">Email</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-envelope"></i>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="you@example.com"
+                                autocomplete="email"
+                            >
+                        </div>
+                        <span class="field-error" id="email-error"></span>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="password">Password</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-lock"></i>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                            >
+                            <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1" aria-label="Show password">
+                                <i class="fas fa-eye" id="pw-eye"></i>
+                            </button>
+                        </div>
+                        <span class="field-error" id="password-error"></span>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="remember-label">
+                            <input type="checkbox" id="remember"> Remember me
+                        </label>
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="login-btn">
+                        <span id="login-btn-text">Log In</span>
+                        <span class="spinner" id="login-spinner" style="display:none;"></span>
+                    </button>
+
+                </form>
+
+                <div class="divider"><span>or continue with</span></div>
+
+                <div class="social-auth">
+                    <button class="social-btn" id="google-btn">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google"> Google
+                    </button>
+                    <button class="social-btn" id="fb-btn">
+                        <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook"> Facebook
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script src="../js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+/* =====================
+   RESET & BASE
+   ===================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+}
+
+/* =====================
+   TWO-PANEL LAYOUT
+   ===================== */
+.auth-page {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =====================
+   LEFT PANEL
+   ===================== */
+.left-panel {
+    flex: 0 0 38%;
+    background: linear-gradient(145deg, #82659D 0%, #B99CC8 60%, #C8B8DC 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px 44px;
+    position: relative;
+    overflow: hidden;
+}
+
+.panel-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    z-index: 2;
+}
+
+.panel-logo img {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.5);
+}
+
+.panel-logo span {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    letter-spacing: 0.3px;
+}
+
+.panel-text {
+    z-index: 2;
+}
+
+.panel-text h2 {
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 14px;
+    line-height: 1.2;
+}
+
+.panel-text p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.7;
+}
+
+/* Decorative floating circles */
+.panel-decoration {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+}
+
+.c1 { width: 280px; height: 280px; bottom: -80px; right: -80px; }
+.c2 { width: 160px; height: 160px; bottom: 120px; right: 40px; background: rgba(255,255,255,0.06); }
+.c3 { width: 90px;  height: 90px;  top: 30%;  left: -30px; background: rgba(255,255,255,0.1); }
+
+/* =====================
+   RIGHT PANEL
+   ===================== */
+.right-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: #fafafa;
+    overflow-y: auto;
+}
+
+/* =====================
+   FORM CARD
+   ===================== */
+.form-card {
+    width: 100%;
+    max-width: 440px;
+}
+
+.form-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2d2d2d;
+    margin-bottom: 6px;
+}
+
+.form-subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 28px;
+}
+
+.form-subtitle a {
+    color: #82659D;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.form-subtitle a:hover { text-decoration: underline; }
+
+/* =====================
+   ERROR / SUCCESS BANNERS
+   ===================== */
+.auth-error,
+.auth-success {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.auth-error {
+    background: #fff0f0;
+    border: 1px solid #f5c6c6;
+    color: #c0392b;
+}
+
+.auth-success {
+    background: #f0fff4;
+    border: 1px solid #b2dfdb;
+    color: #2e7d52;
+}
+
+/* =====================
+   FIELD GROUPS
+   ===================== */
+.field-group {
+    margin-bottom: 18px;
+    flex: 1;
+}
+
+.field-row {
+    display: flex;
+    gap: 14px;
+}
+
+.field-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 7px;
+}
+
+.optional {
+    font-weight: 400;
+    color: #aaa;
+    font-size: 12px;
+}
+
+/* Input wrapper with icon */
+.input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrap > i:first-child {
+    position: absolute;
+    left: 13px;
+    color: #B99CC8;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.input-wrap input {
+    width: 100%;
+    padding: 11px 42px 11px 38px;
+    border: 1.5px solid #e0d6f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.input-wrap input::placeholder { color: #bbb; }
+
+.input-wrap input:focus {
+    border-color: #B99CC8;
+    box-shadow: 0 0 0 3px rgba(185,156,200,0.15);
+}
+
+.input-wrap input.input-error {
+    border-color: #e05c5c;
+    box-shadow: 0 0 0 3px rgba(224,92,92,0.1);
+}
+
+.input-wrap input.input-ok {
+    border-color: #6dbf8b;
+}
+
+/* Show/hide password button */
+.toggle-pw {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #B99CC8;
+    font-size: 14px;
+    padding: 4px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-pw:hover { color: #82659D; }
+
+/* Field-level errors */
+.field-error {
+    display: block;
+    font-size: 12px;
+    color: #e05c5c;
+    margin-top: 5px;
+    min-height: 16px;
+}
+
+/* =====================
+   REMEMBER / FORGOT ROW
+   ===================== */
+.form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    font-size: 13px;
+}
+
+.remember-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #555;
+    cursor: pointer;
+}
+
+.remember-label input[type="checkbox"] {
+    accent-color: #82659D;
+    width: 15px;
+    height: 15px;
+}
+
+.forgot-link {
+    color: #82659D;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-link:hover { text-decoration: underline; }
+
+/* =====================
+   PASSWORD STRENGTH BAR
+   ===================== */
+.pw-strength {
+    height: 4px;
+    background: #eee;
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.pw-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    transition: width 0.3s, background 0.3s;
+}
+
+/* =====================
+   TERMS CHECKBOX
+   ===================== */
+.terms-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.terms-label input[type="checkbox"] {
+    accent-color: #82659D;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.terms-label a {
+    color: #82659D;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.terms-label a:hover { text-decoration: underline; }
+
+/* =====================
+   SUBMIT BUTTON
+   ===================== */
+.submit-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #82659D, #B99CC8);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.submit-btn:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(130,101,157,0.35);
+}
+
+.submit-btn:active { transform: translateY(0); }
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Spinner */
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* =====================
+   DIVIDER
+   ===================== */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0 18px;
+    color: #bbb;
+    font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e8e0f0;
+}
+
+/* =====================
+   SOCIAL AUTH BUTTONS
+   ===================== */
+.social-auth {
+    display: flex;
+    gap: 12px;
+}
+
+.social-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1.5px solid #e0d6f0;
+    border-radius: 8px;
+    background: white;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.social-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.social-btn:hover {
+    border-color: #B99CC8;
+    background: #faf7ff;
+    box-shadow: 0 2px 8px rgba(185,156,200,0.15);
+}
+
+/* =====================
+   RESPONSIVE
+   ===================== */
+@media (max-width: 768px) {
+    .auth-page { flex-direction: column; }
+
+    .left-panel {
+        flex: none;
+        min-height: 200px;
+        padding: 28px 24px;
+        justify-content: flex-start;
+        gap: 16px;
+    }
+
+    .panel-text h2 { font-size: 24px; }
+    .panel-text p  { font-size: 14px; }
+
+    .c1 { width: 180px; height: 180px; bottom: -50px; right: -50px; }
+    .c2 { display: none; }
+
+    .right-panel { padding: 32px 20px 48px; }
+    .form-card { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .field-row { flex-direction: column; gap: 0; }
+    .social-auth { flex-direction: column; }
+    .form-title { font-size: 24px; }
+    .left-panel { min-height: 170px; }
+}

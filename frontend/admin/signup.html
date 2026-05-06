@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up – Neko Animestore</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="auth-page">
+
+        <!-- LEFT PANEL -->
+        <div class="auth-panel left-panel">
+            <a href="index.html" class="panel-logo">
+                <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo">
+                <span>Neko_Animestore</span>
+            </a>
+            <div class="panel-text">
+                <h2>Join the family!</h2>
+                <p>Create an account to shop,<br>save wishlists, and get exclusive deals.</p>
+            </div>
+            <div class="panel-decoration">
+                <div class="deco-circle c1"></div>
+                <div class="deco-circle c2"></div>
+                <div class="deco-circle c3"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL — FORM -->
+        <div class="auth-panel right-panel">
+            <div class="form-card">
+
+                <h1 class="form-title">Create Account</h1>
+                <p class="form-subtitle">Already have an account? <a href="login.html">Log in</a></p>
+
+                <!-- Error banner -->
+                <div class="auth-error" id="auth-error" style="display:none;">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span id="auth-error-msg"></span>
+                </div>
+
+                <!-- Success banner -->
+                <div class="auth-success" id="auth-success" style="display:none;">
+                    <i class="fas fa-circle-check"></i>
+                    <span id="auth-success-msg"></span>
+                </div>
+
+                <form id="signup-form" novalidate>
+
+                    <div class="field-row">
+                        <div class="field-group">
+                            <label for="first-name">First Name</label>
+                            <div class="input-wrap">
+                                <i class="fas fa-user"></i>
+                                <input
+                                    type="text"
+                                    id="first-name"
+                                    name="first-name"
+                                    placeholder="First name"
+                                    autocomplete="given-name"
+                                >
+                            </div>
+                            <span class="field-error" id="first-name-error"></span>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="last-name">Last Name</label>
+                            <div class="input-wrap">
+                                <i class="fas fa-user"></i>
+                                <input
+                                    type="text"
+                                    id="last-name"
+                                    name="last-name"
+                                    placeholder="Last name"
+                                    autocomplete="family-name"
+                                >
+                            </div>
+                            <span class="field-error" id="last-name-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="email">Email</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-envelope"></i>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="you@example.com"
+                                autocomplete="email"
+                            >
+                        </div>
+                        <span class="field-error" id="email-error"></span>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="phone">Phone Number <span class="optional">(optional)</span></label>
+                        <div class="input-wrap">
+                            <i class="fas fa-phone"></i>
+                            <input
+                                type="tel"
+                                id="phone"
+                                name="phone"
+                                placeholder="+855 XX XXX XXX"
+                                autocomplete="tel"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="password">Password</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-lock"></i>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="At least 8 characters"
+                                autocomplete="new-password"
+                            >
+                            <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1" aria-label="Show password">
+                                <i class="fas fa-eye" id="pw-eye"></i>
+                            </button>
+                        </div>
+                        <div class="pw-strength" id="pw-strength">
+                            <div class="pw-bar" id="pw-bar"></div>
+                        </div>
+                        <span class="field-error" id="password-error"></span>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="confirm-password">Confirm Password</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-lock"></i>
+                            <input
+                                type="password"
+                                id="confirm-password"
+                                name="confirm-password"
+                                placeholder="Repeat your password"
+                                autocomplete="new-password"
+                            >
+                            <button type="button" class="toggle-pw" id="toggle-confirm-pw" tabindex="-1" aria-label="Show password">
+                                <i class="fas fa-eye" id="confirm-pw-eye"></i>
+                            </button>
+                        </div>
+                        <span class="field-error" id="confirm-password-error"></span>
+                    </div>
+
+                    <label class="terms-label">
+                        <input type="checkbox" id="terms-check">
+                        I agree to the <a href="#terms">Terms & Conditions</a> and <a href="#privacy">Privacy Policy</a>
+                    </label>
+                    <span class="field-error" id="terms-error"></span>
+
+                    <button type="submit" class="submit-btn" id="signup-btn">
+                        <span id="signup-btn-text">Create Account</span>
+                        <span class="spinner" id="signup-spinner" style="display:none;"></span>
+                    </button>
+
+                </form>
+
+                <div class="divider"><span>or sign up with</span></div>
+
+                <div class="social-auth">
+                    <button class="social-btn" id="google-btn">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google"> Google
+                    </button>
+                    <button class="social-btn" id="fb-btn">
+                        <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook"> Facebook
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script src="../js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Up Address – Neko Animestore</title>
+    <link rel="stylesheet" href="../css/address.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<header class="header">
+    <div class="header-top">
+        <div class="container">
+            <div class="header-flex desktop-header">
+                <div class="header-socials">
+                    <a href="https://www.facebook.com/Nekoanimestore.kh" target="_blank">
+                        <img src="https://i.pinimg.com/736x/7e/a3/bd/7ea3bd759d038651d0b9efa55d07bb8f.jpg" alt="Facebook">
+                    </a>
+                    <a href="https://www.instagram.com/nekoanimestore.kh/" target="_blank">
+                        <img src="https://i.pinimg.com/736x/fc/49/56/fc4956e4c15da83905e7f1c2481e9b90.jpg" alt="Instagram">
+                    </a>
+                    <a href="https://www.tiktok.com/@nekoanimestore.kh" target="_blank">
+                        <img src="https://i.pinimg.com/736x/b9/92/06/b99206653417284b71702a76774be1fc.jpg" alt="TikTok">
+                    </a>
+                </div>
+                <div class="logo-section">
+                    <a href="index.html">
+                        <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo" class="logo-img">
+                    </a>
+                    <span class="logo-text">Neko_Animestore</span>
+                </div>
+                <div class="right-section">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search...">
+                    </div>
+                    <div class="header-icons">
+                        <a href="cart.html" class="icon-link" title="Cart">
+                            <img src="https://i.pinimg.com/736x/a8/55/11/a855111b1cef5fc7d045fdab7892fde2.jpg" alt="Cart" class="icon-img">
+                        </a>
+                        <a href="#user" class="icon-link" title="User">
+                            <img src="https://i.pinimg.com/736x/09/9b/de/099bdea361336b894f410cdf67c777e4.jpg" alt="User" class="icon-img">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-header">
+                <div class="header-icons-mobile">
+                    <a href="cart.html" class="icon-link">
+                        <img src="https://i.pinimg.com/736x/09/9b/de/099bdea361336b894f410cdf67c777e4.jpg" alt="Back" class="icon-img">
+                    </a>
+                    <div class="logo-section-mobile">
+                        <a href="index.html">
+                            <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Logo" class="logo-img-mobile">
+                        </a>
+                        <span class="logo-text-mobile">Neko_Animestore</span>
+                    </div>
+                    <a href="cart.html" class="icon-link">
+                        <img src="https://i.pinimg.com/736x/a8/55/11/a855111b1cef5fc7d045fdab7892fde2.jpg" alt="Cart" class="icon-img">
+                    </a>
+                </div>
+                <div class="search-box-mobile">
+                    <input type="text" placeholder="Search...">
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ========== MAIN ========== -->
+<main class="main-content">
+    <div class="container">
+
+        <a href="cart.html" class="back-btn"><i class="fas fa-chevron-left"></i> Back to Cart</a>
+
+        <!-- PROGRESS STEPS -->
+        <div class="progress-steps">
+            <div class="step done">
+                <div class="step-circle"><i class="fas fa-check"></i></div>
+                <span>Cart</span>
+            </div>
+            <div class="step-line done-line"></div>
+            <div class="step active">
+                <div class="step-circle">2</div>
+                <span>Address</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-circle">3</div>
+                <span>Confirm</span>
+            </div>
+        </div>
+
+        <div class="address-layout">
+
+            <!-- LEFT: FORM -->
+            <div class="form-col">
+
+                <!-- ── LOCATION ── -->
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-map-marker-alt card-icon"></i>
+                        <h2>Delivery Location</h2>
+                    </div>
+
+                    <!-- Tab switch -->
+                    <div class="loc-tabs">
+                        <button class="loc-tab active" data-tab="manual">
+                            <i class="fas fa-pencil-alt"></i> Type Address
+                        </button>
+                        <button class="loc-tab" data-tab="maps">
+                            <i class="fas fa-map"></i> Google Maps Link
+                        </button>
+                    </div>
+
+                    <!-- Manual address tab -->
+                    <div class="loc-panel" id="tab-manual">
+                        <div class="field-group">
+                            <label class="field-label">Full Address <span class="req">*</span></label>
+                            <input type="text" class="field-input" id="addr-line1"
+                                   placeholder="House No, Street, Village / Sangkat">
+                        </div>
+                        <div class="field-row-2">
+                            <div class="field-group">
+                                <label class="field-label">District / Khan</label>
+                                <input type="text" class="field-input" id="addr-district"
+                                       placeholder="e.g. Chamkarmon">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">City / Province</label>
+                                <input type="text" class="field-input" id="addr-city"
+                                       placeholder="e.g. Phnom Penh">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Landmark / Nearby Reference <span class="optional">(optional)</span></label>
+                            <input type="text" class="field-input" id="addr-landmark"
+                                   placeholder="Near Aeon Mall, opposite of the temple…">
+                        </div>
+                    </div>
+
+                    <!-- Google Maps tab -->
+                    <div class="loc-panel hidden" id="tab-maps">
+                        <div class="maps-info">
+                            <div class="maps-steps">
+                                <p class="maps-title"><i class="fas fa-info-circle"></i> How to get your Google Maps link:</p>
+                                <ol>
+                                    <li>Open <strong>Google Maps</strong> on your phone or computer.</li>
+                                    <li>Drop a pin on your delivery location (long press on the map).</li>
+                                    <li>Tap the pin, then tap <strong>Share</strong> → <strong>Copy link</strong>.</li>
+                                    <li>Paste the link below.</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div class="field-group" style="margin-top:14px">
+                            <label class="field-label">Paste Google Maps Link <span class="req">*</span></label>
+                            <div class="maps-input-wrap">
+                                <i class="fas fa-link maps-link-icon"></i>
+                                <input type="url" class="field-input maps-input" id="addr-maps-link"
+                                       placeholder="https://maps.google.com/…">
+                                <button class="verify-maps-btn" id="verify-maps-btn" type="button">
+                                    Verify <i class="fas fa-external-link-alt"></i>
+                                </button>
+                            </div>
+                            <p class="maps-hint">We'll use this link to locate your address exactly.</p>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Additional Notes for Driver <span class="optional">(optional)</span></label>
+                            <input type="text" class="field-input" id="addr-maps-detail"
+                                   placeholder="3rd floor, blue gate, ring bell twice…">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── SHIPPING ── -->
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-shipping-fast card-icon"></i>
+                        <h2>Shipping Method</h2>
+                    </div>
+
+                    <div class="shipping-options" id="shipping-options">
+
+                        <label class="shipping-opt">
+                            <input type="radio" name="shipping" value="express" checked>
+                            <div class="ship-content">
+                                <div class="ship-left">
+                                    <div class="ship-name">Express Delivery</div>
+                                    <div class="ship-desc">Same-day or next-day within Phnom Penh</div>
+                                    <div class="ship-est"><i class="fas fa-clock"></i> 1 – 2 days</div>
+                                </div>
+                                <div class="ship-price">$3.00</div>
+                            </div>
+                        </label>
+
+                        <label class="shipping-opt">
+                            <input type="radio" name="shipping" value="standard">
+                            <div class="ship-content">
+                                <div class="ship-left">
+                                    <div class="ship-name">Standard Delivery</div>
+                                    <div class="ship-desc">Covers all provinces across Cambodia</div>
+                                    <div class="ship-est"><i class="fas fa-clock"></i> 3 – 5 days</div>
+                                </div>
+                                <div class="ship-price">$2.00</div>
+                            </div>
+                        </label>
+
+                        <label class="shipping-opt">
+                            <input type="radio" name="shipping" value="economy">
+                            <div class="ship-content">
+                                <div class="ship-left">
+                                    <div class="ship-name">Economy Shipping</div>
+                                    <div class="ship-desc">Budget option for non-urgent orders</div>
+                                    <div class="ship-est"><i class="fas fa-clock"></i> 5 – 10 days</div>
+                                </div>
+                                <div class="ship-price">$1.00</div>
+                            </div>
+                        </label>
+
+                        <label class="shipping-opt">
+                            <input type="radio" name="shipping" value="pickup">
+                            <div class="ship-content">
+                                <div class="ship-left">
+                                    <div class="ship-name">Store Pickup</div>
+                                    <div class="ship-desc">Pick up at our Phnom Penh location</div>
+                                    <div class="ship-est"><i class="fas fa-store"></i> Ready in 1 day</div>
+                                </div>
+                                <div class="ship-price free">FREE</div>
+                            </div>
+                        </label>
+
+                        <label class="shipping-opt undetermined-opt">
+                            <input type="radio" name="shipping" value="undetermined">
+                            <div class="ship-content">
+                                <div class="ship-left">
+                                    <div class="ship-name">
+                                        <i class="fas fa-question-circle" style="color:#B99CC8;margin-right:4px"></i>
+                                        To Be Determined
+                                    </div>
+                                    <div class="ship-desc">Our team will contact you to arrange the best shipping option</div>
+                                    <div class="ship-est"><i class="fas fa-comment-dots"></i> We'll reach out via phone / Telegram</div>
+                                </div>
+                                <div class="ship-price tbd">TBD</div>
+                            </div>
+                        </label>
+
+                    </div>
+                </div>
+
+                <!-- ── PHONE ── -->
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-phone-alt card-icon"></i>
+                        <h2>Contact Numbers</h2>
+                    </div>
+                    <p class="card-sub">We'll use these to coordinate your delivery.</p>
+
+                    <div class="field-group">
+                        <label class="field-label">Phone Number 1 <span class="req">*</span></label>
+                        <div class="phone-wrap">
+                            <span class="phone-prefix">+855</span>
+                            <input type="tel" class="field-input phone-input" id="phone1"
+                                   placeholder="12 345 678" maxlength="15">
+                        </div>
+                    </div>
+
+                    <div class="field-group" style="margin-top:14px">
+                        <label class="field-label">Phone Number 2 <span class="optional">(optional)</span></label>
+                        <div class="phone-wrap">
+                            <span class="phone-prefix">+855</span>
+                            <input type="tel" class="field-input phone-input" id="phone2"
+                                   placeholder="16 755 194" maxlength="15">
+                        </div>
+                        <p class="field-hint">Useful if the primary number is unavailable.</p>
+                    </div>
+                </div>
+
+                <!-- ── ORDER NOTE ── -->
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-comment-alt card-icon"></i>
+                        <h2>Order Note <span class="optional" style="font-size:13px;font-weight:400">(optional)</span></h2>
+                    </div>
+                    <p class="card-sub">Any special instructions for the entire order (packaging, delivery window, etc.)</p>
+                    <textarea class="field-textarea" id="order-note"
+                              placeholder="e.g. Please deliver after 5 PM, wrap all items individually…"
+                              maxlength="500"></textarea>
+                    <p class="char-count" id="note-char">0 / 500</p>
+                </div>
+
+            </div><!-- end form-col -->
+
+            <!-- RIGHT: ORDER MINI-SUMMARY -->
+            <div class="side-col">
+                <div class="summary-card">
+                    <h2 class="summary-title">Your Order</h2>
+                    <div id="order-mini-summary">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span id="mini-subtotal">—</span>
+                    </div>
+                    <div class="summary-row shipping-row">
+                        <span>Shipping</span>
+                        <span id="mini-shipping">$3.00</span>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row total-row">
+                        <span>Total</span>
+                        <span id="mini-total">—</span>
+                    </div>
+
+                    <button class="submit-order-btn" id="submit-order-btn" type="button">
+                        <i class="fas fa-check-circle"></i> Submit Order
+                    </button>
+
+                    <p class="submit-note">By submitting you agree to our <a href="#">Terms & Conditions</a>.</p>
+                </div>
+            </div>
+
+        </div><!-- end address-layout -->
+    </div>
+</main>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <p><i class="fas fa-phone"></i> +855 99 237 770</p>
+                <p><i class="fas fa-phone"></i> +855 16 755 194</p>
+                <p><i class="fas fa-envelope"></i> nekoanimestore@gmail.com</p>
+                <p><i class="fas fa-map-marker-alt"></i> Base in Phnom Penh, Cambodia</p>
+            </div>
+            <div class="footer-section">
+                <h3>About Us</h3>
+                <ul><li><a href="#">Store</a></li><li><a href="#">Founder</a></li></ul>
+            </div>
+            <div class="footer-section">
+                <h3>Services</h3>
+                <ul>
+                    <li><a href="#">Order</a></li><li><a href="#">Gift</a></li>
+                    <li><a href="#">Refund</a></li><li><a href="#">Terms and Condition</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <div class="footer-logo">
+                    <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo">
+                    <span>Neko_Animestore</span>
+                </div>
+                <p>Subscribe for new products and promotions.</p>
+                <div class="newsletter">
+                    <input type="email" placeholder="Enter your Email">
+                    <button type="button">Subscribe</button>
+                </div>
+                <div class="social-icons">
+                    <a href="https://www.facebook.com/Nekoanimestore.kh" target="_blank"><img src="https://i.pinimg.com/736x/7e/a3/bd/7ea3bd759d038651d0b9efa55d07bb8f.jpg" alt="Facebook"></a>
+                    <a href="https://www.instagram.com/nekoanimestore.kh/" target="_blank"><img src="https://i.pinimg.com/736x/fc/49/56/fc4956e4c15da83905e7f1c2481e9b90.jpg" alt="Instagram"></a>
+                    <a href="https://www.tiktok.com/@nekoanimestore.kh" target="_blank"><img src="https://i.pinimg.com/736x/b9/92/06/b99206653417284b71702a76774be1fc.jpg" alt="TikTok"></a>
+                    <a href="https://t.me/rizeisok" target="_blank"><img src="https://i.pinimg.com/736x/28/ef/1d/28ef1d894bd55a01bd96c7326831a4b1.jpg" alt="Telegram"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="../js/address.js"></script>
+</body>
+</html>
