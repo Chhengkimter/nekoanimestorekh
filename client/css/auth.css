@@ -49,6 +49,7 @@ body {
     border-radius: 8px;
     object-fit: cover;
     border: 2px solid rgba(255,255,255,0.5);
+    mix-blend-mode: multiply;
 }
 
 .panel-logo span {

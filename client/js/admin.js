@@ -10,10 +10,10 @@ let invFilter = 'All';
 
 if (products.length === 0) {
   products = [
-    { id:'PROD001', name:'Naruto Hokage Figure', categories:['Figures'], price:24.99, discount:0, discountFlat:false, inventory:12, description:'High-quality PVC figure of Naruto in Hokage outfit.', options:['Small','Large'], images:[] },
-    { id:'PROD002', name:'Demon Slayer Hoodie', categories:['Clothing','Accessories'], price:34.99, discount:10, discountFlat:false, inventory:3, description:'Tanjiro-inspired unisex hoodie, soft fleece.', options:['S','M','L','XL'], images:[] },
-    { id:'PROD003', name:'One Piece Keychain Set', categories:['Keychains','Accessories'], price:8.99, discount:0, discountFlat:false, inventory:45, description:'Set of 5 Straw Hat crew keychains.', options:[], images:[] },
-    { id:'PROD004', name:'Attack on Titan Poster', categories:['Posters'], price:5.99, discount:2, discountFlat:true, inventory:0, description:'A2 size glossy poster, Survey Corps design.', options:['A3','A2','A1'], images:[] },
+    { id:'PROD001', name:'Naruto Hokage Figure', categories:['Figures'], price:24.99, discount:0, discountFlat:false, inventory:12, stockStatus:'instock', description:'High-quality PVC figure of Naruto in Hokage outfit.', options:['Small','Large'], images:[] },
+    { id:'PROD002', name:'Demon Slayer Hoodie', categories:['Clothing','Accessories'], price:34.99, discount:10, discountFlat:false, inventory:3, stockStatus:'instock', description:'Tanjiro-inspired unisex hoodie, soft fleece.', options:['S','M','L','XL'], images:[] },
+    { id:'PROD003', name:'One Piece Keychain Set', categories:['Keychains','Accessories'], price:8.99, discount:0, discountFlat:false, inventory:45, stockStatus:'instock', description:'Set of 5 Straw Hat crew keychains.', options:[], images:[] },
+    { id:'PROD004', name:'Attack on Titan Poster', categories:['Posters'], price:5.99, discount:2, discountFlat:true, inventory:0, stockStatus:'preorder', description:'A2 size glossy poster, Survey Corps design.', options:['A3','A2','A1'], images:[] },
   ];
   save();
 }
@@ -113,8 +113,8 @@ function renderProducts() {
     <th>Product</th><th>Categories</th><th>Price</th><th>Inventory</th><th>Status</th><th>Actions</th>
   </tr></thead><tbody>${filtered.map(p => {
     const thumb = p.images&&p.images[0]
-      ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
-      : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+  ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
+  : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px">📦</div>`;
     const status = p.inventory===0
       ? `<span class="badge badge-red">Out of stock</span>`
       : p.inventory<=5
@@ -147,7 +147,7 @@ function openModal(id) {
   modalImages = []; modalOptions = []; modalCats = [];
   renderCatPicker();
   if (id) {
-    const p = products.find(x => x.id===id);
+    const p = products.find(x => x.id === id);
     document.getElementById('modal-title').textContent = 'Edit product';
     document.getElementById('f-name').value = p.name;
     document.getElementById('f-price').value = p.price;
@@ -155,16 +155,37 @@ function openModal(id) {
     document.getElementById('f-desc').value = p.description;
     document.getElementById('f-discount').value = p.discount || 0;
     document.getElementById('f-discount-type').checked = p.discountFlat || false;
-    modalOptions = [...(p.options||[])];
-    modalImages = [...(p.images||[])];
+    modalOptions = [...(p.options || [])];
+    modalImages = [...(p.images || [])];
     modalCats = [...(p.categories || (p.category ? [p.category] : []))];
+    // set stock status buttons
+    setStockStatusUI(p.stockStatus || 'instock');
   } else {
     document.getElementById('modal-title').textContent = 'Add product';
     ['f-name','f-price','f-inv','f-desc','f-discount'].forEach(i => document.getElementById(i).value = '');
     document.getElementById('f-discount-type').checked = false;
+    setStockStatusUI('instock');
   }
   renderCatPicker(); renderOptions(); renderImagePreviews(); updateSalePreview();
   document.getElementById('modal-overlay').classList.add('open');
+}
+
+function setStockStatusUI(status) {
+  document.querySelectorAll('.stock-status-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.status === status);
+  });
+  // show/hide inventory qty field
+  const invGroup = document.getElementById('inv-group');
+  invGroup.style.display = (status === 'preorder') ? 'none' : '';
+}
+
+function selectStockStatus(status) {
+  setStockStatusUI(status);
+}
+
+function getStockStatus() {
+  const sel = document.querySelector('.stock-status-btn.selected');
+  return sel ? sel.dataset.status : 'instock';
 }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 
@@ -201,23 +222,24 @@ function updateSalePreview() {
 function saveProduct() {
   const name = document.getElementById('f-name').value.trim();
   const price = parseFloat(document.getElementById('f-price').value);
-  const inv = parseInt(document.getElementById('f-inv').value);
+  const stockStatus = getStockStatus();
+  const inv = stockStatus === 'preorder' ? 0 : parseInt(document.getElementById('f-inv').value);
   const desc = document.getElementById('f-desc').value.trim();
-  const discount = parseFloat(document.getElementById('f-discount').value)||0;
+  const discount = parseFloat(document.getElementById('f-discount').value) || 0;
   const discountFlat = document.getElementById('f-discount-type').checked;
-  if (!name || isNaN(price) || isNaN(inv)) { toast('Fill in name, price and qty', true); return; }
+  if (!name || isNaN(price)) { toast('Fill in name and price', true); return; }
+  if (stockStatus !== 'preorder' && isNaN(inv)) { toast('Fill in inventory qty', true); return; }
   if (modalCats.length === 0) { toast('Select at least one category', true); return; }
   if (editingId) {
-    const idx = products.findIndex(p => p.id===editingId);
-    products[idx] = { ...products[idx], name, categories:modalCats, price, discount, discountFlat, inventory:inv, description:desc, options:modalOptions, images:modalImages };
+    const idx = products.findIndex(p => p.id === editingId);
+    products[idx] = { ...products[idx], name, categories: modalCats, price, discount, discountFlat, inventory: inv, stockStatus, description: desc, options: modalOptions, images: modalImages };
     toast('Product updated ✓');
   } else {
-    products.unshift({ id:genId(), name, categories:modalCats, price, discount, discountFlat, inventory:inv, description:desc, options:modalOptions, images:modalImages });
+    products.unshift({ id: genId(), name, categories: modalCats, price, discount, discountFlat, inventory: inv, stockStatus, description: desc, options: modalOptions, images: modalImages });
     toast('Product added ✓');
   }
   save(); renderAll(); buildFilters(); closeModal();
 }
-
 // ── OPTIONS ──
 function addOption() {
   const val = document.getElementById('opt-input').value.trim();
@@ -265,53 +287,293 @@ function closeConfirm() { document.getElementById('confirm-overlay').classList.r
 function renderInventory() {
   const cats = ['All', ...categories];
   document.getElementById('inv-cat-row').innerHTML = cats.map(c =>
-    `<div class="cat-chip ${c===invFilter?'active':''}" onclick="setInvFilter('${c}')">${c}</div>`
+    `<div class="cat-chip ${c === invFilter ? 'active' : ''}" onclick="setInvFilter('${c}')">${c}</div>`
   ).join('');
-  const maxInv = Math.max(...products.map(p=>p.inventory), 1);
-  const filtered = invFilter==='All' ? products : products.filter(p=>(p.categories||[p.category]).includes(invFilter));
-  document.getElementById('inv-grid').innerHTML = !filtered.length
-    ? `<div class="empty-state"><div class="es-icon">📦</div><p>No products here</p></div>`
-    : filtered.map(p => {
-        const pct = Math.min(100, (p.inventory/maxInv)*100);
-        const col = p.inventory===0 ? '#f87171' : p.inventory<=5 ? '#fbbf24' : '#4ade80';
-        const cats = (p.categories||[p.category]).filter(Boolean).join(', ');
-        const salePrice = calcSale(p.price, p.discount, p.discountFlat);
-        const priceDisplay = p.discount > 0
-          ? `<span style="text-decoration:line-through;color:var(--muted);font-size:10px">$${Number(p.price).toFixed(2)}</span> <span style="color:var(--green);font-size:11px;font-weight:700">$${salePrice}</span>`
-          : `<span style="font-size:11px;color:var(--muted)">$${Number(p.price).toFixed(2)}</span>`;
-        return `<div class="inv-card">
-          <div class="inv-card-name">${p.name}</div>
-          <div class="inv-card-cat">#${p.id} · ${cats}</div>
-          <div style="font-family:var(--mono);margin-bottom:8px">${priceDisplay}</div>
-          <div class="inv-bar-wrap"><div class="inv-bar" style="width:${pct}%;background:${col}"></div></div>
-          <div class="inv-count-row">
-            <div class="inv-count" style="color:${col}">${p.inventory}</div>
-            <div class="inv-adj">
-              <button onclick="adjustInv('${p.id}',-1)">−</button>
-              <button onclick="adjustInv('${p.id}',1)">+</button>
-            </div>
+
+  const q = (document.getElementById('inv-search')?.value || '').toLowerCase();
+
+  const filtered = products.filter(p => {
+    const inInv = p.stockStatus === 'instock' || p.stockStatus === 'both';
+    if (!inInv) return false;
+    const matchCat = invFilter === 'All' || (p.categories || [p.category] || []).includes(invFilter);
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+
+  if (!filtered.length) {
+    document.getElementById('inv-grid').innerHTML = `<div class="empty-state"><div class="es-icon">📦</div><p>No products in inventory</p></div>`;
+    return;
+  }
+
+  document.getElementById('inv-grid').innerHTML = `<div class="inv-table-wrap">${filtered.map(p => {
+    const thumb = p.images && p.images[0]
+      ? `<div class="inv-thumb"><img src="${p.images[0]}" onerror="this.style.opacity=.3"></div>`
+      : `<div class="inv-thumb">📦</div>`;
+    const cats = (p.categories || [p.category]).filter(Boolean).join(', ');
+    const salePrice = calcSale(p.price, p.discount, p.discountFlat);
+    const priceHtml = p.discount > 0
+      ? `<span style="text-decoration:line-through;color:var(--muted);font-size:10px">$${Number(p.price).toFixed(2)}</span><br><span style="color:var(--green);font-weight:700">$${salePrice}</span>`
+      : `<span style="color:var(--text)">$${Number(p.price).toFixed(2)}</span>`;
+    const statusBadge = p.inventory === 0
+      ? `<span class="badge badge-red">Out of stock</span>`
+      : p.inventory <= 5
+      ? `<span class="badge badge-amber">Low stock</span>`
+      : `<span class="badge badge-green">In stock</span>`;
+    return `<div class="inv-row">
+      ${thumb}
+      <div class="inv-info">
+        <div class="inv-info-name">${p.name}</div>
+        <div class="inv-info-meta">#${p.id} · ${cats}</div>
+      </div>
+      <div class="inv-price-col">${priceHtml}</div>
+      <div class="inv-qty-col">
+        <button class="inv-adj-btn" onclick="adjustInv('${p.id}',-1)">−</button>
+        <input class="inv-qty-input" type="number" min="0" value="${p.inventory}"
+          onchange="setInv('${p.id}', this.value)"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        <button class="inv-adj-btn" onclick="adjustInv('${p.id}',1)">+</button>
+      </div>
+      <div class="inv-status-col">${statusBadge}</div>
+      <div>
+        <button class="action-btn del" style="font-size:10px" onclick="removeFromInventory('${p.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function removeFromInventory(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.stockStatus = 'preorder';
+  save(); renderInventory(); renderStats(); renderProducts();
+  toast(`"${p.name}" moved to pre-order`);
+}
+
+function openAddToInventoryModal() {
+  categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('add-inv-overlay').classList.add('open');
+  const sel = document.getElementById('add-inv-cat-filter');
+  sel.innerHTML = '<option value="All">All categories</option>' +
+  categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('add-inv-search').value = '';
+  document.getElementById('add-inv-cat-filter').value = 'All';
+  renderAddInvList();
+}
+
+function renderAddInvList() {
+  const q = (document.getElementById('add-inv-search')?.value || '').toLowerCase();
+  const cat = document.getElementById('add-inv-cat-filter')?.value || 'All';
+
+  const eligible = products.filter(p => {
+    const isPreorder = !p.stockStatus || p.stockStatus === 'preorder';
+    if (!isPreorder) return false;
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+    const matchCat = cat === 'All' || (p.categories || []).includes(cat);
+    return matchQ && matchCat;
+  });
+
+  document.getElementById('add-inv-list').innerHTML = !eligible.length
+    ? `<div class="empty-state" style="padding:30px 20px">
+        <div class="es-icon">✓</div>
+        <p>${q || cat !== 'All' ? 'No products match your search' : 'All products are already in inventory'}</p>
+       </div>`
+    : eligible.map(p => {
+        const thumb = p.images && p.images[0]
+          ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
+          : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>`;
+        const cats = (p.categories || [p.category]).filter(Boolean).join(', ');
+        return `<div class="add-inv-row" id="add-inv-row-${p.id}">
+          ${thumb}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${p.name}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px">#${p.id} · ${cats}</div>
           </div>
+          <span class="badge badge-amber" style="flex-shrink:0">Pre-order</span>
+          <button class="add-btn" style="padding:7px 16px;font-size:12px;flex-shrink:0" onclick="addToInventory('${p.id}')">+ Add</button>
         </div>`;
       }).join('');
 }
+
+function addToInventory(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.stockStatus = 'instock';
+  if (!p.inventory) p.inventory = 0;
+  save(); renderStats(); renderProducts();
+  renderAddInvList();
+  toast(`"${p.name}" added to inventory ✓`);
+}
+
+function closeAddInvModal() {
+  document.getElementById('add-inv-overlay').classList.remove('open');
+  renderInventory();
+}
 function setInvFilter(c) { invFilter=c; renderInventory(); }
 function adjustInv(id, delta) {
-  const p = products.find(x=>x.id===id);
+  const p = products.find(x => x.id === id);
   if (!p) return;
-  p.inventory = Math.max(0, p.inventory+delta);
-  save(); renderInventory(); renderStats();
+  p.inventory = Math.max(0, p.inventory + delta);
+  save();
+  // sync the input field value without full re-render
+  const rows = document.querySelectorAll('.inv-row');
+  rows.forEach(row => {
+    const meta = row.querySelector('.inv-info-meta');
+    if (meta && meta.textContent.includes(id)) {
+      row.querySelector('.inv-qty-input').value = p.inventory;
+      const badge = row.querySelector('.inv-status-col');
+      badge.innerHTML = p.inventory===0
+        ? `<span class="badge badge-red">Out of stock</span>`
+        : p.inventory<=5
+        ? `<span class="badge badge-amber">Low stock</span>`
+        : `<span class="badge badge-green">In stock</span>`;
+    }
+  });
+  renderStats();
+}
+function setInv(id, val) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  const n = parseInt(val);
+  p.inventory = isNaN(n) || n < 0 ? 0 : n;
+  save(); renderStats();
+  // update just the status badge without full re-render
+  const rows = document.querySelectorAll('.inv-row');
+  rows.forEach(row => {
+    const input = row.querySelector('.inv-qty-input');
+    if (input && row.querySelector('.inv-info-meta').textContent.includes(id)) {
+      const badge = row.querySelector('.inv-status-col');
+      badge.innerHTML = p.inventory===0
+        ? `<span class="badge badge-red">Out of stock</span>`
+        : p.inventory<=5
+        ? `<span class="badge badge-amber">Low stock</span>`
+        : `<span class="badge badge-green">In stock</span>`;
+    }
+  });
 }
 
 // ── CATEGORIES ──
+let catDetailName = null;
+let catDetailPendingRemovals = [];
+
+function openCategoryDetail(catName) {
+  catDetailName = catName;
+  catDetailPendingRemovals = [];
+  renderCategoryDetail();
+  document.getElementById('sec-categories').style.display = 'none';
+  document.getElementById('sec-cat-detail').style.display = 'block';
+}
+
+function closeCategoryDetail() {
+  catDetailName = null;
+  catDetailPendingRemovals = [];
+  document.getElementById('sec-cat-detail').style.display = 'none';
+  document.getElementById('sec-categories').style.display = 'block';
+}
+
+function renderCategoryDetail() {
+  const prods = products.filter(p => (p.categories||[p.category]||[]).includes(catDetailName));
+  const hasPending = catDetailPendingRemovals.length > 0;
+
+  document.getElementById('cat-detail-content').innerHTML = `
+    <div class="cat-detail-header">
+      <button class="cat-back-btn" onclick="closeCategoryDetail()">
+        ← Back
+      </button>
+      <div>
+        <div class="cat-detail-title">${catDetailName}</div>
+        <div class="cat-detail-sub">${prods.length} product${prods.length!==1?'s':''}</div>
+      </div>
+      <div class="cat-detail-actions">
+        ${hasPending ? `<span class="pending-badge">⚠ ${catDetailPendingRemovals.length} pending removal</span>` : ''}
+        <button class="btn-cancel" onclick="cancelCategoryEdits()" ${!hasPending?'style="opacity:.4;pointer-events:none"':''}>Cancel</button>
+        <button class="btn-save" onclick="saveCategoryEdits()" ${!hasPending?'style="opacity:.4;pointer-events:none"':''}>Save changes</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      ${!prods.length
+        ? `<div class="empty-state"><div class="es-icon">🔍</div><p>No products in this category</p></div>`
+        : `<table><thead><tr>
+            <th>Product</th><th>Price</th><th>Inventory</th><th>Status</th><th>Remove</th>
+           </tr></thead><tbody>
+           ${prods.map(p => {
+             const isPending = catDetailPendingRemovals.includes(p.id);
+             const thumb = p.images && p.images[0]
+               ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
+               : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+             const status = p.inventory===0
+               ? `<span class="badge badge-red">Out of stock</span>`
+               : p.inventory<=5
+               ? `<span class="badge badge-amber">Low stock</span>`
+               : `<span class="badge badge-green">In stock</span>`;
+             const salePrice = calcSale(p.price, p.discount, p.discountFlat);
+             const priceHtml = p.discount > 0
+               ? `<span style="text-decoration:line-through;color:var(--muted);font-size:11px">$${Number(p.price).toFixed(2)}</span><br><span style="color:var(--green);font-weight:700">$${salePrice}</span>`
+               : `$${Number(p.price).toFixed(2)}`;
+             return `<tr style="${isPending ? 'opacity:.4;' : ''}">
+               <td><div class="prod-cell">${thumb}
+                 <div>
+                   <div class="prod-name" style="${isPending ? 'text-decoration:line-through' : ''}">${p.name}</div>
+                   <div class="prod-id">#${p.id}</div>
+                 </div>
+               </div></td>
+               <td style="font-family:var(--mono)">${priceHtml}</td>
+               <td style="font-family:var(--mono)">${p.inventory}</td>
+               <td>${status}</td>
+               <td>
+                 ${isPending
+                   ? `<button class="action-btn" onclick="undoRemoveFromCat('${p.id}')">Undo</button>`
+                   : `<button class="action-btn del" onclick="markRemoveFromCat('${p.id}')">Remove</button>`
+                 }
+               </td>
+             </tr>`;
+           }).join('')}
+           </tbody></table>`
+      }
+    </div>`;
+}
+
+function markRemoveFromCat(prodId) {
+  if (!catDetailPendingRemovals.includes(prodId)) catDetailPendingRemovals.push(prodId);
+  renderCategoryDetail();
+}
+
+function undoRemoveFromCat(prodId) {
+  catDetailPendingRemovals = catDetailPendingRemovals.filter(id => id !== prodId);
+  renderCategoryDetail();
+}
+
+function cancelCategoryEdits() {
+  catDetailPendingRemovals = [];
+  renderCategoryDetail();
+}
+
+function saveCategoryEdits() {
+  if (!catDetailPendingRemovals.length) return;
+  catDetailPendingRemovals.forEach(prodId => {
+    const p = products.find(x => x.id === prodId);
+    if (!p) return;
+    if (p.categories) p.categories = p.categories.filter(c => c !== catDetailName);
+    else if (p.category === catDetailName) p.category = null;
+  });
+  const count = catDetailPendingRemovals.length;
+  catDetailPendingRemovals = [];
+  save(); renderAll(); buildFilters();
+  toast(`Removed ${count} product${count!==1?'s':''} from "${catDetailName}" ✓`);
+  renderCategoryDetail();
+}
 function renderCategories() {
   document.getElementById('cat-table-body').innerHTML = `<table>
     <thead><tr><th>Category name</th><th>Products</th><th>Actions</th></tr></thead>
-    <tbody>${categories.map((c,i) => {
-      const count = products.filter(p=>(p.categories||[p.category]).includes(c)).length;
-      return `<tr>
-        <td style="font-weight:600">${c}</td>
+    <tbody>${categories.map((c, i) => {
+      const count = products.filter(p => (p.categories||[p.category]||[]).includes(c)).length;
+      return `<tr style="cursor:pointer" onclick="openCategoryDetail('${c}')" title="Click to view products">
+        <td style="font-weight:600">${c}
+          <span style="font-size:10px;color:var(--muted);margin-left:6px;font-family:var(--mono)">→ view</span>
+        </td>
         <td><span class="badge badge-purple">${count}</span></td>
-        <td><button class="action-btn del" onclick="deleteCategory(${i})">Delete</button></td>
+        <td onclick="event.stopPropagation()"><div class="action-btns">
+          <button class="action-btn" onclick="editCategory(${i})">Edit</button>
+          <button class="action-btn del" onclick="deleteCategory(${i})">Delete</button>
+        </div></td>
       </tr>`;
     }).join('')}</tbody></table>`;
 }
@@ -320,6 +582,31 @@ function addCategory() {
   if (name && name.trim() && !categories.includes(name.trim())) {
     categories.push(name.trim()); save(); renderCategories(); buildFilters(); toast('Category added ✓');
   }
+}
+function editCategory(i) {
+  const oldName = categories[i];
+  const newName = prompt('Rename category:', oldName);
+  if (!newName || !newName.trim()) return;
+  const trimmed = newName.trim();
+  if (trimmed === oldName) return;
+  if (categories.includes(trimmed)) { toast(`"${trimmed}" already exists`, true); return; }
+
+  // Update the category name everywhere it's used in products
+  categories[i] = trimmed;
+  products.forEach(p => {
+    if (p.categories) {
+      const idx = p.categories.indexOf(oldName);
+      if (idx !== -1) p.categories[idx] = trimmed;
+    } else if (p.category === oldName) {
+      p.category = trimmed;
+    }
+  });
+
+  save();
+  renderCategories();
+  buildFilters();
+  renderAll();
+  toast(`"${oldName}" renamed to "${trimmed}" ✓`);
 }
 function deleteCategory(i) {
   const name = categories[i];
