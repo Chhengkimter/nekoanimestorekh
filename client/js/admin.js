@@ -1,64 +1,43 @@
 // ── DATA ──
-let products = JSON.parse(localStorage.getItem('neko_products') || '[]');
-let categories = JSON.parse(localStorage.getItem('neko_cats') || '["Figures","Clothing","Accessories","Keychains","Posters","Stationery","Other"]');
+let products   = [];
+let categories = [];
 let editingId = null;
 let modalImages = [];
 let modalOptions = [];
 let pendingDeleteId = null;
 let activeFilter = 'All';
 let invFilter = 'All';
+let allCategoryObjects = []; // stores { category_id, category_name }
 
-if (products.length === 0) {
-  products = [
-    { id:'PROD001', name:'Naruto Hokage Figure', categories:['Figures'], price:24.99, discount:0, discountFlat:false, inventory:12, stockStatus:'instock', description:'High-quality PVC figure of Naruto in Hokage outfit.', options:['Small','Large'], images:[] },
-    { id:'PROD002', name:'Demon Slayer Hoodie', categories:['Clothing','Accessories'], price:34.99, discount:10, discountFlat:false, inventory:3, stockStatus:'instock', description:'Tanjiro-inspired unisex hoodie, soft fleece.', options:['S','M','L','XL'], images:[] },
-    { id:'PROD003', name:'One Piece Keychain Set', categories:['Keychains','Accessories'], price:8.99, discount:0, discountFlat:false, inventory:45, stockStatus:'instock', description:'Set of 5 Straw Hat crew keychains.', options:[], images:[] },
-    { id:'PROD004', name:'Attack on Titan Poster', categories:['Posters'], price:5.99, discount:2, discountFlat:true, inventory:0, stockStatus:'preorder', description:'A2 size glossy poster, Survey Corps design.', options:['A3','A2','A1'], images:[] },
-  ];
-  save();
+async function initApp() {
+  await Promise.all([loadProducts(), loadCategories()]);
+  renderAll();
 }
 
-function save() {
-  localStorage.setItem('neko_products', JSON.stringify(products));
-  localStorage.setItem('neko_cats', JSON.stringify(categories));
-}
-function genId() { return 'PROD' + String(Date.now()).slice(-6); }
-
-// ── AUTH ──
-const ADMINS = { admin: 'neko2024', rize: 'rize123' };
-
-document.getElementById('login-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const u = document.getElementById('login-user').value.trim();
-  const p = document.getElementById('login-pass').value;
-  if (ADMINS[u] && ADMINS[u] === p) {
-    sessionStorage.setItem('neko_admin', u);
-    document.getElementById('login-screen').classList.add('hide');
-    setTimeout(() => {
-      document.getElementById('app').classList.add('show');
-      document.getElementById('logged-as').textContent = '@' + u;
-      renderAll();
-    }, 400);
-  } else {
-    const err = document.getElementById('login-err');
-    err.style.display = 'block';
-    setTimeout(() => err.style.display = 'none', 2500);
-  }
-});
-
-function logout() {
-  sessionStorage.removeItem('neko_admin');
-  document.getElementById('app').classList.remove('show');
-  document.getElementById('login-screen').classList.remove('hide');
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
+async function loadProducts() {
+  const res = await apiFetch('/products');
+  const data = await res.json();
+  products = data.map(p => ({
+    id:           p.product_code || p.product_id,
+    dbId:         p.product_id,
+    name:         p.product_name,
+    categories:   p.categories ? p.categories.split(', ') : [],
+    price:        parseFloat(p.product_price),
+    discount:     parseFloat(p.discount)     || 0,
+    discountFlat: p.discount_flat            || false,
+    inventory:    p.product_stock,
+    stockStatus:  p.stock_status,
+    description:  p.product_description      || '',
+    options:      [],
+    images:       p.primary_image ? [p.primary_image] : [],
+    promotion:    p.promotion                || null
+  }));
 }
 
-if (sessionStorage.getItem('neko_admin')) {
-  document.getElementById('login-screen').classList.add('hide');
-  document.getElementById('app').classList.add('show');
-  document.getElementById('logged-as').textContent = '@' + sessionStorage.getItem('neko_admin');
-  setTimeout(renderAll, 100);
+async function loadCategories() {
+  const res = await apiFetch('/admin/categories');
+  allCategoryObjects = await res.json();
+  categories = allCategoryObjects.map(c => c.category_name);
 }
 
 // ── NAVIGATION ──
@@ -219,7 +198,7 @@ function updateSalePreview() {
   }
 }
 
-function saveProduct() {
+async function saveProduct() {
   const name = document.getElementById('f-name').value.trim();
   const price = parseFloat(document.getElementById('f-price').value);
   const stockStatus = getStockStatus();
@@ -227,18 +206,46 @@ function saveProduct() {
   const desc = document.getElementById('f-desc').value.trim();
   const discount = parseFloat(document.getElementById('f-discount').value) || 0;
   const discountFlat = document.getElementById('f-discount-type').checked;
+  const promotion = document.getElementById('f-promotion').value || null;
   if (!name || isNaN(price)) { toast('Fill in name and price', true); return; }
   if (stockStatus !== 'preorder' && isNaN(inv)) { toast('Fill in inventory qty', true); return; }
   if (modalCats.length === 0) { toast('Select at least one category', true); return; }
+  
+  const payload = {
+    productName:        name,
+    productPrice:       price,
+    productDescription: desc,
+    productStock:       inv,
+    discount,
+    discountFlat,
+    stockStatus,
+    promotion,
+    categories: modalCats.map(c => {
+      const found = allCategoryObjects.find(x => x.category_name === c);
+      return found ? found.category_id : null;
+    }).filter(Boolean),
+    options: modalOptions
+  };
+
   if (editingId) {
-    const idx = products.findIndex(p => p.id === editingId);
-    products[idx] = { ...products[idx], name, categories: modalCats, price, discount, discountFlat, inventory: inv, stockStatus, description: desc, options: modalOptions, images: modalImages };
+    const p      = products.find(x => x.id === editingId);
+    const res    = await apiFetch(`/admin/products/${p.dbId}`, {
+      method: 'PUT',
+      body:   JSON.stringify(payload)
+    });
+    if (!res.ok) { toast('Update failed', true); return; }
     toast('Product updated ✓');
   } else {
-    products.unshift({ id: genId(), name, categories: modalCats, price, discount, discountFlat, inventory: inv, stockStatus, description: desc, options: modalOptions, images: modalImages });
+    const res = await apiFetch('/admin/products', {
+      method: 'POST',
+      body:   JSON.stringify(payload)
+    });
+    if (!res.ok) { toast('Add failed', true); return; }
     toast('Product added ✓');
   }
-  save(); renderAll(); buildFilters(); closeModal();
+
+  await loadProducts();
+  renderAll(); buildFilters(); closeModal();
 }
 // ── OPTIONS ──
 function addOption() {
@@ -276,9 +283,13 @@ function renderImagePreviews() {
 function confirmDelete(id) {
   pendingDeleteId = id;
   document.getElementById('confirm-overlay').classList.add('open');
-  document.getElementById('confirm-del-btn').onclick = () => {
-    products = products.filter(p => p.id!==id);
-    save(); renderAll(); buildFilters(); closeConfirm(); toast('Product deleted');
+  
+  document.getElementById('confirm-del-btn').onclick = async () => {
+    const p   = products.find(x => x.id === id);
+    const res = await apiFetch(`/admin/products/${p.dbId}`, { method: 'DELETE' });
+    if (!res.ok) { toast('Delete failed', true); return; }
+    await loadProducts();
+    renderAll(); buildFilters(); closeConfirm(); toast('Product deleted');
   };
 }
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
@@ -340,23 +351,32 @@ function renderInventory() {
     </div>`;
   }).join('')}</div>`;
 }
-function removeFromInventory(id) {
+
+async function removeFromInventory(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-  p.stockStatus = 'preorder';
-  save(); renderInventory(); renderStats(); renderProducts();
+  const res = await apiFetch('/admin/inventory/adjust', {
+    method: 'POST',
+    body:   JSON.stringify({ productId: p.dbId, newQty: 0, note: 'Moved to pre-order' })
+  });
+  if (!res.ok) { toast('Failed to remove from inventory', true); return; }
+  await loadProducts();
+  renderInventory(); renderStats(); renderProducts();
   toast(`"${p.name}" moved to pre-order`);
 }
 
-function openAddToInventoryModal() {
-  categories.map(c => `<option value="${c}">${c}</option>`).join('');
-  document.getElementById('add-inv-overlay').classList.add('open');
-  const sel = document.getElementById('add-inv-cat-filter');
-  sel.innerHTML = '<option value="All">All categories</option>' +
-  categories.map(c => `<option value="${c}">${c}</option>`).join('');
-  document.getElementById('add-inv-search').value = '';
-  document.getElementById('add-inv-cat-filter').value = 'All';
+async function addToInventory(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  const res = await apiFetch('/admin/inventory/restock', {
+    method: 'POST',
+    body:   JSON.stringify({ productId: p.dbId, quantity: 1, note: 'Added to inventory' })
+  });
+  if (!res.ok) { toast('Failed to add to inventory', true); return; }
+  await loadProducts();
+  renderStats(); renderProducts();
   renderAddInvList();
+  toast(`"${p.name}" added to inventory ✓`);
 }
 
 function renderAddInvList() {
@@ -393,48 +413,59 @@ function renderAddInvList() {
       }).join('');
 }
 
-function addToInventory(id) {
-  const p = products.find(x => x.id === id);
-  if (!p) return;
-  p.stockStatus = 'instock';
-  if (!p.inventory) p.inventory = 0;
-  save(); renderStats(); renderProducts();
-  renderAddInvList();
-  toast(`"${p.name}" added to inventory ✓`);
-}
-
 function closeAddInvModal() {
   document.getElementById('add-inv-overlay').classList.remove('open');
   renderInventory();
 }
 function setInvFilter(c) { invFilter=c; renderInventory(); }
+
 function adjustInv(id, delta) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-  p.inventory = Math.max(0, p.inventory + delta);
-  save();
-  // sync the input field value without full re-render
+  const newQty = Math.max(0, p.inventory + delta);
+  p.inventory = newQty;
+
+  if (delta > 0) {
+    // adding stock → use restock
+    apiFetch('/admin/inventory/restock', {
+      method: 'POST',
+      body: JSON.stringify({ productId: p.dbId, quantity: delta, note: 'Admin adjustment' })
+    });
+  } else {
+    // reducing stock → use adjust with new total
+    apiFetch('/admin/inventory/adjust', {
+      method: 'POST',
+      body: JSON.stringify({ productId: p.dbId, newQty, note: 'Admin adjustment' })
+    });
+  }
+
+  // update UI without re-render (keep this part same as before)
   const rows = document.querySelectorAll('.inv-row');
   rows.forEach(row => {
     const meta = row.querySelector('.inv-info-meta');
     if (meta && meta.textContent.includes(id)) {
       row.querySelector('.inv-qty-input').value = p.inventory;
       const badge = row.querySelector('.inv-status-col');
-      badge.innerHTML = p.inventory===0
+      badge.innerHTML = p.inventory === 0
         ? `<span class="badge badge-red">Out of stock</span>`
-        : p.inventory<=5
+        : p.inventory <= 5
         ? `<span class="badge badge-amber">Low stock</span>`
         : `<span class="badge badge-green">In stock</span>`;
     }
   });
   renderStats();
 }
+
 function setInv(id, val) {
   const p = products.find(x => x.id === id);
   if (!p) return;
   const n = parseInt(val);
   p.inventory = isNaN(n) || n < 0 ? 0 : n;
-  save(); renderStats();
+  apiFetch('/admin/inventory/adjust', {
+    method: 'POST',
+    body:   JSON.stringify({ productId: p.dbId, newQty: p.inventory })
+  });
+  renderStats();
   // update just the status badge without full re-render
   const rows = document.querySelectorAll('.inv-row');
   rows.forEach(row => {
@@ -546,20 +577,30 @@ function cancelCategoryEdits() {
   renderCategoryDetail();
 }
 
-function saveCategoryEdits() {
+// ✅ Replace:
+async function saveCategoryEdits() {
   if (!catDetailPendingRemovals.length) return;
-  catDetailPendingRemovals.forEach(prodId => {
-    const p = products.find(x => x.id === prodId);
-    if (!p) return;
-    if (p.categories) p.categories = p.categories.filter(c => c !== catDetailName);
-    else if (p.category === catDetailName) p.category = null;
-  });
+  for (const prodId of catDetailPendingRemovals) {
+    const p   = products.find(x => x.id === prodId);
+    const cat = allCategoryObjects.find(c => c.category_name === catDetailName);
+    if (!p || !cat) continue;
+    const newCats = p.categories
+      .filter(c => c !== catDetailName)
+      .map(c => allCategoryObjects.find(x => x.category_name === c)?.category_id)
+      .filter(Boolean);
+    await apiFetch(`/admin/products/${p.dbId}`, {
+      method: 'PUT',
+      body:   JSON.stringify({ categories: newCats })
+    });
+  }
   const count = catDetailPendingRemovals.length;
   catDetailPendingRemovals = [];
-  save(); renderAll(); buildFilters();
+  await loadProducts();
+  renderAll(); buildFilters();
   toast(`Removed ${count} product${count!==1?'s':''} from "${catDetailName}" ✓`);
   renderCategoryDetail();
 }
+
 function renderCategories() {
   document.getElementById('cat-table-body').innerHTML = `<table>
     <thead><tr><th>Category name</th><th>Products</th><th>Actions</th></tr></thead>
@@ -577,41 +618,52 @@ function renderCategories() {
       </tr>`;
     }).join('')}</tbody></table>`;
 }
-function addCategory() {
+// ✅ addCategory()
+async function addCategory() {
   const name = prompt('New category name:');
-  if (name && name.trim() && !categories.includes(name.trim())) {
-    categories.push(name.trim()); save(); renderCategories(); buildFilters(); toast('Category added ✓');
-  }
+  if (!name || !name.trim() || categories.includes(name.trim())) return;
+  const res = await apiFetch('/admin/categories', {
+    method: 'POST',
+    body:   JSON.stringify({ categoryName: name.trim() })
+  });
+  if (!res.ok) { toast('Failed to add category', true); return; }
+  await loadCategories();
+  renderCategories(); buildFilters(); toast('Category added ✓');
 }
-function editCategory(i) {
+
+// ✅ editCategory()
+async function editCategory(i) {
   const oldName = categories[i];
   const newName = prompt('Rename category:', oldName);
-  if (!newName || !newName.trim()) return;
+  if (!newName || !newName.trim() || newName.trim() === oldName) return;
   const trimmed = newName.trim();
-  if (trimmed === oldName) return;
   if (categories.includes(trimmed)) { toast(`"${trimmed}" already exists`, true); return; }
-
-  // Update the category name everywhere it's used in products
-  categories[i] = trimmed;
-  products.forEach(p => {
-    if (p.categories) {
-      const idx = p.categories.indexOf(oldName);
-      if (idx !== -1) p.categories[idx] = trimmed;
-    } else if (p.category === oldName) {
-      p.category = trimmed;
-    }
+  const cat = allCategoryObjects.find(c => c.category_name === oldName);
+  if (!cat) return;
+  const res = await apiFetch(`/admin/categories/${cat.category_id}`, {
+    method: 'PUT',
+    body:   JSON.stringify({ categoryName: trimmed })
   });
-
-  save();
-  renderCategories();
-  buildFilters();
-  renderAll();
+  if (!res.ok) { toast('Rename failed', true); return; }
+  await loadCategories();
+  await loadProducts();
+  renderCategories(); buildFilters(); renderAll();
   toast(`"${oldName}" renamed to "${trimmed}" ✓`);
 }
-function deleteCategory(i) {
+
+// ✅ deleteCategory()
+async function deleteCategory(i) {
   const name = categories[i];
-  if (products.some(p=>(p.categories||[p.category]).includes(name))) { toast(`"${name}" is used by products`, true); return; }
-  if (confirm(`Delete category "${name}"?`)) { categories.splice(i,1); save(); renderCategories(); buildFilters(); toast('Category deleted'); }
+  if (products.some(p => (p.categories||[]).includes(name))) {
+    toast(`"${name}" is used by products`, true); return;
+  }
+  if (!confirm(`Delete category "${name}"?`)) return;
+  const cat = allCategoryObjects.find(c => c.category_name === name);
+  if (!cat) return;
+  const res = await apiFetch(`/admin/categories/${cat.category_id}`, { method: 'DELETE' });
+  if (!res.ok) { toast('Delete failed', true); return; }
+  await loadCategories();
+  renderCategories(); buildFilters(); toast('Category deleted');
 }
 
 // ── TOAST ──

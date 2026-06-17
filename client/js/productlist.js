@@ -10,21 +10,43 @@
         the fake data below while you build the DB connection.
    ===================================================================== */
 
-/* =====================
-   FAKE DATA
-   Replace each array / fetch with real DB calls later.
-   ===================== */
-const DISCOUNT_PRODUCTS = [
-    { id: 1,  name: "Tanjiro Figure",          price: 24.99, originalPrice: 34.99, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 2,  name: "Nezuko Plushie",          price: 14.99, originalPrice: 19.99, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 3,  name: "Zenitsu Keychain",        price: 5.99,  originalPrice: 8.99,  image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 4,  name: "Inosuke Poster",          price: 9.99,  originalPrice: 14.99, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 5,  name: "Rengoku Acrylic Stand",   price: 11.50, originalPrice: 15.00, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 6,  name: "Mitsuri Badge Set",       price: 7.99,  originalPrice: 11.99, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 7,  name: "Shinobu Figure",          price: 18.00, originalPrice: 25.00, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-    { id: 8,  name: "Muzan Canvas Print",      price: 21.99, originalPrice: 29.99, image: "https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" },
-];
+// Replace the fake DISCOUNT_PRODUCTS and the DOMContentLoaded block with:
 
+const API = 'http://localhost:3000/api';
+
+// Each page sets this before loading productlist.js:
+// window.PAGE_FILTER = { promotion: 'discount' }
+// window.PAGE_FILTER = { promotion: 'new_arrival' }
+// window.PAGE_FILTER = { categoryId: 3 }
+
+async function loadProducts() {
+  const filter  = window.PAGE_FILTER || {};
+  const params  = new URLSearchParams();
+
+  if (filter.promotion)  params.append('promotion', filter.promotion);
+  if (filter.categoryId) params.append('category',  filter.categoryId);
+  if (filter.search)     params.append('search',    filter.search);
+
+  const res      = await fetch(`${API}/products?${params}`);
+  const products = await res.json();
+
+  // Map API fields to what buildCard() expects
+  return products.map(p => ({
+    id:            p.product_id,
+    name:          p.product_name,
+    price:         parseFloat(p.sale_price),
+    originalPrice: p.original_price ? parseFloat(p.original_price) : null,
+    image:         p.primary_image  || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
+    promotion:     p.promotion
+  }));
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const products = await loadProducts();
+  renderGrid(products);
+  initSearch(products);
+  initNewsletter();
+});
 /* =====================
    WISHLIST STATE
    (per session – persist to DB / localStorage later)
@@ -77,11 +99,9 @@ function buildCard(product) {
         </div>
     `;
 
-    /* Navigate to product page on card click */
     div.addEventListener("click", (e) => {
         if (e.target.closest(".card-wishlist")) return;
-        // TODO: window.location.href = `ProductPage.html?id=${product.id}`;
-        showToast(`Opening "${product.name}"…`);
+        window.location.href = `../pages/productpage.html?id=${product.id}`;
     });
 
     /* Wishlist toggle */
@@ -159,19 +179,3 @@ function initNewsletter() {
         }
     });
 }
-
-/* =====================
-   INIT
-   Each page can override window.PAGE_PRODUCTS before this script
-   loads, or we fall back to the fake data for the current page.
-   ===================== */
-document.addEventListener("DOMContentLoaded", () => {
-    /* Decide which product list to show.
-       Pages set  window.PAGE_PRODUCTS = [...]  before this script.
-       Falls back to DISCOUNT_PRODUCTS for discount.html. */
-    const products = window.PAGE_PRODUCTS || DISCOUNT_PRODUCTS;
-
-    renderGrid(products);
-    initSearch(products);
-    initNewsletter();
-});

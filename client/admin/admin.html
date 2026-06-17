@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/admin.css">
 </head>
-<body>
+<body data-page="admin">
 
 <!-- LOGIN -->
 <div id="login-screen">
@@ -21,22 +21,22 @@
     <h1>Welcome back</h1>
     <form id="login-form">
       <div class="field">
-        <label>Username</label>
-        <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+        <!-- admin.html -->
+        <label>Email</label>
+        <input type="text" id="login-user" placeholder="" autocomplete="email">
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+        <input type="password" id="login-pass" placeholder="" autocomplete="current-password">
       </div>
       <button type="submit" class="login-btn">Sign in →</button>
       <p class="login-error" id="login-err">Incorrect credentials</p>
     </form>
-    <p class="login-hint">demo: admin / neko2024</p>
   </div>
 </div>
 
 <!-- APP -->
-<div id="app">
+<div id="app" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Logo">
@@ -162,6 +162,18 @@
         </div>
         <div class="sale-price" id="sale-preview"></div>
       </div>
+      <div class="form-group form-full">
+      <label>Promotion label <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+      <select id="f-promotion">
+        <option value="">None</option>
+        <option value="discount">🏷️ Discount</option>
+        <option value="new_arrival">✨ New Arrival</option>
+        <option value="featured">⭐ Featured</option>
+        <option value="bundle">📦 Bundle</option>
+        <option value="limited">🔥 Limited Edition</option>
+        <option value="preorder_special">⏳ Preorder Special</option>
+      </select>
+    </div>
       <!-- Stock Status — add this as a new form-group BEFORE the inventory qty group -->
     <div class="form-group form-full">
       <label>Availability *</label>
@@ -184,10 +196,6 @@
       <label>Inventory qty *</label>
       <input type="number" id="f-inv" placeholder="0" min="0">
     </div>
-      <div class="form-group">
-        <label>Inventory qty *</label>
-        <input type="number" id="f-inv" placeholder="0" min="0">
-      </div>
       <div class="form-group form-full">
         <label>Description</label>
         <textarea id="f-desc" rows="3" placeholder="Product description…"></textarea>
@@ -277,6 +285,7 @@
   </div>
 </div>
 
+<script src="../js/auth.js"></script>
 <script src="../js/admin.js"></script>
 </body>
 </html>
