@@ -55,4 +55,35 @@ router.delete(
   ProductController.deleteImage
 );
 
+// ─── Variant routes (admin only) ─────────────────────────────
+router.get(
+  '/:id/variants',
+  ProductController.getVariants
+);
+
+router.post(
+  '/:id/variants',
+  requireAuth, adminOnly,
+  ProductController.addVariant
+);
+
+router.put(
+  '/:id/variants/:variantId',
+  requireAuth, adminOnly,
+  ProductController.updateVariant
+);
+
+router.delete(
+  '/:id/variants/:variantId',
+  requireAuth, adminOnly,
+  ProductController.deleteVariant
+);
+
+// Bulk set all variants at once (used by inventory editor)
+router.put(
+  '/:id/variants',
+  requireAuth, adminOnly,
+  ProductController.setVariants
+);
+
 module.exports = router;

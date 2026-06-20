@@ -28,7 +28,6 @@ async function loadProducts() {
     inventory:    p.product_stock,
     stockStatus:  p.stock_status,
     description:  p.product_description      || '',
-    options:      [],
     images:       p.primary_image ? [p.primary_image] : [],
     promotion:    p.promotion                || null
   }));
@@ -116,6 +115,7 @@ function renderProducts() {
       <td>${status}</td>
       <td><div class="action-btns">
         <button class="action-btn" onclick="openModal('${p.id}')">Edit</button>
+        <button class="action-btn" onclick="openVariantModal('${p.id}', ${p.dbId})">Variants</button>
         <button class="action-btn del" onclick="confirmDelete('${p.id}')">Delete</button>
       </div></td>
     </tr>`;
@@ -128,7 +128,7 @@ function renderProducts() {
 let modalCats = [];
 function openModal(id) {
   editingId = id || null;
-  modalImages = []; modalOptions = []; modalCats = [];
+  modalImages = []; modalCats = [];
   renderCatPicker();
   if (id) {
     const p = products.find(x => x.id === id);
@@ -139,10 +139,8 @@ function openModal(id) {
     document.getElementById('f-desc').value = p.description;
     document.getElementById('f-discount').value = p.discount || 0;
     document.getElementById('f-discount-type').checked = p.discountFlat || false;
-    modalOptions = [...(p.options || [])];
     modalImages = [...(p.images || [])];
     modalCats = [...(p.categories || (p.category ? [p.category] : []))];
-    // set stock status buttons
     setStockStatusUI(p.stockStatus || 'instock');
   } else {
     document.getElementById('modal-title').textContent = 'Add product';
@@ -150,7 +148,7 @@ function openModal(id) {
     document.getElementById('f-discount-type').checked = false;
     setStockStatusUI('instock');
   }
-  renderCatPicker(); renderOptions(); renderImagePreviews(); updateSalePreview();
+  renderCatPicker(); renderImagePreviews(); updateSalePreview();
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -158,9 +156,7 @@ function setStockStatusUI(status) {
   document.querySelectorAll('.stock-status-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.status === status);
   });
-  // show/hide inventory qty field
-  const invGroup = document.getElementById('inv-group');
-  invGroup.style.display = (status === 'preorder') ? 'none' : '';
+  document.getElementById('inv-group').style.display = 'none';
 }
 
 function selectStockStatus(status) {
@@ -207,20 +203,19 @@ async function saveProduct() {
   const name = document.getElementById('f-name').value.trim();
   const price = parseFloat(document.getElementById('f-price').value);
   const stockStatus = getStockStatus();
-  const inv = stockStatus === 'preorder' ? 0 : parseInt(document.getElementById('f-inv').value);
   const desc = document.getElementById('f-desc').value.trim();
   const discount = parseFloat(document.getElementById('f-discount').value) || 0;
   const discountFlat = document.getElementById('f-discount-type').checked;
   const promotion = document.getElementById('f-promotion').value || null;
+
   if (!name || isNaN(price)) { toast('Fill in name and price', true); return; }
-  if (stockStatus !== 'preorder' && isNaN(inv)) { toast('Fill in inventory qty', true); return; }
   if (modalCats.length === 0) { toast('Select at least one category', true); return; }
-  
+
   const payload = {
     productName:        name,
     productPrice:       price,
     productDescription: desc,
-    productStock:       inv,
+    productStock:       0,
     discount,
     discountFlat,
     stockStatus,
@@ -228,8 +223,7 @@ async function saveProduct() {
     categories: modalCats.map(c => {
       const found = allCategoryObjects.find(x => x.category_name === c);
       return found ? found.category_id : null;
-    }).filter(Boolean),
-    options: modalOptions
+    }).filter(Boolean)
   };
 
   if (editingId) {
@@ -299,7 +293,19 @@ function confirmDelete(id) {
 }
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
 
-// ── INVENTORY ──
+function openAddToInventoryModal() {
+  // populate category filter
+  const catSelect = document.getElementById('add-inv-cat-filter');
+  catSelect.innerHTML = `<option value="All">All categories</option>` +
+    categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  
+  renderAddInvList();
+  document.getElementById('add-inv-overlay').classList.add('open');
+}
+
+// ── INVENTORY ──────────────────────────────────────────────────
+let activeVariantModalProductId = null;
+
 function renderInventory() {
   const cats = ['All', ...categories];
   document.getElementById('inv-cat-row').innerHTML = cats.map(c =>
@@ -311,31 +317,52 @@ function renderInventory() {
   const filtered = products.filter(p => {
     const inInv = p.stockStatus === 'instock' || p.stockStatus === 'both';
     if (!inInv) return false;
-    const matchCat = invFilter === 'All' || (p.categories || [p.category] || []).includes(invFilter);
+    const matchCat = invFilter === 'All' || (p.categories || []).includes(invFilter);
     const matchQ = !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
     return matchCat && matchQ;
   });
 
   if (!filtered.length) {
-    document.getElementById('inv-grid').innerHTML = `<div class="empty-state"><div class="es-icon">📦</div><p>No products in inventory</p></div>`;
+    document.getElementById('inv-grid').innerHTML =
+      `<div class="empty-state"><div class="es-icon">📦</div><p>No products in inventory</p></div>`;
     return;
   }
 
-  document.getElementById('inv-grid').innerHTML = `<div class="inv-table-wrap">${filtered.map(p => {
-    const thumb = p.images && p.images[0]
-      ? `<div class="inv-thumb"><img src="${p.images[0]}" onerror="this.style.opacity=.3"></div>`
-      : `<div class="inv-thumb">📦</div>`;
-    const cats = (p.categories || [p.category]).filter(Boolean).join(', ');
-    const salePrice = calcSale(p.price, p.discount, p.discountFlat);
-    const priceHtml = p.discount > 0
-      ? `<span style="text-decoration:line-through;color:var(--muted);font-size:10px">$${Number(p.price).toFixed(2)}</span><br><span style="color:var(--green);font-weight:700">$${salePrice}</span>`
-      : `<span style="color:var(--text)">$${Number(p.price).toFixed(2)}</span>`;
-    const statusBadge = p.inventory === 0
-      ? `<span class="badge badge-red">Out of stock</span>`
-      : p.inventory <= 5
-      ? `<span class="badge badge-amber">Low stock</span>`
-      : `<span class="badge badge-green">In stock</span>`;
-    return `<div class="inv-row">
+  document.getElementById('inv-grid').innerHTML =
+    `<div class="inv-table-wrap">${filtered.map(p => renderInvRow(p)).join('')}</div>`;
+    
+  if (expandedVariantProductId) {
+    const p = products.find(x => String(x.id) === String(expandedVariantProductId));
+    if (p && p.dbId) {
+      apiFetch(`/products/${p.dbId}/variants`).then(r => {
+        if (r.ok) r.json().then(variants => {
+          if (p) p.variants = variants;
+          const editorEl = document.getElementById(`variant-editor-${p.id}`);
+          if (editorEl) editorEl.innerHTML = renderVariantEditor(p);
+        });
+      });
+    }
+  }
+}
+
+function renderInvRow(p) {
+  const thumb = p.images && p.images[0]
+    ? `<div class="inv-thumb"><img src="${p.images[0]}" onerror="this.style.opacity=.3"></div>`
+    : `<div class="inv-thumb">📦</div>`;
+  const cats = (p.categories || []).filter(Boolean).join(', ');
+  const salePrice = calcSale(p.price, p.discount, p.discountFlat);
+  const priceHtml = p.discount > 0
+    ? `<span style="text-decoration:line-through;color:var(--muted);font-size:10px">$${Number(p.price).toFixed(2)}</span><br>
+       <span style="color:var(--green);font-weight:700">$${salePrice}</span>`
+    : `<span>$${Number(p.price).toFixed(2)}</span>`;
+  const statusBadge = p.inventory === 0
+    ? `<span class="badge badge-red">Out of stock</span>`
+    : p.inventory <= 5
+    ? `<span class="badge badge-amber">Low stock</span>`
+    : `<span class="badge badge-green">In stock</span>`;
+
+  return `
+    <div class="inv-row" id="inv-row-${p.id}">
       ${thumb}
       <div class="inv-info">
         <div class="inv-info-name">${p.name}</div>
@@ -350,11 +377,185 @@ function renderInventory() {
         <button class="inv-adj-btn" onclick="adjustInv('${p.id}',1)">+</button>
       </div>
       <div class="inv-status-col">${statusBadge}</div>
-      <div>
-        <button class="action-btn del" style="font-size:10px" onclick="removeFromInventory('${p.id}')">Remove</button>
+      <div style="display:flex;gap:6px">
+        <button class="action-btn" style="font-size:10px"
+                onclick="openVariantModal('${p.id}', ${p.dbId})">Variants</button>
+        <button class="action-btn del" style="font-size:10px"
+                onclick="removeFromInventory('${p.id}')">Remove</button>
       </div>
     </div>`;
-  }).join('')}</div>`;
+}
+
+function renderVariantEditor(p) {
+  const variants = p.variants || [];
+  const isPreorder = p.stockStatus === 'preorder';
+
+  const totalLine = isPreorder ? '' : `
+    <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">
+      Total stock: ${variants.reduce((s, v) => s + v.variant_stock, 0)}
+    </span>`;
+
+  return `
+    <div class="variant-editor">
+      <div class="variant-editor-header">
+        <span>Variants for <strong>${p.name}</strong>${isPreorder ? ' <span class="badge badge-amber" style="margin-left:6px">Pre-order — labels only</span>' : ''}</span>
+        ${totalLine}
+      </div>
+
+      ${variants.length === 0
+        ? `<p style="font-size:12px;color:var(--muted);padding:12px 0">No variants yet. Add one below.</p>`
+        : `<div class="variant-list" id="variant-list-${p.id}">
+             ${variants.map(v => renderVariantRow(p.id, p.dbId, v, isPreorder)).join('')}
+           </div>`
+      }
+
+      <div class="variant-add-row">
+        <input type="text" id="new-variant-name-${p.id}"
+               placeholder="Variant name (e.g. Size M / Red)"
+               class="search-input" style="flex:1;width:auto">
+        ${isPreorder ? '' : `
+        <input type="number" id="new-variant-stock-${p.id}"
+               placeholder="Stock" min="0"
+               class="inv-qty-input" style="width:72px">`}
+        <input type="text" id="new-variant-sku-${p.id}"
+               placeholder="SKU (optional)"
+               class="search-input" style="width:110px">
+        <button class="add-btn" style="padding:7px 14px;font-size:12px"
+                onclick="addVariant('${p.id}', ${p.dbId}, ${isPreorder})">+ Add</button>
+      </div>
+    </div>`;
+}
+
+function renderVariantRow(productLocalId, productDbId, v, isPreorder) {
+  if (isPreorder) {
+    return `
+      <div class="variant-row" id="variant-row-${v.variant_id}">
+        <div style="flex:1;font-size:13px;font-weight:600">${v.variant_name}</div>
+        ${v.variant_sku ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${v.variant_sku}</div>` : ''}
+        <button class="action-btn del" style="font-size:10px"
+                onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
+      </div>`;
+  }
+
+  return `
+    <div class="variant-row" id="variant-row-${v.variant_id}">
+      <div style="flex:1;font-size:13px;font-weight:600">${v.variant_name}</div>
+      ${v.variant_sku ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${v.variant_sku}</div>` : ''}
+      <div class="inv-qty-col" style="min-width:auto">
+        <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, -1)">−</button>
+        <input class="inv-qty-input" type="number" min="0" value="${v.variant_stock}"
+               id="variant-stock-input-${v.variant_id}"
+               onchange="setVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">
+        <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, 1)">+</button>
+      </div>
+      <span class="badge ${v.variant_stock === 0 ? 'badge-red' : v.variant_stock <= 3 ? 'badge-amber' : 'badge-green'}"
+            id="variant-badge-${v.variant_id}">
+        ${v.variant_stock === 0 ? 'Out' : v.variant_stock <= 3 ? 'Low' : 'OK'}
+      </span>
+      <button class="action-btn del" style="font-size:10px"
+              onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
+    </div>`;
+}
+
+async function toggleVariantEditor(productLocalId, productDbId) {
+  if (String(expandedVariantProductId) === String(productLocalId)) {
+    expandedVariantProductId = null;
+    renderInventory();
+    return;
+  }
+
+  // Load fresh variants from API before expanding
+  const p = products.find(x => String(x.id) === String(productLocalId));
+  if (p) {
+    const varRes = await apiFetch(`/products/${productDbId}/variants`);
+    if (varRes.ok) {
+      p.variants = await varRes.json();
+    }
+  }
+
+  expandedVariantProductId = productLocalId;
+  renderInventory();
+}
+
+async function addVariant(productLocalId, productDbId, isPreorder) {
+  const nameEl  = document.getElementById(`new-variant-name-${productLocalId}`);
+  const stockEl = document.getElementById(`new-variant-stock-${productLocalId}`);
+  const skuEl   = document.getElementById(`new-variant-sku-${productLocalId}`);
+
+  const variantName  = nameEl.value.trim();
+  const variantStock = isPreorder ? 0 : (parseInt(stockEl?.value) || 0);
+  const variantSku   = skuEl.value.trim() || null;
+
+  if (!variantName) { toast('Enter a variant name', true); return; }
+
+  const res = await apiFetch(`/products/${productDbId}/variants`, {
+    method: 'POST',
+    body: JSON.stringify({ variantName, variantStock, variantSku })
+  });
+  if (!res.ok) { toast('Failed to add variant', true); return; }
+
+  nameEl.value = ''; if (stockEl) stockEl.value = ''; skuEl.value = '';
+  toast(`Variant "${variantName}" added ✓`);
+  await reloadVariants(productLocalId, productDbId);
+}
+
+async function deleteVariant(productLocalId, productDbId, variantId) {
+  if (!confirm('Delete this variant?')) return;
+  const res = await apiFetch(`/products/${productDbId}/variants/${variantId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) { toast('Failed to delete variant', true); return; }
+  toast('Variant deleted');
+  await reloadVariants(productLocalId, productDbId);
+}
+
+async function setVariantStock(productLocalId, productDbId, variantId, val) {
+  const n = parseInt(val);
+  const stock = isNaN(n) || n < 0 ? 0 : n;
+  const res = await apiFetch(`/products/${productDbId}/variants/${variantId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ variantStock: stock })
+  });
+  if (!res.ok) { toast('Failed to update stock', true); return; }
+  await reloadVariants(productLocalId, productDbId);
+  renderStats();
+}
+
+async function adjustVariantStock(productLocalId, productDbId, variantId, delta) {
+  const input = document.getElementById(`variant-stock-input-${variantId}`);
+  const current = parseInt(input.value) || 0;
+  const newStock = Math.max(0, current + delta);
+  input.value = newStock;
+  await setVariantStock(productLocalId, productDbId, variantId, newStock);
+}
+
+async function reloadVariants(productLocalId, productDbId) {
+  const res = await apiFetch(`/products/${productDbId}/variants`);
+  if (!res.ok) return;
+  const variants = await res.json();
+  const p = products.find(x => x.id === productLocalId);
+  if (p) {
+    p.variants = variants;
+    p.inventory = variants.reduce((s, v) => s + v.variant_stock, 0);
+  }
+
+  if (activeVariantModalProductId === productLocalId) {
+    const modalContent = document.getElementById('variant-modal-content');
+    if (modalContent && p) modalContent.innerHTML = renderVariantEditor(p);
+  }
+
+  const rowEl = document.getElementById(`inv-row-${productLocalId}`);
+  if (rowEl && p) {
+    const qtyInput = rowEl.querySelector('.inv-qty-input');
+    if (qtyInput) qtyInput.value = p.inventory;
+    const badge = rowEl.querySelector('.inv-status-col');
+    if (badge) badge.innerHTML = p.inventory === 0
+      ? `<span class="badge badge-red">Out of stock</span>`
+      : p.inventory <= 5
+      ? `<span class="badge badge-amber">Low stock</span>`
+      : `<span class="badge badge-green">In stock</span>`;
+  }
+  renderStats();
 }
 
 async function removeFromInventory(id) {
@@ -371,16 +572,20 @@ async function removeFromInventory(id) {
 }
 
 async function addToInventory(id) {
-  const p = products.find(x => x.id === id);
-  if (!p) return;
-  const res = await apiFetch('/admin/inventory/restock', {
-    method: 'POST',
-    body:   JSON.stringify({ productId: p.dbId, quantity: 1, note: 'Added to inventory' })
+  const p = products.find(x => String(x.id) === String(id));
+  if (!p) { toast('Product not found', true); return; }
+
+  const res = await apiFetch(`/admin/products/${p.dbId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ stockStatus: 'instock' })
   });
   if (!res.ok) { toast('Failed to add to inventory', true); return; }
+
   await loadProducts();
-  renderStats(); renderProducts();
+  renderStats();
+  renderProducts();
   renderAddInvList();
+  renderInventory();
   toast(`"${p.name}" added to inventory ✓`);
 }
 
@@ -871,4 +1076,277 @@ async function applyBulkEdit() {
   clearSelection();
   await loadProducts();
   renderAll();
+}
+
+// ── ADMIN: CREATE NEW ORDER ──────────────────────────────────────
+
+let newOrderItems = [];
+let newOrderCustomerMode = 'search'; // 'search' | 'guest'
+let newOrderSelectedUser = null;
+
+function openCreateOrderModal() {
+  newOrderItems = [];
+  newOrderCustomerMode = 'search';
+  newOrderSelectedUser = null;
+
+  document.getElementById('new-ord-customer-search').value = '';
+  document.getElementById('new-ord-customer-results').innerHTML = '';
+  document.getElementById('new-ord-guest-name').value = '';
+  document.getElementById('new-ord-guest-email').value = '';
+  document.getElementById('new-ord-phone1').value = '';
+  document.getElementById('new-ord-phone2').value = '';
+  document.getElementById('new-ord-addr-line1').value = '';
+  document.getElementById('new-ord-addr-district').value = '';
+  document.getElementById('new-ord-addr-city').value = '';
+  document.getElementById('new-ord-addr-landmark').value = '';
+  document.getElementById('new-ord-shipping-method').value = 'express';
+  document.getElementById('new-ord-shipping-cost').value = '3.00';
+  document.getElementById('new-ord-note').value = '';
+  document.getElementById('new-ord-admin-note').value = '';
+
+  setCustomerMode('search');
+  renderNewOrderItems();
+  document.getElementById('create-order-overlay').classList.add('open');
+}
+
+function closeCreateOrderModal() {
+  document.getElementById('create-order-overlay').classList.remove('open');
+}
+
+function setCustomerMode(mode) {
+  newOrderCustomerMode = mode;
+  newOrderSelectedUser = null;
+  document.getElementById('new-ord-mode-search').classList.toggle('selected', mode === 'search');
+  document.getElementById('new-ord-mode-guest').classList.toggle('selected', mode === 'guest');
+  document.getElementById('new-ord-search-panel').classList.toggle('hidden', mode !== 'search');
+  document.getElementById('new-ord-guest-panel').classList.toggle('hidden', mode !== 'guest');
+}
+
+let customerSearchTimer;
+function searchNewOrderCustomer() {
+  clearTimeout(customerSearchTimer);
+  const q = document.getElementById('new-ord-customer-search').value.trim();
+  if (q.length < 2) {
+    document.getElementById('new-ord-customer-results').innerHTML = '';
+    return;
+  }
+  customerSearchTimer = setTimeout(async () => {
+    const res = await apiFetch(`/admin/customers/search?q=${encodeURIComponent(q)}`);
+    const users = res.ok ? await res.json() : [];
+
+    document.getElementById('new-ord-customer-results').innerHTML = !users.length
+      ? `<p style="font-size:12px;color:var(--muted);padding:8px 0">No customers found</p>`
+      : users.map(u => `
+        <div class="cust-search-row ${newOrderSelectedUser?.user_id === u.user_id ? 'selected' : ''}"
+             onclick="selectNewOrderCustomer(${u.user_id}, '${u.first_name} ${u.last_name}', '${u.phone_number || ''}')">
+          <div style="font-weight:700;font-size:13px">${u.first_name} ${u.last_name}</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${u.email}${u.phone_number ? ' · ' + u.phone_number : ''}</div>
+        </div>`).join('');
+  }, 300);
+}
+
+function selectNewOrderCustomer(userId, name, phone) {
+  newOrderSelectedUser = { user_id: userId, name };
+  if (phone) document.getElementById('new-ord-phone1').value = phone;
+  document.querySelectorAll('.cust-search-row').forEach(r => r.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  toast(`Selected ${name}`);
+}
+
+// ── ITEMS ──
+function openNewOrderAddProductModal() {
+  addProductCatFilter = 'All';
+  document.getElementById('add-prod-search').value = '';
+  const catSelect = document.getElementById('add-prod-cat-filter');
+  catSelect.innerHTML = `<option value="All">All categories</option>` +
+    categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  // temporarily redirect the add-product modal's "add" action to the new-order flow
+  window._addProductTarget = 'newOrder';
+  renderAddProductListGeneric();
+  document.getElementById('add-product-overlay').classList.add('open');
+}
+
+function renderAddProductListGeneric() {
+  const q = document.getElementById('add-prod-search').value.toLowerCase();
+  const cat = document.getElementById('add-prod-cat-filter').value;
+
+  const filtered = products.filter(p => {
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+    const matchCat = cat === 'All' || (p.categories || []).includes(cat);
+    return matchQ && matchCat;
+  });
+
+  document.getElementById('add-product-list').innerHTML = !filtered.length
+    ? `<div class="empty-state" style="padding:30px 20px"><div class="es-icon">🔍</div><p>No products match</p></div>`
+    : filtered.map(p => {
+        const thumb = p.images && p.images[0]
+          ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
+          : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>`;
+        const salePrice = calcSale(p.price, p.discount, p.discountFlat);
+        const cats = (p.categories || []).join(', ');
+        const handler = window._addProductTarget === 'newOrder'
+          ? `addNewOrderItem('${p.id}')`
+          : `addOrderItemFromModal('${p.id}')`;
+        return `<div class="add-inv-row">
+          ${thumb}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${p.name}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px">#${p.id} · ${cats}</div>
+          </div>
+          <span style="font-family:var(--mono);font-weight:700;font-size:13px">$${salePrice}</span>
+          <button class="add-btn" style="padding:7px 16px;font-size:12px;flex-shrink:0" onclick="${handler}">+ Add</button>
+        </div>`;
+      }).join('');
+}
+
+function addNewOrderItem(productId) {
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+
+  const existing = newOrderItems.find(it => it.productId === p.dbId);
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    newOrderItems.push({
+      productId:       p.dbId,
+      productName:     p.name,
+      image:           p.images?.[0] || null,
+      selectedOption:  null,
+      quantity:        1,
+      priceAtPurchase: parseFloat(calcSale(p.price, p.discount, p.discountFlat)),
+      itemNote:        ''
+    });
+  }
+  toast(`"${p.name}" added`);
+  closeAddProductModal();
+  renderNewOrderItems();
+}
+
+function adjustNewOrderItemQty(i, delta) {
+  newOrderItems[i].quantity = Math.max(1, newOrderItems[i].quantity + delta);
+  renderNewOrderItems();
+}
+
+function removeNewOrderItem(i) {
+  newOrderItems.splice(i, 1);
+  renderNewOrderItems();
+}
+
+function calcNewOrderSubtotal() {
+  return newOrderItems.reduce((sum, it) => sum + it.priceAtPurchase * it.quantity, 0);
+}
+
+function renderNewOrderItems() {
+  const subtotal = calcNewOrderSubtotal();
+  const shippingCost = parseFloat(document.getElementById('new-ord-shipping-cost')?.value) || 0;
+  const total = subtotal + shippingCost;
+
+  const itemsHtml = newOrderItems.map((it, i) => {
+    const thumb = it.image
+      ? `<img class="ord-item-thumb" src="${it.image}" onerror="this.style.opacity=.3">`
+      : `<div class="ord-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+    return `<div class="ord-edit-item-row">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div class="ord-item-name">${it.productName}</div>
+      </div>
+      <div class="ord-item-qty-col">
+        <button class="inv-adj-btn" onclick="adjustNewOrderItemQty(${i}, -1)">−</button>
+        <span style="width:32px;text-align:center;font-family:var(--mono)">${it.quantity}</span>
+        <button class="inv-adj-btn" onclick="adjustNewOrderItemQty(${i}, 1)">+</button>
+      </div>
+      <div class="ord-item-price">$${(it.priceAtPurchase * it.quantity).toFixed(2)}</div>
+      <button class="action-btn del" onclick="removeNewOrderItem(${i})">Remove</button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('new-ord-items-list').innerHTML =
+    itemsHtml || `<p style="font-size:12px;color:var(--muted)">No items added yet</p>`;
+  document.getElementById('new-ord-totals').innerHTML = `
+    <div class="ord-detail-row"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+    <div class="ord-detail-row"><span>Shipping</span><span>$${shippingCost.toFixed(2)}</span></div>
+    <div class="receipt-divider"></div>
+    <div class="ord-detail-row receipt-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>`;
+}
+
+// ── SUBMIT ──
+async function submitNewOrder() {
+  const phone1 = document.getElementById('new-ord-phone1').value.trim();
+  const addrLine1 = document.getElementById('new-ord-addr-line1').value.trim();
+
+  if (!phone1) { toast('Phone number is required', true); return; }
+  if (!addrLine1) { toast('Address is required', true); return; }
+  if (!newOrderItems.length) { toast('Add at least one item', true); return; }
+
+  let customerPayload = {};
+  if (newOrderCustomerMode === 'search') {
+    if (!newOrderSelectedUser) { toast('Select a customer or switch to walk-in', true); return; }
+    customerPayload = { userId: newOrderSelectedUser.user_id };
+  } else {
+    const guestName = document.getElementById('new-ord-guest-name').value.trim();
+    if (!guestName) { toast('Guest name is required', true); return; }
+    customerPayload = {
+      guestName,
+      guestEmail: document.getElementById('new-ord-guest-email').value.trim() || null
+    };
+  }
+
+  const payload = {
+    ...customerPayload,
+    phone1,
+    phone2: document.getElementById('new-ord-phone2').value.trim() || null,
+    addrType: 'manual',
+    addrLine1,
+    addrDistrict: document.getElementById('new-ord-addr-district').value.trim(),
+    addrCity: document.getElementById('new-ord-addr-city').value.trim(),
+    addrLandmark: document.getElementById('new-ord-addr-landmark').value.trim(),
+    shippingMethod: document.getElementById('new-ord-shipping-method').value,
+    shippingCost: parseFloat(document.getElementById('new-ord-shipping-cost').value) || 0,
+    orderNote: document.getElementById('new-ord-note').value.trim(),
+    adminNote: document.getElementById('new-ord-admin-note').value.trim(),
+    items: newOrderItems.map(it => ({
+      productId: it.productId,
+      selectedOption: it.selectedOption,
+      quantity: it.quantity,
+      priceAtPurchase: it.priceAtPurchase,
+      itemNote: it.itemNote
+    }))
+  };
+
+  const res = await apiFetch('/admin/orders', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    toast(err.error || 'Failed to create order', true);
+    return;
+  }
+
+  toast('Order created ✓');
+  closeCreateOrderModal();
+  await loadOrders();
+  renderOrders();
+}
+
+async function openVariantModal(productLocalId, productDbId) {
+  const p = products.find(x => String(x.id) === String(productLocalId));
+  if (!p) return;
+
+  const varRes = await apiFetch(`/products/${productDbId}/variants`);
+  if (varRes.ok) p.variants = await varRes.json();
+
+  activeVariantModalProductId = productLocalId;
+  document.getElementById('variant-modal-title').textContent = `Variants — ${p.name}`;
+  document.getElementById('variant-modal-content').innerHTML = renderVariantEditor(p);
+  document.getElementById('variant-modal-overlay').classList.add('open');
+}
+
+function closeVariantModal() {
+  activeVariantModalProductId = null;
+  document.getElementById('variant-modal-overlay').classList.remove('open');
+  if (document.getElementById('sec-products').classList.contains('active')) renderProducts();
+  if (document.getElementById('sec-inventory').classList.contains('active')) renderInventory();
 }

@@ -1,9 +1,12 @@
 const db = require('../config/db');
+const Order = require('../models/Order');
 
 class AdminController {
 
-  // ─── GET /api/admin/orders ────────────────────────────────────
-  // Get all orders with optional status filter
+  static getAdminId(req) {
+    return req.admin?.admin_id ?? req.user?.id ?? null;
+  }
+
   static async getAllOrders(req, res) {
     try {
       const { status, limit = 50, offset = 0 } = req.query;
@@ -196,7 +199,7 @@ class AdminController {
   static async restockProduct(req, res) {
     try {
       const { productId, quantity, note } = req.body;
-      const adminId = req.admin?.admin_id || req.user?.id;
+      const adminId = req.admin?.admin_id ?? null;
 
       if (!productId || !quantity || quantity <= 0) {
         return res.status(400).json({ error: 'productId and quantity required' });
@@ -221,7 +224,7 @@ class AdminController {
   static async adjustStock(req, res) {
     try {
       const { productId, newQty, note } = req.body;
-      const adminId = req.admin.admin_id;
+      const adminId = req.admin?.admin_id ?? null;  // ← safe
 
       if (productId === undefined || newQty === undefined) {
         return res.status(400).json({ error: 'productId and newQty required' });
@@ -233,13 +236,167 @@ class AdminController {
       );
 
       res.status(200).json({ message: `Stock for product ${productId} set to ${newQty}` });
-
     } catch (err) {
       console.error('adjustStock error:', err.message);
       res.status(500).json({ error: err.message || 'Failed to adjust stock' });
     }
   }
 
+  // ── ADD THESE METHODS TO YOUR EXISTING AdminController.js ──────
+  // (paste inside the AdminController class)
+  // Make sure to add this require at the top of the file:
+  //   const Order = require('../models/Order');
+
+    // ─── PATCH /api/admin/orders/:id/edit ──────────────────────────
+    // Update order-level fields: address, phone, shipping, notes
+    static async updateOrderFields(req, res) {
+      try {
+        const updated = await Order.adminUpdateFields(req.params.id, req.body);
+        if (!updated) {
+          return res.status(404).json({ error: 'Order not found' });
+        }
+        res.status(200).json({ message: 'Order updated', order: updated });
+      } catch (err) {
+        console.error('updateOrderFields error:', err.message);
+        res.status(500).json({ error: 'Failed to update order' });
+      }
+    }
+
+
+    // ─── PUT /api/admin/orders/:id/items ───────────────────────────
+    // Replace order items: handles add/remove/quantity changes,
+    // adjusts stock accordingly, recalculates totals
+    static async updateOrderItems(req, res) {
+      try {
+        const { items } = req.body;
+        if (!Array.isArray(items)) {
+          return res.status(400).json({ error: 'items must be an array' });
+        }
+
+        const adminId = req.admin?.admin_id || req.user?.id;
+        const result = await Order.adminUpdateItems(req.params.id, items, adminId);
+
+        res.status(200).json({ message: 'Order items updated', ...result });
+      } catch (err) {
+        console.error('updateOrderItems error:', err.message);
+        res.status(500).json({ error: err.message || 'Failed to update order items' });
+      }
+    }
+
+
+  // ─── POST /api/admin/orders/:id/payments ───────────────────────
+  // Record a payment entry for this order
+  static async addOrderPayment(req, res) {
+    try {
+      const { amount, note } = req.body;
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: 'Valid amount is required' });
+      }
+
+      const adminId = req.admin?.admin_id || req.user?.id;
+      const payment = await Order.addPayment(req.params.id, amount, note, adminId);
+
+      res.status(201).json({ message: 'Payment recorded', payment });
+    } catch (err) {
+      console.error('addOrderPayment error:', err.message);
+      res.status(500).json({ error: 'Failed to record payment' });
+    }
+  }
+
+
+  // ─── GET /api/admin/orders/:id/payments ────────────────────────
+  static async getOrderPayments(req, res) {
+    try {
+      const payments = await Order.getPayments(req.params.id);
+      res.status(200).json(payments);
+    } catch (err) {
+      console.error('getOrderPayments error:', err.message);
+      res.status(500).json({ error: 'Failed to fetch payments' });
+    }
+  }
+
+
+  // ─── DELETE /api/admin/orders/:id/payments/:paymentId ──────────
+  static async deleteOrderPayment(req, res) {
+    try {
+      const deleted = await Order.deletePayment(req.params.paymentId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Payment not found' });
+      }
+      res.status(200).json({ message: 'Payment deleted' });
+    } catch (err) {
+      console.error('deleteOrderPayment error:', err.message);
+      res.status(500).json({ error: 'Failed to delete payment' });
+    }
+  }
+
+  // ── ADD TO AdminController.js ───────────────────────────────────
+
+  // ─── POST /api/admin/orders ─────────────────────────────────────
+  // Admin creates a new order directly (no cart involved)
+  static async createOrder(req, res) {
+    try {
+      const {
+        userId, guestName, guestEmail,
+        addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
+        mapsLink, mapsDetail, phone1, phone2,
+        shippingMethod, shippingCost, orderNote, adminNote,
+        items
+      } = req.body;
+
+      if (!userId && !guestName) {
+        return res.status(400).json({ error: 'Either an existing customer or a guest name is required' });
+      }
+      if (!phone1) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'At least one item is required' });
+      }
+
+      const adminId = req.admin?.admin_id || req.user?.id;
+      const orderCode = Order.generateOrderCode();
+
+      await Order.adminPlace({
+        userId: userId || null, guestName, guestEmail, orderCode,
+        addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
+        mapsLink, mapsDetail, phone1, phone2,
+        shippingMethod, shippingCost, orderNote, adminNote,
+        items, adminId
+      });
+
+      const orderResult = await db.query(
+        `SELECT * FROM vw_order_summary WHERE order_code = $1`,
+        [orderCode]
+      );
+
+      res.status(201).json({ message: 'Order created', order: orderResult.rows[0] });
+
+    } catch (err) {
+      console.error('createOrder error:', err.message);
+      if (err.message.includes('Insufficient stock')) {
+        return res.status(400).json({ error: err.message });
+      }
+      res.status(500).json({ error: err.message || 'Failed to create order' });
+    }
+  }
+
+
+  // ─── GET /api/admin/customers/search?q=... ──────────────────────
+  // Search existing customers for admin order creation
+  static async searchCustomers(req, res) {
+    try {
+      const { q } = req.query;
+      if (!q || q.trim().length < 2) {
+        return res.status(200).json([]);
+      }
+      const users = await Order.searchUsers(q.trim());
+      res.status(200).json(users);
+    } catch (err) {
+      console.error('searchCustomers error:', err.message);
+      res.status(500).json({ error: 'Failed to search customers' });
+    }
+  }
 }
 
 module.exports = AdminController;

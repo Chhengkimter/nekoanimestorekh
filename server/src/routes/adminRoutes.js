@@ -13,13 +13,20 @@ router.use(requireAuth, adminOnly);
 // ─── Dashboard ────────────────────────────────────────────────
 router.get('/dashboard',               AdminController.getDashboard);
 
-// ─── Orders ──────────────────────────────────────────────────
-router.get('/orders',                  AdminController.getAllOrders);
-router.get('/orders/:id',              AdminController.getOrder);
-router.patch('/orders/:id/status',     AdminController.updateOrderStatus);
-
 // ─── Customers ───────────────────────────────────────────────
-router.get('/customers',               AdminController.getAllCustomers);
+router.get('/customers/search',         AdminController.searchCustomers);  // ← BEFORE :id
+router.get('/customers',                AdminController.getAllCustomers);
+
+// ─── Orders ──────────────────────────────────────────────────
+router.get('/orders',                   AdminController.getAllOrders);
+router.post('/orders',                  AdminController.createOrder);
+router.get('/orders/:id',               AdminController.getOrder);
+router.patch('/orders/:id/status',      AdminController.updateOrderStatus);
+router.patch('/orders/:id/edit',        AdminController.updateOrderFields);
+router.put('/orders/:id/items',         AdminController.updateOrderItems);
+router.get('/orders/:id/payments',      AdminController.getOrderPayments);
+router.post('/orders/:id/payments',     AdminController.addOrderPayment);
+router.delete('/orders/:id/payments/:paymentId', AdminController.deleteOrderPayment);
 
 // ─── Inventory ───────────────────────────────────────────────
 router.get('/inventory',               AdminController.getInventoryLog);
@@ -32,6 +39,9 @@ router.get('/products',                ProductController.getAll);
 router.post('/products',               ProductController.create);
 router.put('/products/:id',            ProductController.update);
 router.delete('/products/:id',         ProductController.remove);
+router.post('/orders',                  AdminController.createOrder);
+router.get('/customers/search',         AdminController.searchCustomers);
+ 
 
 // adminRoutes.js — add this line:
 router.get('/categories', async (req, res) => {

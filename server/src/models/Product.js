@@ -34,49 +34,56 @@ class Product {
     return result.rows;
   }
 
-  // ─── Get one product with all images + options ───────────────
   static async findById(productId) {
     const productResult = await db.query(
       `SELECT * FROM vw_product_catalogue WHERE product_id = $1`,
       [productId]
     );
     if (!productResult.rows[0]) return null;
-
     const product = productResult.rows[0];
 
     const imagesResult = await db.query(
       `SELECT image_id, image_url, is_primary
-       FROM product_images WHERE product_id = $1
-       ORDER BY is_primary DESC`,
+      FROM product_images WHERE product_id = $1
+      ORDER BY is_primary DESC`,
       [productId]
     );
     product.images = imagesResult.rows;
 
-    const optionsResult = await db.query(
-      `SELECT option_id, option_name
-       FROM product_options WHERE product_id = $1
-       ORDER BY sort_order`,
+    // ← new
+    const variantsResult = await db.query(
+      `SELECT variant_id, variant_name, variant_stock, variant_sku, sort_order
+      FROM product_variants WHERE product_id = $1
+      ORDER BY sort_order, variant_id`,
       [productId]
     );
-    product.options = optionsResult.rows;
+    product.variants = variantsResult.rows;
 
     return product;
   }
 
   // ─── Create new product (admin only) ─────────────────────────
-  static async create({ productCode, productName, productDescription,
-                         productPrice, originalPrice, discount, discountFlat,
-                         productStock, stockStatus }) {
+static async create({ productCode, productName, productDescription,
+                       productPrice, originalPrice, discount, discountFlat,
+                       productStock, stockStatus }) {
+
+  // Auto-generate product_code if not provided
+    if (!productCode) {
+      const countResult = await db.query('SELECT COUNT(*) FROM products');
+      const count = parseInt(countResult.rows[0].count) + 1;
+      productCode = 'PID' + String(count).padStart(6, '0');
+    }
+
     const result = await db.query(
       `INSERT INTO products
-         (product_code, product_name, product_description,
+        (product_code, product_name, product_description,
           product_price, original_price, discount, discount_flat,
           product_stock, stock_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-       RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      RETURNING *`,
       [productCode, productName, productDescription,
-       productPrice, originalPrice || null, discount || 0, discountFlat || false,
-       productStock || 0, stockStatus || 'instock']
+      productPrice, originalPrice || null, discount || 0, discountFlat || false,
+      productStock || 0, stockStatus || 'instock']
     );
     return result.rows[0];
   }
@@ -166,6 +173,78 @@ class Product {
         [productId, optionNames[i], i + 1]
       );
     }
+  }
+
+  // ─── Get all variants for a product ──────────────────────────
+static async getVariants(productId) {
+  const result = await db.query(
+    `SELECT variant_id, variant_name, variant_stock, variant_sku, sort_order
+     FROM product_variants
+     WHERE product_id = $1
+     ORDER BY sort_order, variant_id`,
+    [productId]
+  );
+  return result.rows;
+}
+
+// ─── Set variants (replaces all existing) ────────────────────
+static async setVariants(productId, variants) {
+  // variants: [{ variantName, variantStock, variantSku, sortOrder }]
+  await db.query(
+    `DELETE FROM product_variants WHERE product_id = $1`,
+    [productId]
+  );
+  for (let i = 0; i < variants.length; i++) {
+    await db.query(
+      `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku, sort_order)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [productId, variants[i].variantName, variants[i].variantStock || 0,
+       variants[i].variantSku || null, i + 1]
+    );
+  }
+}
+
+// ─── Update single variant fields ─────────────────────────────
+static async updateVariant(variantId, { variantStock, variantName, variantSku }) {
+  const result = await db.query(
+    `UPDATE product_variants SET
+       variant_stock = COALESCE($1, variant_stock),
+       variant_name  = COALESCE($2, variant_name),
+       variant_sku   = COALESCE($3, variant_sku)
+     WHERE variant_id = $4 RETURNING *`,
+    [variantStock, variantName, variantSku, variantId]
+  );
+  return result.rows[0];
+}
+// ─── Add single variant ───────────────────────────────────────
+static async addVariant(productId, variantName, variantStock, variantSku) {
+  const result = await db.query(
+    `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [productId, variantName, variantStock || 0, variantSku || null]
+  );
+  return result.rows[0];
+}
+
+// ─── Delete single variant ────────────────────────────────────
+static async deleteVariant(variantId) {
+  const result = await db.query(
+    `DELETE FROM product_variants WHERE variant_id = $1 RETURNING *`,
+    [variantId]
+  );
+  return result.rows[0];
+}
+
+  // ─── Get total stock across all variants ─────────────────────
+  static async syncProductStockFromVariants(productId) {
+    const result = await db.query(
+      `UPDATE products SET product_stock = (
+        SELECT COALESCE(SUM(variant_stock), 0)
+        FROM product_variants WHERE product_id = $1
+      ) WHERE product_id = $1 RETURNING product_stock`,
+      [productId]
+    );
+    return result.rows[0]?.product_stock ?? 0;
   }
 
 }

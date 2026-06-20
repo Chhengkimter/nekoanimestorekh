@@ -137,34 +137,37 @@
       </div>
     </section>
     
-  <!-- ORDERS LIST -->
-  <section id="sec-orders" class="section">
-    <div class="topbar">
-      <div class="topbar-title">Orders</div>
-      <div class="topbar-actions">
-        <input class="search-input" id="ord-search" placeholder="Search by code or customer…" oninput="renderOrders()">
-      </div>
-    </div>
-    <div style="padding:28px 32px">
-
-      <!-- Status filter tabs -->
-      <div class="ord-status-tabs" id="ord-status-tabs">
-        <button class="ord-tab active" data-status="all"       onclick="setOrderTab(this)">All</button>
-        <button class="ord-tab"        data-status="pending"   onclick="setOrderTab(this)">Pending</button>
-        <button class="ord-tab"        data-status="confirmed" onclick="setOrderTab(this)">Confirmed</button>
-        <button class="ord-tab"        data-status="shipped"   onclick="setOrderTab(this)">Shipped</button>
-        <button class="ord-tab"        data-status="delivered" onclick="setOrderTab(this)">Delivered</button>
-        <button class="ord-tab"        data-status="cancelled" onclick="setOrderTab(this)">Cancelled</button>
-      </div>
-
-      <div class="table-wrap" style="margin-top:20px">
-        <div id="ord-table-body">
-          <div class="ord-loading">Loading orders…</div>
+    <!-- ORDERS LIST -->
+    <section id="sec-orders" class="section">
+      <div class="topbar">
+        <div class="topbar-title">Orders</div>
+        <div class="topbar-actions">
+          <input class="search-input" id="ord-search" placeholder="Search by code or customer…" oninput="renderOrders()">
+          <button class="add-btn" onclick="openCreateOrderModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add order
+          </button>
         </div>
       </div>
+      <div style="padding:28px 32px">
 
-    </div>
-  </section>
+        <div class="ord-status-tabs" id="ord-status-tabs">
+          <button class="ord-tab active" data-status="all"       onclick="setOrderTab(this)">All</button>
+          <button class="ord-tab"        data-status="pending"   onclick="setOrderTab(this)">Pending</button>
+          <button class="ord-tab"        data-status="confirmed" onclick="setOrderTab(this)">Confirmed</button>
+          <button class="ord-tab"        data-status="shipped"   onclick="setOrderTab(this)">Shipped</button>
+          <button class="ord-tab"        data-status="delivered" onclick="setOrderTab(this)">Delivered</button>
+          <button class="ord-tab"        data-status="cancelled" onclick="setOrderTab(this)">Cancelled</button>
+        </div>
+
+        <div class="table-wrap" style="margin-top:20px">
+          <div id="ord-table-body">
+            <div class="ord-loading">Loading orders…</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
 
   <!-- ORDER DETAIL (drill-down view) -->
   <section id="sec-order-detail" class="section">
@@ -253,12 +256,9 @@
         <textarea id="f-desc" rows="3" placeholder="Product description…"></textarea>
       </div>
       <div class="form-group form-full">
-        <label>Options (sizes, colors, variants)</label>
-        <div class="options-row" id="options-tags"></div>
-        <div class="option-add-row">
-          <input type="text" id="opt-input" placeholder="e.g. Red / Size M" onkeydown="if(event.key==='Enter'){event.preventDefault();addOption()}">
-          <button onclick="addOption()">Add</button>
-        </div>
+        <p style="font-size:11px;color:var(--muted);font-family:var(--mono)">
+          Variant labels (sizes, colors, etc.) are managed separately — save the product first, then use the "Variants" button in the products table.
+        </p>
       </div>
       <div class="form-group form-full">
         <label>Product images</label>
@@ -374,7 +374,165 @@
     </div>
   </div>
 </div>
+<!-- ADD PRODUCT TO ORDER MODAL — paste near your other modal overlays -->
+<div class="modal-overlay" id="add-product-overlay" onclick="if(event.target===this)closeAddProductModal()">
+  <div class="modal add-inv-modal">
+    <div class="modal-header">
+      <span class="modal-title">Add product to order</span>
+      <button class="modal-close" onclick="closeAddProductModal()">✕</button>
+    </div>
 
+    <div class="add-inv-toolbar">
+      <input
+        class="search-input"
+        id="add-prod-search"
+        placeholder="Search by name or ID…"
+        oninput="renderAddProductList()"
+        style="flex:1;width:auto"
+      >
+      <select
+        id="add-prod-cat-filter"
+        class="add-inv-cat-select"
+        onchange="renderAddProductList()"
+      >
+        <option value="All">All categories</option>
+      </select>
+    </div>
+
+    <div class="add-inv-list-wrap">
+      <div id="add-product-list"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddProductModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="create-order-overlay" onclick="if(event.target===this)closeCreateOrderModal()">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <span class="modal-title">Create new order</span>
+      <button class="modal-close" onclick="closeCreateOrderModal()">✕</button>
+    </div>
+ 
+    <div class="form-group form-full">
+      <label>Customer</label>
+      <div class="stock-status-row">
+        <button type="button" class="stock-status-btn selected" id="new-ord-mode-search" onclick="setCustomerMode('search')">
+          Existing customer
+        </button>
+        <button type="button" class="stock-status-btn" id="new-ord-mode-guest" onclick="setCustomerMode('guest')">
+          Walk-in / guest
+        </button>
+      </div>
+    </div>
+ 
+    <div id="new-ord-search-panel" style="margin-top:12px">
+      <input type="text" class="field-input" id="new-ord-customer-search"
+             placeholder="Search by name or email…" oninput="searchNewOrderCustomer()"
+             style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none">
+      <div id="new-ord-customer-results" style="margin-top:8px;max-height:140px;overflow-y:auto"></div>
+    </div>
+ 
+    <div id="new-ord-guest-panel" class="form-grid hidden" style="margin-top:12px">
+      <div class="form-group">
+        <label>Guest name *</label>
+        <input type="text" id="new-ord-guest-name" placeholder="Customer name">
+      </div>
+      <div class="form-group">
+        <label>Guest email <span class="optional">(optional)</span></label>
+        <input type="email" id="new-ord-guest-email" placeholder="email@example.com">
+      </div>
+    </div>
+ 
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group">
+        <label>Phone 1 *</label>
+        <input type="text" id="new-ord-phone1" placeholder="+855 12 345 678">
+      </div>
+      <div class="form-group">
+        <label>Phone 2 <span class="optional">(optional)</span></label>
+        <input type="text" id="new-ord-phone2" placeholder="+855 16 755 194">
+      </div>
+    </div>
+ 
+    <div class="form-group form-full" style="margin-top:14px">
+      <label>Address line 1 *</label>
+      <input type="text" id="new-ord-addr-line1" placeholder="House No, Street, Village">
+    </div>
+    <div class="form-grid" style="margin-top:10px">
+      <div class="form-group">
+        <label>District</label>
+        <input type="text" id="new-ord-addr-district">
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" id="new-ord-addr-city">
+      </div>
+    </div>
+    <div class="form-group form-full" style="margin-top:10px">
+      <label>Landmark <span class="optional">(optional)</span></label>
+      <input type="text" id="new-ord-addr-landmark">
+    </div>
+ 
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group">
+        <label>Shipping method</label>
+        <select id="new-ord-shipping-method" onchange="renderNewOrderItems()">
+          <option value="express">Express</option>
+          <option value="standard">Standard</option>
+          <option value="economy">Economy</option>
+          <option value="pickup">Pickup</option>
+          <option value="undetermined">Undetermined</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Shipping cost ($)</label>
+        <input type="number" id="new-ord-shipping-cost" value="3.00" min="0" step="0.01" oninput="renderNewOrderItems()">
+      </div>
+    </div>
+ 
+    <div class="form-group form-full" style="margin-top:14px">
+      <label>Items</label>
+      <div id="new-ord-items-list" class="table-wrap" style="padding:4px 16px"></div>
+      <button class="add-btn" style="margin-top:10px;width:100%;justify-content:center;padding:10px;font-size:12px" onclick="openNewOrderAddProductModal()">
+        <i class="fas fa-plus"></i> Add a product
+      </button>
+    </div>
+ 
+    <div class="table-wrap" style="margin-top:14px;padding:14px 16px" id="new-ord-totals"></div>
+ 
+    <div class="form-group form-full" style="margin-top:14px">
+      <label>Order note <span class="optional">(optional)</span></label>
+      <textarea id="new-ord-note" rows="2"></textarea>
+    </div>
+    <div class="form-group form-full" style="margin-top:10px">
+      <label>Admin note <span class="optional">(internal only)</span></label>
+      <textarea id="new-ord-admin-note" rows="2"></textarea>
+    </div>
+ 
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeCreateOrderModal()">Cancel</button>
+      <button class="btn-save" onclick="submitNewOrder()">Create order</button>
+    </div>
+  </div>
+</div>
+
+<!-- VARIANT MANAGER MODAL -->
+<div class="modal-overlay" id="variant-modal-overlay" onclick="if(event.target===this)closeVariantModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="variant-modal-title">Variants</span>
+      <button class="modal-close" onclick="closeVariantModal()">✕</button>
+    </div>
+    <div id="variant-modal-content"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeVariantModal()">Done</button>
+    </div>
+  </div>
+</div>
+ 
 <script src="../js/auth.js"></script>
 <script src="../js/admin.js"></script>
 <script src="../js/orderAdmin.js"></script>

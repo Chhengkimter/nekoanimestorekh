@@ -42,3 +42,12 @@ redesign database in canva for better understanding
 Add select product in admin page
 
 update login and signup pages ui
+
+front end varaint logic: for product with charcater name just let them note in order
+
+admin cant remove product from inventory, should set status to out of stock and pre order after remove from inventory
+
+change customer option name to varaint because we dropped product option and replaced with variant instead
+
+⚠️ You'll need to check this too: your frontend's saveProduct() posts to /admin/products, not /products — that controller isn't one of the files you've shown me. If it also calls Product.setOptions(...), it'll throw once the model method is gone. Worth a quick search for setOptions or an options field in that file.
+⚠️ Also worth checking: if your customer-facing storefront (not shown to me) renders product.options on the product detail page to let shoppers pick a variant before adding to cart, that needs to switch to reading product.variants (variant_name) instead, since findById no longer returns options.

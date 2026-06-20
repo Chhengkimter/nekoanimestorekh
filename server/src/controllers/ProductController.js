@@ -75,11 +75,6 @@ class ProductController {
         await Product.setCategories(product.product_id, categories);
       }
 
-      // 5. Set options if provided
-      if (options && options.length > 0) {
-        await Product.setOptions(product.product_id, options);
-      }
-
       // 6. Return full product
       const fullProduct = await Product.findById(product.product_id);
       res.status(201).json(fullProduct);
@@ -109,11 +104,6 @@ class ProductController {
       // Update categories if provided
       if (req.body.categories) {
         await Product.setCategories(productId, req.body.categories);
-      }
-
-      // Update options if provided
-      if (req.body.options) {
-        await Product.setOptions(productId, req.body.options);
       }
 
       const fullProduct = await Product.findById(productId);
@@ -186,6 +176,69 @@ class ProductController {
     } catch (err) {
       console.error('deleteImage error:', err.message);
       res.status(500).json({ error: 'Failed to delete image' });
+    }
+  }
+
+  static async getVariants(req, res) {
+    try {
+      const variants = await Product.getVariants(req.params.id);
+      res.status(200).json(variants);
+    } catch (err) {
+      console.error('getVariants error:', err.message);
+      res.status(500).json({ error: 'Failed to fetch variants' });
+    }
+  }
+
+  static async addVariant(req, res) {
+    try {
+      const { variantName, variantStock, variantSku } = req.body;
+      if (!variantName) return res.status(400).json({ error: 'Variant name required' });
+      const variant = await Product.addVariant(
+        req.params.id, variantName, variantStock, variantSku
+      );
+      // Sync product_stock to sum of variants
+      await Product.syncProductStockFromVariants(req.params.id);
+      res.status(201).json(variant);
+    } catch (err) {
+      console.error('addVariant error:', err.message);
+      res.status(500).json({ error: 'Failed to add variant' });
+    }
+  }
+
+  static async updateVariant(req, res) {
+    try {
+      const { variantStock, variantName, variantSku } = req.body;
+      const result = await Product.updateVariant(req.params.variantId, { variantStock, variantName, variantSku });
+      if (!result) return res.status(404).json({ error: 'Variant not found' });
+      await Product.syncProductStockFromVariants(req.params.id);
+      res.status(200).json(result);
+    } catch (err) {
+      console.error('updateVariant error:', err.message);
+      res.status(500).json({ error: 'Failed to update variant' });
+    }
+  }
+  static async deleteVariant(req, res) {
+    try {
+      const deleted = await Product.deleteVariant(req.params.variantId);
+      if (!deleted) return res.status(404).json({ error: 'Variant not found' });
+      await Product.syncProductStockFromVariants(req.params.id);
+      res.status(200).json({ message: 'Variant deleted' });
+    } catch (err) {
+      console.error('deleteVariant error:', err.message);
+      res.status(500).json({ error: 'Failed to delete variant' });
+    }
+  }
+
+  static async setVariants(req, res) {
+    try {
+      const { variants } = req.body;
+      if (!Array.isArray(variants)) return res.status(400).json({ error: 'variants must be array' });
+      await Product.setVariants(req.params.id, variants);
+      await Product.syncProductStockFromVariants(req.params.id);
+      res.status(200).json({ message: 'Variants updated' });
+    } catch (err) {
+      console.error('setVariants error:', err.message);
+      res.status(500).json({ error: 'Failed to set variants' });
     }
   }
 
