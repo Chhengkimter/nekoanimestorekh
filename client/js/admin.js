@@ -246,17 +246,6 @@ async function saveProduct() {
   await loadProducts();
   renderAll(); buildFilters(); closeModal();
 }
-// ── OPTIONS ──
-function addOption() {
-  const val = document.getElementById('opt-input').value.trim();
-  if (val && !modalOptions.includes(val)) { modalOptions.push(val); document.getElementById('opt-input').value = ''; renderOptions(); }
-}
-function removeOption(i) { modalOptions.splice(i,1); renderOptions(); }
-function renderOptions() {
-  document.getElementById('options-tags').innerHTML = modalOptions.map((o,i) =>
-    `<span class="option-tag">${o}<button onclick="removeOption(${i})">✕</button></span>`
-  ).join('');
-}
 
 // ── IMAGES ──
 function handleImageUpload(e) {
@@ -305,6 +294,7 @@ function openAddToInventoryModal() {
 
 // ── INVENTORY ──────────────────────────────────────────────────
 let activeVariantModalProductId = null;
+let expandedVariantProductId = null;
 
 function renderInventory() {
   const cats = ['All', ...categories];
@@ -561,11 +551,13 @@ async function reloadVariants(productLocalId, productDbId) {
 async function removeFromInventory(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-  const res = await apiFetch('/admin/inventory/adjust', {
-    method: 'POST',
-    body:   JSON.stringify({ productId: p.dbId, newQty: 0, note: 'Moved to pre-order' })
+
+  const res = await apiFetch(`/admin/products/${p.dbId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ stockStatus: 'preorder' })
   });
   if (!res.ok) { toast('Failed to remove from inventory', true); return; }
+
   await loadProducts();
   renderInventory(); renderStats(); renderProducts();
   toast(`"${p.name}" moved to pre-order`);

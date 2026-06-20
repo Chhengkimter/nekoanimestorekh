@@ -101,11 +101,14 @@ function render() {
     list.innerHTML = '';
 
     if (cartItems.length === 0) {
-        empty.style.display    = 'block';
+        empty.style.display      = 'block';
         summaryCol.style.display = 'none';
-        countEl.textContent    = '0';
+        countEl.textContent      = '0';
+        document.querySelector('.cart-layout').classList.add('is-empty');
         return;
     }
+
+    document.querySelector('.cart-layout').classList.remove('is-empty');
 
     empty.style.display      = 'none';
     summaryCol.style.display = 'block';

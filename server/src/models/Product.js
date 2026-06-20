@@ -160,80 +160,65 @@ static async create({ productCode, productName, productDescription,
     }
   }
 
-  // ─── Set options for product ──────────────────────────────────
-  static async setOptions(productId, optionNames) {
-    await db.query(
-      `DELETE FROM product_options WHERE product_id = $1`,
+  // ─── Get all variants for a product ──────────────────────────
+  static async getVariants(productId) {
+    const result = await db.query(
+      `SELECT variant_id, variant_name, variant_stock, variant_sku, sort_order
+      FROM product_variants
+      WHERE product_id = $1
+      ORDER BY sort_order, variant_id`,
       [productId]
     );
-    for (let i = 0; i < optionNames.length; i++) {
+    return result.rows;
+  }
+
+  // ─── Set variants (replaces all existing) ────────────────────
+  static async setVariants(productId, variants) {
+    // variants: [{ variantName, variantStock, variantSku, sortOrder }]
+    await db.query(
+      `DELETE FROM product_variants WHERE product_id = $1`,
+      [productId]
+    );
+    for (let i = 0; i < variants.length; i++) {
       await db.query(
-        `INSERT INTO product_options (product_id, option_name, sort_order)
-         VALUES ($1, $2, $3)`,
-        [productId, optionNames[i], i + 1]
+        `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku, sort_order)
+        VALUES ($1, $2, $3, $4, $5)`,
+        [productId, variants[i].variantName, variants[i].variantStock || 0,
+        variants[i].variantSku || null, i + 1]
       );
     }
   }
 
-  // ─── Get all variants for a product ──────────────────────────
-static async getVariants(productId) {
-  const result = await db.query(
-    `SELECT variant_id, variant_name, variant_stock, variant_sku, sort_order
-     FROM product_variants
-     WHERE product_id = $1
-     ORDER BY sort_order, variant_id`,
-    [productId]
-  );
-  return result.rows;
-}
-
-// ─── Set variants (replaces all existing) ────────────────────
-static async setVariants(productId, variants) {
-  // variants: [{ variantName, variantStock, variantSku, sortOrder }]
-  await db.query(
-    `DELETE FROM product_variants WHERE product_id = $1`,
-    [productId]
-  );
-  for (let i = 0; i < variants.length; i++) {
-    await db.query(
-      `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku, sort_order)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [productId, variants[i].variantName, variants[i].variantStock || 0,
-       variants[i].variantSku || null, i + 1]
+  // ─── Update single variant fields ─────────────────────────────
+  static async updateVariant(variantId, { variantStock, variantName, variantSku }) {
+    const result = await db.query(
+      `UPDATE product_variants SET
+        variant_stock = COALESCE($1, variant_stock),
+        variant_name  = COALESCE($2, variant_name),
+        variant_sku   = COALESCE($3, variant_sku)
+      WHERE variant_id = $4 RETURNING *`,
+      [variantStock, variantName, variantSku, variantId]
     );
+    return result.rows[0];
   }
-}
+  // ─── Add single variant ───────────────────────────────────────
+  static async addVariant(productId, variantName, variantStock, variantSku) {
+    const result = await db.query(
+      `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku)
+      VALUES ($1, $2, $3, $4) RETURNING *`,
+      [productId, variantName, variantStock || 0, variantSku || null]
+    );
+    return result.rows[0];
+  }
 
-// ─── Update single variant fields ─────────────────────────────
-static async updateVariant(variantId, { variantStock, variantName, variantSku }) {
-  const result = await db.query(
-    `UPDATE product_variants SET
-       variant_stock = COALESCE($1, variant_stock),
-       variant_name  = COALESCE($2, variant_name),
-       variant_sku   = COALESCE($3, variant_sku)
-     WHERE variant_id = $4 RETURNING *`,
-    [variantStock, variantName, variantSku, variantId]
-  );
-  return result.rows[0];
-}
-// ─── Add single variant ───────────────────────────────────────
-static async addVariant(productId, variantName, variantStock, variantSku) {
-  const result = await db.query(
-    `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku)
-     VALUES ($1, $2, $3, $4) RETURNING *`,
-    [productId, variantName, variantStock || 0, variantSku || null]
-  );
-  return result.rows[0];
-}
-
-// ─── Delete single variant ────────────────────────────────────
-static async deleteVariant(variantId) {
-  const result = await db.query(
-    `DELETE FROM product_variants WHERE variant_id = $1 RETURNING *`,
-    [variantId]
-  );
-  return result.rows[0];
-}
+  // ─── Delete single variant ────────────────────────────────────
+  static async deleteVariant(variantId) {
+    const result = await db.query(
+      `DELETE FROM product_variants WHERE variant_id = $1 RETURNING *`,
+      [variantId]
+    );
+    return result.rows[0];
+  }
 
   // ─── Get total stock across all variants ─────────────────────
   static async syncProductStockFromVariants(productId) {
