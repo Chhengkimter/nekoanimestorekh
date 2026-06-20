@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neko Admin — Dashboard</title>
+<title>Neko_Animestore Admin — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/admin.css">
@@ -54,6 +54,10 @@
     <div class="nav-item" data-section="categories" onclick="switchSection('categories')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
       <span>Categories</span>
+    </div>
+    <div class="nav-item" data-section="orders" onclick="switchSection('orders')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18l-2 13H5L3 3z"/><path d="M3 3H1"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>
+      <span>Orders</span>
     </div>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="logout()">
@@ -122,8 +126,9 @@
         <div class="table-wrap"><div id="cat-table-body"></div></div>
       </div>
     </section>
+
     <!-- CATEGORY DETAIL -->
-    <section id="sec-cat-detail" style="display:none;">
+    <section id="sec-cat-detail" class="section">
       <div class="topbar">
         <div class="topbar-title">Categories</div>
       </div>
@@ -131,6 +136,53 @@
         <div id="cat-detail-content"></div>
       </div>
     </section>
+    
+  <!-- ORDERS LIST -->
+  <section id="sec-orders" class="section">
+    <div class="topbar">
+      <div class="topbar-title">Orders</div>
+      <div class="topbar-actions">
+        <input class="search-input" id="ord-search" placeholder="Search by code or customer…" oninput="renderOrders()">
+      </div>
+    </div>
+    <div style="padding:28px 32px">
+
+      <!-- Status filter tabs -->
+      <div class="ord-status-tabs" id="ord-status-tabs">
+        <button class="ord-tab active" data-status="all"       onclick="setOrderTab(this)">All</button>
+        <button class="ord-tab"        data-status="pending"   onclick="setOrderTab(this)">Pending</button>
+        <button class="ord-tab"        data-status="confirmed" onclick="setOrderTab(this)">Confirmed</button>
+        <button class="ord-tab"        data-status="shipped"   onclick="setOrderTab(this)">Shipped</button>
+        <button class="ord-tab"        data-status="delivered" onclick="setOrderTab(this)">Delivered</button>
+        <button class="ord-tab"        data-status="cancelled" onclick="setOrderTab(this)">Cancelled</button>
+      </div>
+
+      <div class="table-wrap" style="margin-top:20px">
+        <div id="ord-table-body">
+          <div class="ord-loading">Loading orders…</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ORDER DETAIL (drill-down view) -->
+  <section id="sec-order-detail" class="section">
+    <div class="topbar">
+      <div class="topbar-title">
+        <button class="ord-back-btn" onclick="closeOrderDetail()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        Order Detail
+      </div>
+    </div>
+    <div style="padding:28px 32px" id="ord-detail-content">
+      <!-- Populated by JS -->
+    </div>
+  </section>
+
   </main>
 </div>
 
@@ -285,7 +337,47 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="bulk-edit-overlay" onclick="if(event.target===this)closeBulkEditModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Bulk edit products</span>
+      <button class="modal-close" onclick="closeBulkEditModal()">✕</button>
+    </div>
+
+    <div id="bulk-edit-summary" class="bulk-edit-summary"></div>
+
+    <div class="form-grid" style="margin-top:18px">
+      <div class="form-group">
+        <label>Set price ($) <span class="optional">(leave blank to skip)</span></label>
+        <input type="number" id="bulk-price" placeholder="Leave blank to skip" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Set discount <span class="optional">(leave blank to skip)</span></label>
+        <div class="discount-row">
+          <input type="number" id="bulk-discount" placeholder="0" min="0" max="100" step="1">
+          <label class="discount-toggle"><input type="checkbox" id="bulk-discount-type"> flat $ (unchecked = %)</label>
+        </div>
+      </div>
+      <div class="form-group form-full">
+        <label>Add category to all selected <span class="optional">(keeps each product's existing categories)</span></label>
+        <div class="cat-picker" id="bulk-cat-picker"></div>
+      </div>
+      <div class="form-group form-full">
+        <label>Remove category from all selected <span class="optional">(only shows categories present in selection)</span></label>
+        <div class="cat-picker" id="bulk-remove-cat-picker"></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeBulkEditModal()">Cancel</button>
+      <button class="btn-save" onclick="applyBulkEdit()">Apply to selected</button>
+    </div>
+  </div>
+</div>
+
 <script src="../js/auth.js"></script>
 <script src="../js/admin.js"></script>
+<script src="../js/orderAdmin.js"></script>
+
 </body>
 </html>

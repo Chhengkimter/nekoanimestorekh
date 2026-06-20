@@ -3,16 +3,10 @@ const db = require('../config/db');
 class Product {
 
   // ─── Get all products (customer product listing page) ────────
-  static async findAll({ categoryId, search, limit = 20, offset = 0 } = {}) {
+  static async findAll({ categoryId, search, promotion, limit = 20, offset = 0 } = {}) {
     let query = `SELECT * FROM vw_product_catalogue WHERE 1=1`;
     const params = [];
 
-    // Add after the search filter block:
-    if (promotion) {
-      params.push(promotion);
-      query += ` AND promotion = $${params.length}`;
-    }
-    
     if (search) {
       params.push(`%${search}%`);
       query += ` AND product_name ILIKE $${params.length}`;
@@ -23,6 +17,11 @@ class Product {
       query += ` AND product_id IN (
         SELECT product_id FROM product_categories WHERE category_id = $${params.length}
       )`;
+    }
+
+    if (promotion) {
+      params.push(promotion);
+      query += ` AND promotion = $${params.length}`;
     }
 
     query += ` AND product_status != 'archived'`;
@@ -37,7 +36,6 @@ class Product {
 
   // ─── Get one product with all images + options ───────────────
   static async findById(productId) {
-    // Main product info
     const productResult = await db.query(
       `SELECT * FROM vw_product_catalogue WHERE product_id = $1`,
       [productId]
@@ -46,7 +44,6 @@ class Product {
 
     const product = productResult.rows[0];
 
-    // All images
     const imagesResult = await db.query(
       `SELECT image_id, image_url, is_primary
        FROM product_images WHERE product_id = $1
@@ -55,7 +52,6 @@ class Product {
     );
     product.images = imagesResult.rows;
 
-    // All options
     const optionsResult = await db.query(
       `SELECT option_id, option_name
        FROM product_options WHERE product_id = $1

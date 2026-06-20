@@ -41,9 +41,4 @@ redesign database in canva for better understanding
 
 Add select product in admin page
 
-✅ Products API Confirmed — All 5 Products Loading Perfectly
-One small thing to note — sale_price has too many decimals:
-"sale_price":"31.4910000000000000"  ← fix later in the view
-Not urgent, we'll clean it up when wiring the frontend. Move on first.
-
 update login and signup pages ui

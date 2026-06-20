@@ -124,12 +124,15 @@ class Order {
     return result.rows;
   }
 
-  // ─── Generate unique order code (NK-xxxxxxxx) ─────────────────
+  // ─── Generate unique order code (NK-YYMMDD-XXXX) ─────────────
   static generateOrderCode() {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    return `NK-${timestamp}`;
+    const chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const suffix = Array.from({ length: 4 }, () =>
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join('');
+    const date = new Date().toISOString().slice(2, 10).replace(/-/g, ''); 
+    return `NK-${date}-${suffix}`;
   }
-
 }
 
 module.exports = Order;

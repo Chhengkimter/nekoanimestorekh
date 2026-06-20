@@ -689,3 +689,7 @@ INSERT INTO Inventory (productID, movementType, quantityDelta, quantityAfter, no
 --  FILE: save as  neko_database.sql
 --  Run:  psql -U <user> -d <dbname> -f neko_database.sql
 -- ─────────────────────────────────────────────────────────────
+
+--ALTER TABLE products
+--ADD COLUMN promotion VARCHAR(30) DEFAULT NULL
+--CHECK (promotion IN ('discount', 'new_arrival', 'featured', 'bundle', 'limited', 'preorder_special'));

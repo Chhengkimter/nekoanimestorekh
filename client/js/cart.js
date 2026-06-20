@@ -1,96 +1,131 @@
 /**
  * cart.js — Neko Animestore Cart Page
- * Each cart entry has a unique cartId (uuid-like) so the same product can appear
- * multiple times with different notes.
+ * Connected to backend: GET/PATCH/DELETE /api/cart, DELETE /api/cart/clear
  */
 
 /* =====================
-   DEMO DATA
-   In production this would come from localStorage / your backend.
-   Each entry has a unique `cartId` so the same product with two different
-   notes becomes two separate rows.
+   CONFIG
+   Change BASE_URL to match your backend host in production.
    ===================== */
-const DEMO_CART = [
-    {
-        cartId: 'ci_001',
-        productId: 'p1',
-        name: 'Demon Slayer Tanjiro Figure – Limited Edition',
-        option: 'Standard',
-        price: 24.99,
-        qty: 1,
-        img: 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
-        note: ''
-    },
-    {
-        cartId: 'ci_002',
-        productId: 'p1',
-        name: 'Demon Slayer Tanjiro Figure – Limited Edition',
-        option: 'Box Set',
-        price: 39.99,
-        qty: 2,
-        img: 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
-        note: 'Please gift-wrap this one — it\'s a birthday present 🎁'
-    },
-    {
-        cartId: 'ci_003',
-        productId: 'p2',
-        name: 'Naruto Uzumaki Hokage Figure',
-        option: 'Deluxe Edition',
-        price: 34.50,
-        qty: 1,
-        img: 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
-        note: ''
-    }
-];
+const BASE_URL = '/api/cart';   // e.g. 'https://api.nekoanimestore.com/api/cart'
 
 /* =====================
    STATE
    ===================== */
-let cartItems = loadCart();
+let cartItems = [];   // filled by fetchCart()
 
-function loadCart() {
+/* =====================
+   API HELPERS
+   ===================== */
+
+/**
+ * Fetch the full cart from the backend.
+ * Maps backend field names → the shape the renderer expects.
+ */
+async function fetchCart() {
     try {
-        const saved = sessionStorage.getItem('neko_cart');
-        if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    // Seed demo data on first load
-    sessionStorage.setItem('neko_cart', JSON.stringify(DEMO_CART));
-    return JSON.parse(JSON.stringify(DEMO_CART));
+        const res = await fetch(BASE_URL, {
+            method: 'GET',
+            credentials: 'include',   // send session cookie / JWT cookie
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.status === 401) {
+            // Not logged in → redirect to login page
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        // Map backend rows → frontend shape
+        // Backend columns: cart_item_id, product_id, product_name, selected_option,
+        //                  price_snapshot, quantity, note, image, current_price, stock_status
+        cartItems = (data.items || []).map(item => ({
+            cartId:   item.cart_item_id,          // unique row id used for PATCH/DELETE
+            productId: item.product_id,
+            name:     item.product_name,
+            option:   item.selected_option || '—',
+            price:    parseFloat(item.price_snapshot),
+            qty:      item.quantity,
+            img:      item.image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
+            note:     item.note || '',
+            currentPrice: parseFloat(item.current_price),
+            stockStatus:  item.stock_status
+        }));
+
+    } catch (err) {
+        console.error('fetchCart error:', err);
+        showToast('Could not load cart. Please refresh.');
+    }
 }
 
-function saveCart() {
-    sessionStorage.setItem('neko_cart', JSON.stringify(cartItems));
+/**
+ * PATCH /api/cart/:cartItemId  — update quantity
+ */
+async function apiUpdateQty(cartItemId, newQty) {
+    const res = await fetch(`${BASE_URL}/${cartItemId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: newQty })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+/**
+ * DELETE /api/cart/:cartItemId  — remove one item
+ */
+async function apiRemoveItem(cartItemId) {
+    const res = await fetch(`${BASE_URL}/${cartItemId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
 }
 
 /* =====================
    RENDER
    ===================== */
 function render() {
-    const list     = document.getElementById('cart-items-list');
-    const empty    = document.getElementById('empty-cart');
+    const list       = document.getElementById('cart-items-list');
+    const empty      = document.getElementById('empty-cart');
     const summaryCol = document.getElementById('summary-col');
-    const countEl  = document.getElementById('cart-count');
+    const countEl   = document.getElementById('cart-count');
 
     list.innerHTML = '';
 
     if (cartItems.length === 0) {
-        empty.style.display = 'block';
+        empty.style.display    = 'block';
         summaryCol.style.display = 'none';
-        countEl.textContent = '0';
+        countEl.textContent    = '0';
         return;
     }
 
-    empty.style.display = 'none';
+    empty.style.display      = 'none';
     summaryCol.style.display = 'block';
-    countEl.textContent = cartItems.reduce((s, i) => s + i.qty, 0);
+    countEl.textContent      = cartItems.reduce((s, i) => s + i.qty, 0);
 
     cartItems.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'cart-item';
-        div.dataset.cartId = item.cartId;
+        div.className       = 'cart-item';
+        div.dataset.cartId  = item.cartId;
 
         const subtotal = (item.price * item.qty).toFixed(2);
         const hasNote  = item.note && item.note.trim().length > 0;
+
+        // Show a warning badge if the item's current price differs from the locked price
+        const priceDrift = item.currentPrice !== item.price;
+        const driftBadge = priceDrift
+            ? `<span class="price-drift-badge" title="Price changed since you added this item">
+                   Current price: $${item.currentPrice.toFixed(2)}
+               </span>`
+            : '';
 
         div.innerHTML = `
             <div class="item-top">
@@ -98,7 +133,7 @@ function render() {
                 <div class="item-details">
                     <div class="item-name" title="${item.name}">${item.name}</div>
                     <span class="item-option">${item.option}</span>
-                    <div class="item-price-unit">$${item.price.toFixed(2)} each</div>
+                    <div class="item-price-unit">$${item.price.toFixed(2)} each ${driftBadge}</div>
                 </div>
             </div>
 
@@ -130,22 +165,22 @@ function render() {
             </div>
         `;
 
-        // Qty -
+        // ── Quantity − ──────────────────────────────────────────
         div.querySelector('.minus-btn').addEventListener('click', () => {
             changeQty(item.cartId, -1);
         });
 
-        // Qty +
+        // ── Quantity + ──────────────────────────────────────────
         div.querySelector('.plus-btn').addEventListener('click', () => {
             changeQty(item.cartId, +1);
         });
 
-        // Remove
+        // ── Remove ──────────────────────────────────────────────
         div.querySelector('.remove-btn').addEventListener('click', () => {
             removeItem(item.cartId);
         });
 
-        // Note toggle
+        // ── Note toggle ─────────────────────────────────────────
         const noteToggle = div.querySelector('.note-toggle');
         const noteArea   = div.querySelector('.note-area');
         const chevron    = div.querySelector('.toggle-chevron');
@@ -154,14 +189,16 @@ function render() {
             chevron.className = `fas fa-chevron-${open ? 'up' : 'down'} toggle-chevron`;
         });
 
-        // Note save on input
+        // ── Note: debounced save on input ───────────────────────
+        let noteTimer = null;
         div.querySelector('.note-textarea').addEventListener('input', (e) => {
             const idx = cartItems.findIndex(ci => ci.cartId === item.cartId);
-            if (idx !== -1) {
-                cartItems[idx].note = e.target.value;
-                saveCart();
-                updateToggleLabel(noteToggle, e.target.value);
-            }
+            if (idx !== -1) cartItems[idx].note = e.target.value;
+            updateToggleLabel(noteToggle, e.target.value, noteArea);
+
+            // Debounce: save note 800 ms after the user stops typing
+            clearTimeout(noteTimer);
+            noteTimer = setTimeout(() => saveNote(item.cartId, e.target.value), 800);
         });
 
         list.appendChild(div);
@@ -171,12 +208,13 @@ function render() {
     updateAddressBtn();
 }
 
-function updateToggleLabel(btn, noteText) {
+function updateToggleLabel(btn, noteText, noteArea) {
     const hasNote = noteText && noteText.trim().length > 0;
+    const isOpen  = noteArea.classList.contains('open');
     btn.innerHTML = `
         <i class="fas fa-sticky-note"></i>
         ${hasNote ? 'Edit note' : 'Add a note'}
-        <i class="fas fa-chevron-${btn.nextElementSibling.classList.contains('open') ? 'up' : 'down'} toggle-chevron"></i>
+        <i class="fas fa-chevron-${isOpen ? 'up' : 'down'} toggle-chevron"></i>
     `;
 }
 
@@ -194,7 +232,9 @@ function renderSummary() {
         row.className = 'summary-row';
         const shortName = item.name.length > 28 ? item.name.slice(0, 28) + '…' : item.name;
         row.innerHTML = `
-            <span class="item-label">${shortName}<br><small style="color:#B99CC8">${item.option} × ${item.qty}</small></span>
+            <span class="item-label">${shortName}<br>
+              <small style="color:#B99CC8">${item.option} × ${item.qty}</small>
+            </span>
             <span class="item-val">$${sub.toFixed(2)}</span>
         `;
         summaryItems.appendChild(row);
@@ -210,21 +250,76 @@ function updateAddressBtn() {
 }
 
 /* =====================
-   MUTATIONS
+   MUTATIONS  (optimistic UI + API call)
    ===================== */
-function changeQty(cartId, delta) {
+
+/**
+ * Change qty locally then sync to backend.
+ * On API failure, rollback and show toast.
+ */
+async function changeQty(cartId, delta) {
     const idx = cartItems.findIndex(ci => ci.cartId === cartId);
     if (idx === -1) return;
-    cartItems[idx].qty = Math.max(1, cartItems[idx].qty + delta);
-    saveCart();
+
+    const prevQty = cartItems[idx].qty;
+    const newQty  = Math.max(1, prevQty + delta);
+    if (newQty === prevQty) return;   // already at minimum
+
+    // Optimistic update
+    cartItems[idx].qty = newQty;
     render();
+
+    try {
+        await apiUpdateQty(cartId, newQty);
+    } catch (err) {
+        console.error('changeQty error:', err);
+        // Rollback
+        cartItems[idx].qty = prevQty;
+        render();
+        showToast('Could not update quantity. Please try again.');
+    }
 }
 
-function removeItem(cartId) {
+/**
+ * Remove item locally then sync to backend.
+ * On failure, re-fetch from server to restore accurate state.
+ */
+async function removeItem(cartId) {
+    const snapshot = [...cartItems];
+
+    // Optimistic remove
     cartItems = cartItems.filter(ci => ci.cartId !== cartId);
-    saveCart();
     render();
     showToast('Item removed from cart');
+
+    try {
+        await apiRemoveItem(cartId);
+    } catch (err) {
+        console.error('removeItem error:', err);
+        cartItems = snapshot;   // rollback
+        render();
+        showToast('Could not remove item. Please try again.');
+    }
+}
+
+/**
+ * Save note for a cart item via PATCH (reuses the quantity endpoint —
+ * backend PATCH /api/cart/:id updates whichever fields are sent).
+ * If your backend requires a separate note endpoint, adjust the URL here.
+ */
+async function saveNote(cartId, note) {
+    try {
+        const res = await fetch(`${BASE_URL}/${cartId}`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        console.error('saveNote error:', err);
+        // Silent fail: note is kept in local state; user can retry by typing again
+    }
 }
 
 /* =====================
@@ -238,16 +333,27 @@ function showToast(msg) {
 }
 
 /* =====================
-   PASS CART TO ADDRESS PAGE
-   Save to sessionStorage so address.html can read it
+   ADDRESS BUTTON
+   Pass the current cart snapshot to address.html via sessionStorage
+   so the address page knows what's being ordered.
    ===================== */
 document.getElementById('setup-address-btn').addEventListener('click', () => {
     if (cartItems.length === 0) return;
-    saveCart(); // already saved but make sure notes are flushed
+    // Store a lightweight snapshot (cartId + qty + note) for the address page
+    sessionStorage.setItem('neko_cart_snapshot', JSON.stringify(cartItems));
     window.location.href = 'address.html';
 });
 
 /* =====================
-   INIT
+   INIT — load from backend then render
    ===================== */
-render();
+async function init() {
+    // Show a subtle loading state while fetching
+    const list = document.getElementById('cart-items-list');
+    list.innerHTML = '<p style="color:#B99CC8;padding:1rem;">Loading cart…</p>';
+
+    await fetchCart();
+    render();
+}
+
+init();

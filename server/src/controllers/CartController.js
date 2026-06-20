@@ -32,7 +32,7 @@ class CartController {
   // Add item to cart (or increase qty if already there)
   static async addItem(req, res) {
     try {
-      const userId = req.user.user.id;
+      const userId = req.user.id;
       const { productId, selectedOption, quantity = 1, note } = req.body;
 
       // 1. Validate
@@ -86,6 +86,8 @@ class CartController {
       const cartItemId = req.params.cartItemId;
       const { quantity } = req.body;
 
+      await Cart.updateItem(cartItemId, userId, { quantity, note });
+      
       if (!quantity || quantity < 1) {
         return res.status(400).json({ error: 'Quantity must be at least 1' });
       }
