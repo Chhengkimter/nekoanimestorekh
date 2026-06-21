@@ -27,8 +27,8 @@ if (order) {
         const div = document.createElement('div');
         div.className = 'preview-item';
         const shortName = item.name.length > 32 ? item.name.slice(0,32)+'…' : item.name;
-        div.innerHTML = `
-            <img src="${item.img}" alt="" class="prev-img">
+            div.innerHTML = `
+                <img src="${item.image || item.img}" alt="" class="prev-img">
             <div class="prev-info">
                 <div class="prev-name">${shortName}</div>
                 <div class="prev-opt">${item.option} × ${item.qty}</div>

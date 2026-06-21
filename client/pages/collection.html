@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection — Neko Animestore</title>
+  <link rel="stylesheet" href="../css/customer.css">
+  <link rel="stylesheet" href="../css/productlist.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Collection banner */
+    .collection-banner {
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      margin: 24px 0;
+      max-height: 280px;
+    }
+    .collection-banner img {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+    }
+    .collection-banner-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(0,0,0,0.5), transparent);
+      display: flex;
+      align-items: center;
+      padding: 32px;
+    }
+    #collection-banner-title {
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-top">
+    <div class="container">
+      <div class="header-flex desktop-header">
+        <div class="header-socials">
+          <a href="https://www.facebook.com/Nekoanimestore.kh" target="_blank">
+            <img src="https://i.pinimg.com/736x/7e/a3/bd/7ea3bd759d038651d0b9efa55d07bb8f.jpg" alt="Facebook">
+          </a>
+        </div>
+        <div class="logo-section">
+          <a href="index.html">
+            <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo" class="logo-img">
+          </a>
+          <span class="logo-text">Neko_Animestore</span>
+        </div>
+        <div class="right-section">
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="Search products...">
+          </div>
+          <div class="header-icons">
+            <a href="cart.html" class="icon-link">
+              <img src="https://i.pinimg.com/736x/a8/55/11/a855111b1cef5fc7d045fdab7892fde2.jpg" alt="Cart" class="icon-img">
+            </a>
+            <a href="userpage.html" class="icon-link">
+              <img src="https://i.pinimg.com/736x/09/9b/de/099bdea361336b894f410cdf67c777e4.jpg" alt="User" class="icon-img">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="container">
+
+    <a href="index.html" class="back-btn"><i class="fas fa-chevron-left"></i> Back</a>
+
+    <!-- Banner (populated by productlist.js) -->
+    <div class="collection-banner" id="collection-banner">
+      <img id="collection-banner-img" src="" alt="">
+      <div class="collection-banner-overlay">
+        <h1 id="collection-banner-title"></h1>
+      </div>
+    </div>
+
+    <!-- Search (mobile) -->
+    <div class="search-box-mobile" style="margin-bottom:16px">
+      <input type="text" id="search-input-mobile" placeholder="Search products...">
+    </div>
+
+    <!-- Product Grid -->
+    <div id="product-grid"></div>
+
+    <!-- Empty State -->
+    <div id="empty-state" style="display:none;text-align:center;padding:60px 0;color:#B99CC8">
+      <i class="fas fa-box-open" style="font-size:48px;margin-bottom:16px;display:block"></i>
+      <p>No products found in this collection yet.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Set PAGE_FILTER from URL slug BEFORE productlist.js loads -->
+<script>
+  const _slug = new URLSearchParams(window.location.search).get('slug');
+  if (_slug) window.PAGE_FILTER = { slug: _slug };
+</script>
+<script src="../js/productlist.js"></script>
+</body>
+</html>

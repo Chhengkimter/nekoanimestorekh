@@ -265,10 +265,25 @@ document.getElementById('submit-order-btn').addEventListener('click', async () =
     }
 
     const order = await res.json();
-
-    sessionStorage.setItem('neko_order_code',  order.orderCode);
-    sessionStorage.setItem('neko_order_total', order.order?.total ?? '');
-
+    
+    sessionStorage.setItem('neko_pending_order', JSON.stringify({
+      orderId:   order.orderCode,
+      createdAt: order.order?.order_date || new Date().toISOString(),
+      shipping: {
+        method: order.order?.shipping_method || shippingMethod,
+        cost:   order.order?.shipping_cost   || shippingCost
+      },
+      subtotal:  order.order?.subtotal || cartSubtotal,
+      total:     order.order?.total    || null,
+      items:     (order.order?.items || []).map(i => ({
+        name:   i.product_name,
+        image:  i.image,
+        option: i.selected_option || '—',
+        qty:    i.product_quantity,
+        price:  i.price_at_purchase,
+        note:   i.item_note || ''
+      }))
+    }));
     window.location.href = 'confirmation.html';
 
   } catch (err) {
