@@ -32,3 +32,4 @@ function adminOnly(req, res, next) {
 }
 
 module.exports = { requireAuth, adminOnly };
+
