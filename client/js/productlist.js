@@ -10,7 +10,7 @@
    header with #search-input, and fires 'partials:loaded').
    ======================================================================= */
 
-const API = 'http://localhost:3000/api';
+const PRODUCTLIST_API = 'http://localhost:3000/api';
 
 /* =====================
    WISHLIST STATE
@@ -53,7 +53,7 @@ async function loadProducts() {
 
   // ── Slug-based collection page ──────────────────────────────
   if (filter.slug) {
-    const res = await fetch(`${API}/pages/${filter.slug}`);
+    const res = await fetch(`${PRODUCTLIST_API}/pages/${filter.slug}`);
 
     if (!res.ok) {
       showToast('Page not found');
@@ -86,7 +86,7 @@ async function loadProducts() {
   if (filter.categoryId) params.append('category',  filter.categoryId);
   if (filter.search)     params.append('search',    filter.search);
 
-  const res      = await fetch(`${API}/products?${params}`);
+  const res      = await fetch(`${PRODUCTLIST_API}/products?${params}`);
   const products = await res.json();
   return products.map(mapProduct);
 }
@@ -200,7 +200,7 @@ function initNewsletter() {
     const input = e.target.querySelector('input[type=email]');
     if (!input?.value) return;
     try {
-      await fetch(`${API}/newsletter`, {
+      await fetch(`${PRODUCTLIST_API}/newsletter`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email: input.value })

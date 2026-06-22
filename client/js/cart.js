@@ -308,10 +308,11 @@ document.getElementById('setup-address-btn')?.addEventListener('click', () => {
    INIT
    ===================== */
 async function init() {
+    if (!document.getElementById('cart-items-list')) return; // not the cart page, stop here
     if (!getToken()) { handleUnauth(); return; }
 
     const list = document.getElementById('cart-items-list');
-    if (list) list.innerHTML = '<p style="color:#B99CC8;padding:1rem;">Loading cart…</p>';
+    list.innerHTML = '<p style="color:#B99CC8;padding:1rem;">Loading cart…</p>';
 
     await fetchCart();
     render();
