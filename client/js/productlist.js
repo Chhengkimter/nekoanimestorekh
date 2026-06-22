@@ -5,6 +5,9 @@
      - window.PAGE_FILTER = { promotion: 'discount' }  → promotion filter
      - window.PAGE_FILTER = { categoryId: 3 }          → category filter
      - window.PAGE_FILTER = {}                          → all products
+
+   NOTE: depends on partials.js being loaded first (provides the shared
+   header with #search-input, and fires 'partials:loaded').
    ======================================================================= */
 
 const API = 'http://localhost:3000/api';
@@ -50,7 +53,7 @@ async function loadProducts() {
 
   // ── Slug-based collection page ──────────────────────────────
   if (filter.slug) {
-    const res  = await fetch(`${API}/pages/${filter.slug}`);
+    const res = await fetch(`${API}/pages/${filter.slug}`);
 
     if (!res.ok) {
       showToast('Page not found');
@@ -173,32 +176,23 @@ function renderGrid(products) {
 
 /* =====================
    SEARCH FILTER (client-side)
+   Single shared #search-input lives in the header partial now —
+   no more desktop/mobile pair to keep in sync.
    ===================== */
 function initSearch(products) {
-  function doFilter(query) {
-    const q = query.toLowerCase().trim();
+  const el = document.getElementById('search-input');
+  if (!el) return;
+
+  el.addEventListener('input', () => {
+    const q = el.value.toLowerCase().trim();
     if (!q) { renderGrid(products); return; }
     renderGrid(products.filter(p => p.name.toLowerCase().includes(q)));
-  }
-
-  ['search-input', 'search-input-mobile'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', () => {
-      doFilter(el.value);
-      // Keep both inputs in sync
-      ['search-input', 'search-input-mobile'].forEach(other => {
-        if (other !== id) {
-          const o = document.getElementById(other);
-          if (o) o.value = el.value;
-        }
-      });
-    });
   });
 }
 
 /* =====================
    NEWSLETTER
+   Lives in the footer partial now — bind after partials:loaded.
    ===================== */
 function initNewsletter() {
   document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
@@ -219,20 +213,25 @@ function initNewsletter() {
 
 /* =====================
    INIT
+   Products load immediately (don't depend on header/footer).
+   Search/newsletter binding waits for partials:loaded since those
+   elements now live inside the injected header/footer.
    ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Show loading state
   const grid = document.getElementById('product-grid');
   if (grid) grid.innerHTML = '<p style="color:#B99CC8;padding:2rem;text-align:center">Loading products…</p>';
 
+  let products = [];
   try {
-    const products = await loadProducts();
+    products = await loadProducts();
     renderGrid(products);
-    initSearch(products);
   } catch (err) {
     console.error('productlist init error:', err);
     if (grid) grid.innerHTML = '<p style="color:#e05c5c;padding:2rem;text-align:center">Failed to load products.</p>';
   }
 
-  initNewsletter();
+  document.addEventListener('partials:loaded', () => {
+    initSearch(products);
+    initNewsletter();
+  });
 });

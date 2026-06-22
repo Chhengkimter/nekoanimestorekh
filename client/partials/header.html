@@ -1,0 +1,101 @@
+<!-- ============================================================
+     partials/header.html — single source of truth for the header.
+     Injected by js/partials.js into <div id="header-root"></div>
+
+     Replaces the old .desktop-header / .mobile-header split with one
+     markup block. Responsive behavior now lives entirely in
+     css/header.css — make sure every page links BOTH customer.css
+     AND header.css in its <head>. header.css reproduces the
+     original breakpoints from customer.css:
+       - >768px:  socials | logo+text | search + cart/user icons
+       - <=768px: cart/user icons with logo absolute-centered between
+                  them, search bar drops to its own full-width row.
+                  socials hidden (same as before).
+       - <=480px: same structure, smaller logo/icons, logo text hidden,
+                  search narrower.
+     ============================================================ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neko Animestore</title>
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+   <header class="header">
+        <div class="header-top">
+            <div class="container">
+                <!-- Desktop Layout -->
+                <div class="header-flex desktop-header">
+                    <!-- Social Icons (LEFT) -->
+                    <div class="header-socials">
+                        <a href="https://www.facebook.com/Nekoanimestore.kh" target="_blank" title="Facebook">
+                            <img src="https://i.pinimg.com/736x/7e/a3/bd/7ea3bd759d038651d0b9efa55d07bb8f.jpg" alt="Facebook">
+                        </a>
+                        <a href="https://www.instagram.com/nekoanimestore.kh/" target="_blank" title="Instagram">
+                            <img src="https://i.pinimg.com/736x/fc/49/56/fc4956e4c15da83905e7f1c2481e9b90.jpg" alt="Instagram">
+                        </a>
+                        <a href="https://www.tiktok.com/@nekoanimestore.kh" target="_blank" title="TikTok">
+                            <img src="https://i.pinimg.com/736x/b9/92/06/b99206653417284b71702a76774be1fc.jpg" alt="TikTok">
+                        </a>
+                    </div>
+
+                    <!-- Logo & Name (CENTER) -->
+                    <div class="logo-section">
+                        <a href="index.html">
+                            <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo" class="logo-img">
+                        </a>
+                        <span class="logo-text">Neko_Animestore</span>
+                    </div>
+
+                    <!-- Right Section: Search + Cart & User -->
+                    <div class="right-section">
+                        <!-- Search Bar -->
+                        <div class="search-box">
+                            <input type="text" placeholder="Search...">
+                        </div>
+
+                        <!-- Cart & User (RIGHT) -->
+                        <div class="header-icons">
+                            <a href="cart.html" class="icon-link" title="Cart">
+                                <img src="https://i.pinimg.com/736x/a8/55/11/a855111b1cef5fc7d045fdab7892fde2.jpg" alt="Cart" class="icon-img">
+                            </a>
+                            <a href="userpage.html" class="icon-link" title="User">
+                                <img src="https://i.pinimg.com/736x/09/9b/de/099bdea361336b894f410cdf67c777e4.jpg" alt="User" class="icon-img">
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Layout -->
+                <div class="mobile-header">
+                    <!-- Logo & Name (TOP CENTER) -->
+                    <div class="logo-section-mobile">
+                        <a href="#home">
+                            <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo" class="logo-img-mobile">
+                        </a>
+                        <span class="logo-text-mobile">Neko_Animestore</span>
+                    </div>
+
+                    <!-- Search Bar (MIDDLE) -->
+                    <div class="search-box-mobile">
+                        <input type="text" placeholder="Search...">
+                    </div>
+
+                    <!-- Cart (LEFT) & User (RIGHT) -->
+                    <div class="header-icons-mobile">
+                        <a href="#cart" class="icon-link" title="Cart">
+                            <img src="https://i.pinimg.com/736x/a8/55/11/a855111b1cef5fc7d045fdab7892fde2.jpg" alt="Cart" class="icon-img">
+                        </a>
+                        <a href="#user" class="icon-link" title="User">
+                            <img src="https://i.pinimg.com/736x/09/9b/de/099bdea361336b894f410cdf67c777e4.jpg" alt="User" class="icon-img">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+</body>
+</html>
