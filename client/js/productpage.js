@@ -433,7 +433,7 @@ function initWishlist() {
    a free-text selectedOption string
    ===================== */
 function initAddToCart() {
-  async function handleAddToCart() {
+  async function handleAddToCart(originEl) {
     if (!isLoggedIn()) {
       showToast('Please log in to add to cart');
       setTimeout(() => { window.location.href = '../pages/login.html'; }, 1500);
@@ -468,9 +468,13 @@ function initAddToCart() {
         return;
       }
 
+      if (typeof window.flyToCart === 'function') {
+        window.flyToCart(originEl);
+      }
+
       showToast(`Added ${quantity}× to cart 🛒`);
       if (typeof updateCartBadgeUI === 'function') {
-        updateCartBadgeUI(data.cartCount, true); // true = animate the bump
+        updateCartBadgeUI(data.cartCount, true);
       }
 
       const cartBadge = document.getElementById('cart-count');
@@ -482,8 +486,8 @@ function initAddToCart() {
     }
   }
 
-  document.getElementById('add-to-cart-btn')?.addEventListener('click', handleAddToCart);
-  document.getElementById('sticky-add-to-cart')?.addEventListener('click', handleAddToCart);
+  document.getElementById('add-to-cart-btn')?.addEventListener('click', (e) => handleAddToCart(e.currentTarget));
+  document.getElementById('sticky-add-to-cart')?.addEventListener('click', (e) => handleAddToCart(e.currentTarget));
 }
 
 /* =====================

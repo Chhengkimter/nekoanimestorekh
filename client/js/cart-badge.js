@@ -68,5 +68,65 @@ async function loadInitialCartCount() {
   }
 }
 
+/* =====================
+   FLY-TO-CART ANIMATION
+   Animates a small dot from the clicked element to whichever cart
+   icon is currently visible (desktop vs mobile header), then resolves.
+   Exposed as window.flyToCart so any page script can trigger it.
+   ===================== */
+function getVisibleCartIconEl() {
+  const candidates = document.querySelectorAll('.icon-link[title="Cart"]');
+  for (const el of candidates) {
+    // offsetParent is null when the element or an ancestor is display:none
+    if (el.offsetParent !== null) return el;
+  }
+  return candidates[0] || null;
+}
+
+function flyToCart(originEl) {
+  return new Promise(resolve => {
+    if (!originEl) { resolve(); return; }
+    const cartIcon = getVisibleCartIconEl();
+    if (!cartIcon) { resolve(); return; }
+
+    const startRect = originEl.getBoundingClientRect();
+    const endRect   = cartIcon.getBoundingClientRect();
+
+    const dot = document.createElement('div');
+    dot.className = 'fly-dot';
+    document.body.appendChild(dot);
+
+    const startX = startRect.left + startRect.width / 2 - 7;
+    const startY = startRect.top + startRect.height / 2 - 7;
+    const endX   = endRect.left + endRect.width / 2 - 7;
+    const endY   = endRect.top + endRect.height / 2 - 7;
+
+    // place at start, no transition yet
+    dot.style.transform = `translate3d(${startX}px, ${startY}px, 0) scale(1)`;
+    dot.style.opacity = '1';
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      dot.remove();
+      resolve();
+    };
+
+    requestAnimationFrame(() => {
+      dot.classList.add('flying'); // turns on the transition
+      requestAnimationFrame(() => {
+        dot.style.transform = `translate3d(${endX}px, ${endY}px, 0) scale(0.3)`;
+        dot.style.opacity = '0.4';
+      });
+    });
+
+    dot.addEventListener('transitionend', finish, { once: true });
+    setTimeout(finish, 900); // safety net in case transitionend never fires
+  });
+}
+
+window.flyToCart = flyToCart;
+
 // Runs as soon as this file loads, on every page that includes it
 whenCartBadgesReady(loadInitialCartCount);

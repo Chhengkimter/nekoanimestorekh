@@ -10,7 +10,6 @@
  *   POST   /api/auth/logout            — sign out
  */
 
-const API = 'http://localhost:3000/api';
 function getToken() { return localStorage.getItem('neko_token'); }
 
 /* ── STATE ───────────────────────────────────────────────── */
