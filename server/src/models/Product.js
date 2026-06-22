@@ -19,11 +19,6 @@ class Product {
       )`;
     }
 
-    if (promotion) {
-      params.push(promotion);
-      query += ` AND promotion = $${params.length}`;
-    }
-
     query += ` AND product_status != 'archived'`;
     params.push(limit);
     query += ` LIMIT $${params.length}`;

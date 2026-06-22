@@ -44,8 +44,6 @@ class PageController {
 
       if (page.filter_type === 'category') {
         products = await Product.findAll({ categoryId: page.filter_value });
-      } else if (page.filter_type === 'promotion') {
-        products = await Product.findAll({ promotion: page.filter_value });
       } else {
         // 'all' — no filter
         products = await Product.findAll({});
