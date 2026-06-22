@@ -189,55 +189,96 @@ class ProductController {
     }
   }
 
+  // ... your existing getAll, getOne, create, update, remove, addImage,
+  //     deleteImage handlers stay exactly as they are ...
+
+  // GET /api/products/:id/variants
+  static async getVariants(req, res) {
+    try {
+      const variants = await Product.getVariants(req.params.id);
+      res.json(variants);
+    } catch (err) {
+      console.error('getVariants error:', err);
+      res.status(500).json({ error: 'Failed to load variants' });
+    }
+  }
+
+  // POST /api/products/:id/variants
+  // body: { variantName, variantStock, variantSku, variantPrice }
+  // variantPrice is optional — omit or send null for "no override"
   static async addVariant(req, res) {
     try {
-      const { variantName, variantStock, variantSku } = req.body;
-      if (!variantName) return res.status(400).json({ error: 'Variant name required' });
+      const { variantName, variantStock, variantSku, variantPrice } = req.body;
+      if (!variantName) return res.status(400).json({ error: 'variantName is required' });
+
+      const priceVal = (variantPrice === '' || variantPrice === undefined) ? null : variantPrice;
+
       const variant = await Product.addVariant(
-        req.params.id, variantName, variantStock, variantSku
+        req.params.id, variantName, variantStock, variantSku, priceVal
       );
-      // Sync product_stock to sum of variants
+
+      // Keep product_stock in sync since variants drive total stock
       await Product.syncProductStockFromVariants(req.params.id);
+
       res.status(201).json(variant);
     } catch (err) {
-      console.error('addVariant error:', err.message);
+      console.error('addVariant error:', err);
       res.status(500).json({ error: 'Failed to add variant' });
     }
   }
 
+  // PUT /api/products/:id/variants/:variantId
+  // body: { variantStock?, variantName?, variantSku?, variantPrice?, clearPrice? }
+  // clearPrice: true resets variant_price to NULL (falls back to base price)
   static async updateVariant(req, res) {
     try {
-      const { variantStock, variantName, variantSku } = req.body;
-      const result = await Product.updateVariant(req.params.variantId, { variantStock, variantName, variantSku });
-      if (!result) return res.status(404).json({ error: 'Variant not found' });
+      const { variantStock, variantName, variantSku, variantPrice, clearPrice } = req.body;
+
+      const variant = await Product.updateVariant(req.params.variantId, {
+        variantStock, variantName, variantSku, variantPrice, clearPrice
+      });
+
+      if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
+      // Stock may have changed — resync product total
       await Product.syncProductStockFromVariants(req.params.id);
-      res.status(200).json(result);
+
+      res.json(variant);
     } catch (err) {
-      console.error('updateVariant error:', err.message);
+      console.error('updateVariant error:', err);
       res.status(500).json({ error: 'Failed to update variant' });
     }
   }
+
+  // DELETE /api/products/:id/variants/:variantId
   static async deleteVariant(req, res) {
     try {
-      const deleted = await Product.deleteVariant(req.params.variantId);
-      if (!deleted) return res.status(404).json({ error: 'Variant not found' });
+      const variant = await Product.deleteVariant(req.params.variantId);
+      if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
       await Product.syncProductStockFromVariants(req.params.id);
-      res.status(200).json({ message: 'Variant deleted' });
+
+      res.json({ deleted: true, variant });
     } catch (err) {
-      console.error('deleteVariant error:', err.message);
+      console.error('deleteVariant error:', err);
       res.status(500).json({ error: 'Failed to delete variant' });
     }
   }
 
+  // PUT /api/products/:id/variants  (bulk replace)
+  // body: { variants: [{ variantName, variantStock, variantSku, variantPrice }] }
   static async setVariants(req, res) {
     try {
       const { variants } = req.body;
-      if (!Array.isArray(variants)) return res.status(400).json({ error: 'variants must be array' });
+      if (!Array.isArray(variants)) return res.status(400).json({ error: 'variants must be an array' });
+
       await Product.setVariants(req.params.id, variants);
       await Product.syncProductStockFromVariants(req.params.id);
-      res.status(200).json({ message: 'Variants updated' });
+
+      const updated = await Product.getVariants(req.params.id);
+      res.json(updated);
     } catch (err) {
-      console.error('setVariants error:', err.message);
+      console.error('setVariants error:', err);
       res.status(500).json({ error: 'Failed to set variants' });
     }
   }

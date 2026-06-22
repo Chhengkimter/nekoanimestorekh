@@ -45,9 +45,9 @@ class Product {
     );
     product.images = imagesResult.rows;
 
-    // ← new
+    // variant_price included — NULL means "no override, use base product price"
     const variantsResult = await db.query(
-      `SELECT variant_id, variant_name, variant_stock, variant_sku, sort_order
+      `SELECT variant_id, variant_name, variant_stock, variant_sku, variant_price, sort_order
       FROM product_variants WHERE product_id = $1
       ORDER BY sort_order, variant_id`,
       [productId]
@@ -158,7 +158,7 @@ static async create({ productCode, productName, productDescription,
   // ─── Get all variants for a product ──────────────────────────
   static async getVariants(productId) {
     const result = await db.query(
-      `SELECT variant_id, variant_name, variant_stock, variant_sku, sort_order
+      `SELECT variant_id, variant_name, variant_stock, variant_sku, variant_price, sort_order
       FROM product_variants
       WHERE product_id = $1
       ORDER BY sort_order, variant_id`,
@@ -169,39 +169,44 @@ static async create({ productCode, productName, productDescription,
 
   // ─── Set variants (replaces all existing) ────────────────────
   static async setVariants(productId, variants) {
-    // variants: [{ variantName, variantStock, variantSku, sortOrder }]
+    // variants: [{ variantName, variantStock, variantSku, variantPrice, sortOrder }]
     await db.query(
       `DELETE FROM product_variants WHERE product_id = $1`,
       [productId]
     );
     for (let i = 0; i < variants.length; i++) {
       await db.query(
-        `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku, sort_order)
-        VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku, variant_price, sort_order)
+        VALUES ($1, $2, $3, $4, $5, $6)`,
         [productId, variants[i].variantName, variants[i].variantStock || 0,
-        variants[i].variantSku || null, i + 1]
+        variants[i].variantSku || null, variants[i].variantPrice ?? null, i + 1]
       );
     }
   }
 
   // ─── Update single variant fields ─────────────────────────────
-  static async updateVariant(variantId, { variantStock, variantName, variantSku }) {
+  // clearPrice: true explicitly resets variant_price back to NULL
+  // (so the variant falls back to base product price). Plain
+  // COALESCE can't express "set to NULL", hence the CASE branch.
+  static async updateVariant(variantId, { variantStock, variantName, variantSku, variantPrice, clearPrice }) {
     const result = await db.query(
       `UPDATE product_variants SET
         variant_stock = COALESCE($1, variant_stock),
         variant_name  = COALESCE($2, variant_name),
-        variant_sku   = COALESCE($3, variant_sku)
-      WHERE variant_id = $4 RETURNING *`,
-      [variantStock, variantName, variantSku, variantId]
+        variant_sku   = COALESCE($3, variant_sku),
+        variant_price = CASE WHEN $5 THEN NULL ELSE COALESCE($4, variant_price) END
+      WHERE variant_id = $6 RETURNING *`,
+      [variantStock, variantName, variantSku, variantPrice, !!clearPrice, variantId]
     );
     return result.rows[0];
   }
+
   // ─── Add single variant ───────────────────────────────────────
-  static async addVariant(productId, variantName, variantStock, variantSku) {
+  static async addVariant(productId, variantName, variantStock, variantSku, variantPrice = null) {
     const result = await db.query(
-      `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku)
-      VALUES ($1, $2, $3, $4) RETURNING *`,
-      [productId, variantName, variantStock || 0, variantSku || null]
+      `INSERT INTO product_variants (product_id, variant_name, variant_stock, variant_sku, variant_price)
+      VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [productId, variantName, variantStock || 0, variantSku || null, variantPrice]
     );
     return result.rows[0];
   }

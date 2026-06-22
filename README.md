@@ -55,3 +55,4 @@ add wishlist to userpage
 
 clicking on product in cart will take customer to that product page
 
+get cart-badge working on every pages and mobile.

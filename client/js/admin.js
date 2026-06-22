@@ -376,6 +376,10 @@ function renderInvRow(p) {
     </div>`;
 }
 
+// ─── Replace these functions in admin.js with the versions below ──
+// renderVariantEditor, renderVariantRow, addVariant, setVariantStock (unchanged but
+// kept for reference), plus NEW: setVariantPrice, clearVariantPrice
+
 function renderVariantEditor(p) {
   const variants = p.variants || [];
   const isPreorder = p.stockStatus === 'preorder';
@@ -391,6 +395,9 @@ function renderVariantEditor(p) {
         <span>Variants for <strong>${p.name}</strong>${isPreorder ? ' <span class="badge badge-amber" style="margin-left:6px">Pre-order — labels only</span>' : ''}</span>
         ${totalLine}
       </div>
+      <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin:4px 0 10px">
+        Base product price: $${Number(p.price).toFixed(2)} — leave a variant's price blank to use this base price.
+      </p>
 
       ${variants.length === 0
         ? `<p style="font-size:12px;color:var(--muted);padding:12px 0">No variants yet. Add one below.</p>`
@@ -407,6 +414,9 @@ function renderVariantEditor(p) {
         <input type="number" id="new-variant-stock-${p.id}"
                placeholder="Stock" min="0"
                class="inv-qty-input" style="width:72px">`}
+        <input type="number" id="new-variant-price-${p.id}"
+               placeholder="Price (optional)" min="0" step="0.01"
+               class="search-input" style="width:120px">
         <input type="text" id="new-variant-sku-${p.id}"
                placeholder="SKU (optional)"
                class="search-input" style="width:110px">
@@ -417,11 +427,25 @@ function renderVariantEditor(p) {
 }
 
 function renderVariantRow(productLocalId, productDbId, v, isPreorder) {
+  const priceHtml = v.variant_price != null
+    ? `<input class="inv-qty-input" type="number" min="0" step="0.01" value="${v.variant_price}"
+         style="width:80px"
+         id="variant-price-input-${v.variant_id}"
+         onchange="setVariantPrice('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">
+       <button class="action-btn" style="font-size:10px"
+               title="Clear override — fall back to base price"
+               onclick="clearVariantPrice('${productLocalId}', ${productDbId}, ${v.variant_id})">↺</button>`
+    : `<input class="inv-qty-input" type="number" min="0" step="0.01" placeholder="base"
+         style="width:80px"
+         id="variant-price-input-${v.variant_id}"
+         onchange="setVariantPrice('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">`;
+
   if (isPreorder) {
     return `
       <div class="variant-row" id="variant-row-${v.variant_id}">
         <div style="flex:1;font-size:13px;font-weight:600">${v.variant_name}</div>
         ${v.variant_sku ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${v.variant_sku}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:4px">${priceHtml}</div>
         <button class="action-btn del" style="font-size:10px"
                 onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
       </div>`;
@@ -438,6 +462,7 @@ function renderVariantRow(productLocalId, productDbId, v, isPreorder) {
                onchange="setVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">
         <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, 1)">+</button>
       </div>
+      <div style="display:flex;align-items:center;gap:4px">${priceHtml}</div>
       <span class="badge ${v.variant_stock === 0 ? 'badge-red' : v.variant_stock <= 3 ? 'badge-amber' : 'badge-green'}"
             id="variant-badge-${v.variant_id}">
         ${v.variant_stock === 0 ? 'Out' : v.variant_stock <= 3 ? 'Low' : 'OK'}
@@ -445,6 +470,64 @@ function renderVariantRow(productLocalId, productDbId, v, isPreorder) {
       <button class="action-btn del" style="font-size:10px"
               onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
     </div>`;
+}
+
+async function addVariant(productLocalId, productDbId, isPreorder) {
+  const nameEl  = document.getElementById(`new-variant-name-${productLocalId}`);
+  const stockEl = document.getElementById(`new-variant-stock-${productLocalId}`);
+  const priceEl = document.getElementById(`new-variant-price-${productLocalId}`);
+  const skuEl   = document.getElementById(`new-variant-sku-${productLocalId}`);
+
+  const variantName  = nameEl.value.trim();
+  const variantStock = isPreorder ? 0 : (parseInt(stockEl?.value) || 0);
+  const priceRaw     = priceEl.value.trim();
+  const variantPrice = priceRaw === '' ? null : parseFloat(priceRaw);
+  const variantSku   = skuEl.value.trim() || null;
+
+  if (!variantName) { toast('Enter a variant name', true); return; }
+  if (priceRaw !== '' && (isNaN(variantPrice) || variantPrice < 0)) {
+    toast('Invalid price', true); return;
+  }
+
+  const res = await apiFetch(`/products/${productDbId}/variants`, {
+    method: 'POST',
+    body: JSON.stringify({ variantName, variantStock, variantSku, variantPrice })
+  });
+  if (!res.ok) { toast('Failed to add variant', true); return; }
+
+  nameEl.value = ''; if (stockEl) stockEl.value = ''; priceEl.value = ''; skuEl.value = '';
+  toast(`Variant "${variantName}" added ✓`);
+  await reloadVariants(productLocalId, productDbId);
+}
+
+// NEW: set an absolute price override on a variant
+async function setVariantPrice(productLocalId, productDbId, variantId, val) {
+  const raw = String(val).trim();
+  if (raw === '') {
+    await clearVariantPrice(productLocalId, productDbId, variantId);
+    return;
+  }
+  const price = parseFloat(raw);
+  if (isNaN(price) || price < 0) { toast('Invalid price', true); return; }
+
+  const res = await apiFetch(`/products/${productDbId}/variants/${variantId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ variantPrice: price })
+  });
+  if (!res.ok) { toast('Failed to update price', true); return; }
+  toast('Variant price updated ✓');
+  await reloadVariants(productLocalId, productDbId);
+}
+
+// NEW: reset a variant back to "no override" (falls back to base product price)
+async function clearVariantPrice(productLocalId, productDbId, variantId) {
+  const res = await apiFetch(`/products/${productDbId}/variants/${variantId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ clearPrice: true })
+  });
+  if (!res.ok) { toast('Failed to clear price', true); return; }
+  toast('Variant price reset to base ✓');
+  await reloadVariants(productLocalId, productDbId);
 }
 
 async function toggleVariantEditor(productLocalId, productDbId) {
@@ -467,28 +550,6 @@ async function toggleVariantEditor(productLocalId, productDbId) {
   renderInventory();
 }
 
-async function addVariant(productLocalId, productDbId, isPreorder) {
-  const nameEl  = document.getElementById(`new-variant-name-${productLocalId}`);
-  const stockEl = document.getElementById(`new-variant-stock-${productLocalId}`);
-  const skuEl   = document.getElementById(`new-variant-sku-${productLocalId}`);
-
-  const variantName  = nameEl.value.trim();
-  const variantStock = isPreorder ? 0 : (parseInt(stockEl?.value) || 0);
-  const variantSku   = skuEl.value.trim() || null;
-
-  if (!variantName) { toast('Enter a variant name', true); return; }
-
-  const res = await apiFetch(`/products/${productDbId}/variants`, {
-    method: 'POST',
-    body: JSON.stringify({ variantName, variantStock, variantSku })
-  });
-  if (!res.ok) { toast('Failed to add variant', true); return; }
-
-  nameEl.value = ''; if (stockEl) stockEl.value = ''; skuEl.value = '';
-  toast(`Variant "${variantName}" added ✓`);
-  await reloadVariants(productLocalId, productDbId);
-}
-
 async function deleteVariant(productLocalId, productDbId, variantId) {
   if (!confirm('Delete this variant?')) return;
   const res = await apiFetch(`/products/${productDbId}/variants/${variantId}`, {
@@ -497,18 +558,6 @@ async function deleteVariant(productLocalId, productDbId, variantId) {
   if (!res.ok) { toast('Failed to delete variant', true); return; }
   toast('Variant deleted');
   await reloadVariants(productLocalId, productDbId);
-}
-
-async function setVariantStock(productLocalId, productDbId, variantId, val) {
-  const n = parseInt(val);
-  const stock = isNaN(n) || n < 0 ? 0 : n;
-  const res = await apiFetch(`/products/${productDbId}/variants/${variantId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ variantStock: stock })
-  });
-  if (!res.ok) { toast('Failed to update stock', true); return; }
-  await reloadVariants(productLocalId, productDbId);
-  renderStats();
 }
 
 async function adjustVariantStock(productLocalId, productDbId, variantId, delta) {

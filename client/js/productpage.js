@@ -1,18 +1,20 @@
 /* =======================================================================
    productpage.js  —  wired to real backend API
    Reads ?id= from URL → fetches product → populates page
+   Variants now carry their own optional price override.
+   Wishlist now hits real /api/wishlist endpoints.
    ======================================================================= */
 
-const API = 'http://localhost:3000/api';
+const PRODUCT_API = 'http://localhost:3000/api';
 
 /* =====================
    STATE
    ===================== */
-let currentProduct  = null;
-let quantity        = 1;
-let selectedOption  = null;
-let isWishlisted    = false;
-const cardWishlist  = {};
+let currentProduct   = null;
+let quantity          = 1;
+let selectedVariant   = null;   // full variant object, not just a name
+let isWishlisted      = false;
+const cardWishlist    = {};
 
 /* =====================
    GET TOKEN (from auth.js helpers — same file loaded on page)
@@ -56,10 +58,46 @@ function syncWishlist() {
 }
 
 /* =====================
+   PRICE RESOLUTION
+   A variant with a non-null variant_price is an absolute override —
+   it replaces the base price entirely and skips the discount math,
+   since an admin who hand-set a variant price already decided what
+   it should cost. No variant, or variant_price = null → fall back to
+   the product's own sale_price / product_price (discount-aware).
+   ===================== */
+function resolveDisplayPrice() {
+  if (selectedVariant && selectedVariant.variant_price != null) {
+    return { price: parseFloat(selectedVariant.variant_price), origPrice: null };
+  }
+  const p = currentProduct;
+  const price     = parseFloat(p.sale_price || p.product_price);
+  const origPrice = p.original_price ? parseFloat(p.original_price) : null;
+  return { price, origPrice: (origPrice && origPrice > price) ? origPrice : null };
+}
+
+function updatePriceDisplay() {
+  const { price, origPrice } = resolveDisplayPrice();
+  const total = price * quantity;
+
+  // Main price area shows the qty × price total, not the per-unit price.
+  // origPrice is multiplied too so the strike-through "was" price stays
+  // an apples-to-apples comparison against the multiplied total.
+  const priceEl = document.getElementById('product-price');
+  if (priceEl) {
+    priceEl.innerHTML = origPrice
+      ? `<span style="text-decoration:line-through;color:#999;font-size:14px">${formatPrice(origPrice * quantity)}</span>
+         <span style="color:#e05c5c;font-weight:700">${formatPrice(total)}</span>`
+      : formatPrice(total);
+  }
+
+  const stickyPrice = document.getElementById('sticky-price');
+  if (stickyPrice) stickyPrice.textContent = formatPrice(total);
+}
+
+/* =====================
    LOAD PRODUCT FROM API
    ===================== */
 async function loadProduct() {
-  // Get ?id= from URL
   const params    = new URLSearchParams(window.location.search);
   const productId = params.get('id');
 
@@ -69,12 +107,13 @@ async function loadProduct() {
   }
 
   try {
-    const res  = await fetch(`${API}/products/${productId}`);
+    const res  = await fetch(`${PRODUCT_API}/products/${productId}`);
     if (!res.ok) { showToast('Product not found'); return; }
     const data = await res.json();
     currentProduct = data;
     populatePage(data);
     loadSimilarProducts(data);
+    await loadWishlistStatus(data.product_id);
   } catch (err) {
     showToast('Failed to load product');
     console.error(err);
@@ -91,25 +130,6 @@ function populatePage(p) {
   // Name
   const nameEl = document.getElementById('product-name');
   if (nameEl) nameEl.textContent = p.product_name;
-
-  // Price (show sale price if discounted)
-  const price     = parseFloat(p.sale_price || p.product_price);
-  const origPrice = p.original_price ? parseFloat(p.original_price) : null;
-
-  const priceEl = document.getElementById('product-price');
-  if (priceEl) {
-    if (origPrice && origPrice > price) {
-      priceEl.innerHTML = `
-        <span style="text-decoration:line-through;color:#999;font-size:14px">${formatPrice(origPrice)}</span>
-        <span style="color:#e05c5c;font-weight:700">${formatPrice(price)}</span>`;
-    } else {
-      priceEl.textContent = formatPrice(price);
-    }
-  }
-
-  // Sticky price
-  const stickyPrice = document.getElementById('sticky-price');
-  if (stickyPrice) stickyPrice.textContent = formatPrice(price);
 
   // Description
   const descEl = document.getElementById('product-description');
@@ -129,48 +149,72 @@ function populatePage(p) {
     const dotsEl = document.querySelector('.img-dots');
     if (dotsEl) {
       dotsEl.innerHTML = p.images.map((img, i) =>
-        `<span class="dot ${i === 0 ? 'active' : ''}" data-index="${i}" 
+        `<span class="dot ${i === 0 ? 'active' : ''}" data-index="${i}"
          style="cursor:pointer" onclick="switchImage('${img.image_url}', ${i})"></span>`
       ).join('');
     }
   }
 
-  // Options
+  // Variants — real data from product_variants, each optionally carrying
+  // its own variant_price. Replaces the old fake "options" rendering.
   const optGrid = document.getElementById('options-grid');
   if (optGrid) {
-    if (p.options && p.options.length > 0) {
-      optGrid.innerHTML = p.options.map((opt, i) =>
-        `<button class="option-btn ${i === 0 ? 'active' : ''}" 
-         data-option="${opt.option_name}">${opt.option_name}</button>`
+    if (p.variants && p.variants.length > 0) {
+      optGrid.innerHTML = p.variants.map((v, i) =>
+        `<button class="option-btn ${i === 0 ? 'active' : ''}"
+         data-variant-id="${v.variant_id}">${v.variant_name}</button>`
       ).join('');
-      selectedOption = p.options[0].option_name;
-      initOptions();
+      selectedVariant = p.variants[0];
+      initVariants();
     } else {
-      // No options — hide the options section
-      optGrid.closest('.product-options')?.style && (optGrid.closest('.product-options').style.display = 'none');
-      selectedOption = null;
+      // No variants — hide the options section entirely
+      const wrapper = optGrid.closest('.product-options');
+      if (wrapper) wrapper.style.display = 'none';
+      selectedVariant = null;
     }
   }
 
-  // Stock status badge
+  updatePriceDisplay();
+  updateStockUI();
+}
+
+/* =====================
+   STOCK UI
+   Stock now depends on which variant is selected (if any) — a variant
+   out of stock should disable add-to-cart even if the product overall
+   has stock in other variants.
+   ===================== */
+function updateStockUI() {
+  const nameEl = document.getElementById('product-name');
+  // Clear any previously appended badge before re-adding
+  document.querySelectorAll('.stock-badge-injected').forEach(el => el.remove());
+  ['add-to-cart-btn', 'sticky-add-to-cart'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.disabled = false; btn.textContent = 'Add to cart'; }
+  });
+
+  const p = currentProduct;
   const stockBadge = document.createElement('span');
+  stockBadge.className = 'stock-badge-injected';
   stockBadge.style.cssText = 'font-size:12px;padding:3px 10px;border-radius:20px;margin-left:8px;font-weight:600';
+
+  const effectiveStock = selectedVariant ? selectedVariant.variant_stock : p.product_stock;
+
   if (p.stock_status === 'preorder') {
     stockBadge.textContent = 'Pre-order';
     stockBadge.style.background = '#fff3cd';
     stockBadge.style.color = '#856404';
-  } else if (p.product_stock === 0) {
+  } else if (effectiveStock === 0) {
     stockBadge.textContent = 'Out of stock';
     stockBadge.style.background = '#f8d7da';
     stockBadge.style.color = '#721c24';
-    // Disable add to cart
-    ['add-to-cart-btn','sticky-add-to-cart'].forEach(id => {
+    ['add-to-cart-btn', 'sticky-add-to-cart'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) { btn.disabled = true; btn.textContent = 'Out of stock'; }
     });
   }
-  const nameEl2 = document.getElementById('product-name');
-  if (nameEl2 && stockBadge.textContent) nameEl2.appendChild(stockBadge);
+
+  if (nameEl && stockBadge.textContent) nameEl.appendChild(stockBadge);
 }
 
 /* =====================
@@ -192,13 +236,12 @@ async function loadSimilarProducts(p) {
   try {
     const category = p.categories ? p.categories.split(', ')[0] : null;
     const url      = category
-      ? `${API}/products?search=&limit=8`
-      : `${API}/products?limit=8`;
+      ? `${PRODUCT_API}/products?search=&limit=8`
+      : `${PRODUCT_API}/products?limit=8`;
 
     const res  = await fetch(url);
     const data = await res.json();
 
-    // Exclude current product
     const similar = data
       .filter(item => item.product_id !== p.product_id)
       .slice(0, 8)
@@ -252,22 +295,45 @@ function renderSimilarProducts(similarProducts) {
     });
   });
 
-  // Wishlist buttons on similar cards
+  // Wishlist buttons on similar cards — wired to real API now
   grid.querySelectorAll('.card-wishlist').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
+      if (!isLoggedIn()) {
+        showToast('Please log in to save wishlists');
+        setTimeout(() => { window.location.href = '../pages/login.html'; }, 1500);
+        return;
+      }
       const id = btn.dataset.id;
-      cardWishlist[id] = !cardWishlist[id];
-      btn.classList.toggle('active', cardWishlist[id]);
-      showToast(cardWishlist[id] ? 'Added to wishlist ❤️' : 'Removed from wishlist');
+      try {
+        const res = await fetch(`${PRODUCT_API}/wishlist/toggle`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({ productId: id })
+        });
+        if (!res.ok) { showToast('Failed to update wishlist'); return; }
+        const data = await res.json();
+        cardWishlist[id] = data.wishlisted;
+        btn.classList.toggle('active', data.wishlisted);
+        showToast(data.wishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
+      } catch (err) {
+        showToast('Network error. Please try again.');
+        console.error(err);
+      }
     });
   });
 }
 
 /* =====================
-   OPTION BUTTONS
+   VARIANT BUTTONS
+   Switching variant updates: active state, displayed price, and
+   stock/out-of-stock UI — since stock and price can both be
+   variant-specific now.
    ===================== */
-function initOptions() {
+function initVariants() {
   const grid = document.getElementById('options-grid');
   if (!grid) return;
 
@@ -275,7 +341,18 @@ function initOptions() {
     btn.addEventListener('click', () => {
       grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      selectedOption = btn.dataset.option;
+
+      const variantId = btn.dataset.variantId;
+      selectedVariant = currentProduct.variants.find(
+        v => String(v.variant_id) === String(variantId)
+      ) || null;
+
+      // Reset quantity to 1 whenever the variant changes
+      quantity = 1;
+      syncQuantity();
+
+      updatePriceDisplay();
+      updateStockUI();
     });
   });
 }
@@ -285,22 +362,37 @@ function initOptions() {
    ===================== */
 function initQuantityControls() {
   document.getElementById('qty-minus')?.addEventListener('click', () => {
-    if (quantity > 1) { quantity--; syncQuantity(); }
+    if (quantity > 1) { quantity--; syncQuantity(); updatePriceDisplay(); }
   });
   document.getElementById('qty-plus')?.addEventListener('click', () => {
-    quantity++; syncQuantity();
+    quantity++; syncQuantity(); updatePriceDisplay();
   });
   document.getElementById('sticky-minus')?.addEventListener('click', () => {
-    if (quantity > 1) { quantity--; syncQuantity(); }
+    if (quantity > 1) { quantity--; syncQuantity(); updatePriceDisplay(); }
   });
   document.getElementById('sticky-plus')?.addEventListener('click', () => {
-    quantity++; syncQuantity();
+    quantity++; syncQuantity(); updatePriceDisplay();
   });
 }
 
 /* =====================
-   WISHLIST
+   WISHLIST — now wired to real backend
    ===================== */
+async function loadWishlistStatus(productId) {
+  if (!isLoggedIn()) { isWishlisted = false; syncWishlist(); return; }
+  try {
+    const res = await fetch(`${PRODUCT_API}/wishlist/ids`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!res.ok) return;
+    const ids = await res.json();
+    isWishlisted = ids.includes(productId);
+    syncWishlist();
+  } catch (err) {
+    console.error('Failed to load wishlist status:', err);
+  }
+}
+
 function initWishlist() {
   async function toggleWishlist() {
     if (!isLoggedIn()) {
@@ -308,10 +400,28 @@ function initWishlist() {
       setTimeout(() => { window.location.href = '../pages/login.html'; }, 1500);
       return;
     }
-    isWishlisted = !isWishlisted;
-    syncWishlist();
-    showToast(isWishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
-    // TODO: wire to /api/wishlist when endpoint is built
+    if (!currentProduct) return;
+
+    try {
+      const res = await fetch(`${PRODUCT_API}/wishlist/toggle`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ productId: currentProduct.product_id })
+      });
+
+      if (!res.ok) { showToast('Failed to update wishlist'); return; }
+
+      const data = await res.json();
+      isWishlisted = data.wishlisted;
+      syncWishlist();
+      showToast(isWishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
+    } catch (err) {
+      showToast('Network error. Please try again.');
+      console.error(err);
+    }
   }
 
   document.getElementById('wishlist-btn')?.addEventListener('click', toggleWishlist);
@@ -319,7 +429,8 @@ function initWishlist() {
 }
 
 /* =====================
-   ADD TO CART — wired to real API
+   ADD TO CART — wired to real API, now sends variantId instead of
+   a free-text selectedOption string
    ===================== */
 function initAddToCart() {
   async function handleAddToCart() {
@@ -331,22 +442,21 @@ function initAddToCart() {
 
     if (!currentProduct) return;
 
-    // Check if product has options but none selected
-    if (currentProduct.options?.length > 0 && !selectedOption) {
+    if (currentProduct.variants?.length > 0 && !selectedVariant) {
       showToast('Please select an option');
       return;
     }
 
     try {
-      const res = await fetch(`${API}/cart/add`, {
+      const res = await fetch(`${PRODUCT_API}/cart/add`, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({
-          productId:      currentProduct.product_id,
-          selectedOption: selectedOption || null,
+          productId: currentProduct.product_id,
+          variantId: selectedVariant ? selectedVariant.variant_id : null,
           quantity
         })
       });
@@ -359,8 +469,10 @@ function initAddToCart() {
       }
 
       showToast(`Added ${quantity}× to cart 🛒`);
+      if (typeof updateCartBadgeUI === 'function') {
+        updateCartBadgeUI(data.cartCount, true); // true = animate the bump
+      }
 
-      // Update cart count badge if it exists in header
       const cartBadge = document.getElementById('cart-count');
       if (cartBadge) cartBadge.textContent = data.cartCount;
 
@@ -384,7 +496,7 @@ function initNewsletter() {
     if (!input?.value) return;
 
     try {
-      await fetch(`${API}/newsletter`, {
+      await fetch(`${PRODUCT_API}/newsletter`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email: input.value })
@@ -400,7 +512,7 @@ function initNewsletter() {
    INIT
    ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadProduct();       // ← fetch real product first
+  await loadProduct();
   initQuantityControls();
   initWishlist();
   initAddToCart();

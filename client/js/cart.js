@@ -194,6 +194,12 @@ function render() {
 
     renderSummary();
     updateAddressBtn();
+
+    // Sync the header badge whenever the cart re-renders
+    const totalQty = cartItems.reduce((s, i) => s + i.qty, 0);
+    if (typeof updateCartBadgeUI === 'function') {
+    updateCartBadgeUI(totalQty);
+    }
 }
 
 function updateToggleLabel(btn, noteText, noteArea) {
