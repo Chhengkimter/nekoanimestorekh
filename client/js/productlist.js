@@ -1,21 +1,8 @@
 /* =======================================================================
    productlist.js — shared logic for ALL product listing pages
-   Handles:
-     - window.PAGE_FILTER = { slug: 'genshin' }        → collection page
-     - window.PAGE_FILTER = { promotion: 'discount' }  → promotion filter
-     - window.PAGE_FILTER = { categoryId: 3 }          → category filter
-     - window.PAGE_FILTER = {}                          → all products
-
-   NOTE: depends on partials.js being loaded first (provides the shared
-   header with #search-input, and fires 'partials:loaded').
    ======================================================================= */
 
 const PRODUCTLIST_API = 'http://localhost:3000/api';
-
-/* =====================
-   WISHLIST STATE
-   ===================== */
-const wishlistState = {};
 
 /* =====================
    HELPERS
@@ -51,18 +38,11 @@ function mapProduct(p) {
 async function loadProducts() {
   const filter = window.PAGE_FILTER || {};
 
-  // ── Slug-based collection page ──────────────────────────────
   if (filter.slug) {
     const res = await fetch(`${PRODUCTLIST_API}/pages/${filter.slug}`);
-
-    if (!res.ok) {
-      showToast('Page not found');
-      return [];
-    }
-
+    if (!res.ok) { showToast('Page not found'); return []; }
     const data = await res.json();
 
-    // Populate banner if elements exist on page
     const bannerImg   = document.getElementById('collection-banner-img');
     const bannerTitle = document.getElementById('collection-banner-title');
     const bannerWrap  = document.getElementById('collection-banner');
@@ -73,14 +53,11 @@ async function loadProducts() {
     }
     if (bannerTitle) bannerTitle.textContent = data.page.title;
     if (!data.page.banner_url && bannerWrap) bannerWrap.style.display = 'none';
-
-    // Set page title
     document.title = `${data.page.title} — Neko Animestore`;
 
     return (data.products || []).map(mapProduct);
   }
 
-  // ── Direct filter (promotion / category / all) ───────────────
   const params = new URLSearchParams();
   if (filter.promotion)  params.append('promotion', filter.promotion);
   if (filter.categoryId) params.append('category',  filter.categoryId);
@@ -95,21 +72,18 @@ async function loadProducts() {
    BUILD PRODUCT CARD
    ===================== */
 function buildCard(product) {
+  // ← single declaration, uses shared wishlistState from partials.js
+  const wishlisted = window.isWishlistedById(product.id);
+
   const div = document.createElement('div');
   div.className  = 'product-card';
   div.dataset.id = product.id;
 
-  const wishlisted = !!wishlistState[product.id];
-
-  // Discount badge
   const discountBadge = product.originalPrice && product.originalPrice > product.price
-    ? `<span class="card-badge">SALE</span>`
-    : '';
+    ? `<span class="card-badge">SALE</span>` : '';
 
-  // Promotion badge
   const promoBadge = product.promotion && product.promotion !== 'discount'
-    ? `<span class="card-badge promo">${product.promotion.replace('_', ' ')}</span>`
-    : '';
+    ? `<span class="card-badge promo">${product.promotion.replace('_', ' ')}</span>` : '';
 
   div.innerHTML = `
     <div class="card-img-wrapper">
@@ -136,20 +110,24 @@ function buildCard(product) {
     </div>
   `;
 
-  // Navigate to product page
   div.addEventListener('click', (e) => {
     if (e.target.closest('.card-wishlist')) return;
     window.location.href = `productpage.html?id=${product.id}`;
   });
 
-  // Wishlist toggle
-  div.querySelector('.card-wishlist').addEventListener('click', (e) => {
+  // ← single click handler, uses shared toggleWishlistItem from partials.js
+  div.querySelector('.card-wishlist').addEventListener('click', async (e) => {
     e.stopPropagation();
-    wishlistState[product.id] = !wishlistState[product.id];
+    if (!localStorage.getItem('neko_token')) {
+      showToast('Please log in to save wishlists');
+      return;
+    }
+    const data = await window.toggleWishlistItem(product.id);
+    if (!data) { showToast('Failed to update wishlist'); return; }
     const btn = div.querySelector('.card-wishlist');
-    btn.classList.toggle('active', wishlistState[product.id]);
-    btn.title = wishlistState[product.id] ? 'Remove from wishlist' : 'Add to wishlist';
-    showToast(wishlistState[product.id] ? 'Added to wishlist ❤️' : 'Removed from wishlist');
+    btn.classList.toggle('active', data.wishlisted);
+    btn.title = data.wishlisted ? 'Remove from wishlist' : 'Add to wishlist';
+    showToast(data.wishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
   });
 
   return div;
@@ -175,14 +153,11 @@ function renderGrid(products) {
 }
 
 /* =====================
-   SEARCH FILTER (client-side)
-   Single shared #search-input lives in the header partial now —
-   no more desktop/mobile pair to keep in sync.
+   SEARCH FILTER
    ===================== */
 function initSearch(products) {
   const el = document.getElementById('search-input');
   if (!el) return;
-
   el.addEventListener('input', () => {
     const q = el.value.toLowerCase().trim();
     if (!q) { renderGrid(products); return; }
@@ -192,7 +167,6 @@ function initSearch(products) {
 
 /* =====================
    NEWSLETTER
-   Lives in the footer partial now — bind after partials:loaded.
    ===================== */
 function initNewsletter() {
   document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
@@ -213,9 +187,6 @@ function initNewsletter() {
 
 /* =====================
    INIT
-   Products load immediately (don't depend on header/footer).
-   Search/newsletter binding waits for partials:loaded since those
-   elements now live inside the injected header/footer.
    ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('product-grid');
@@ -223,6 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let products = [];
   try {
+    await window.loadWishlistIds();   // ← load first, then render cards with correct state
     products = await loadProducts();
     renderGrid(products);
   } catch (err) {

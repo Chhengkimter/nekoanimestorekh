@@ -81,3 +81,52 @@ const PARTIALS_API = 'http://localhost:3000/api';
     init();
   }
 })();
+
+/* =======================================================================
+   WISHLIST HELPERS — shared across all pages
+   ======================================================================= */
+
+const WISHLIST_API = 'http://localhost:3000/api';
+
+window.wishlistState = {};
+
+window.loadWishlistIds = async function () {
+  const token = localStorage.getItem('neko_token');
+  if (!token) return;
+  try {
+    const res = await fetch(`${WISHLIST_API}/wishlist/ids`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const ids = await res.json();
+    ids.forEach(id => { window.wishlistState[Number(id)] = true; });
+  } catch (err) {
+    console.error('Failed to load wishlist ids:', err);
+  }
+};
+
+window.toggleWishlistItem = async function (productId) {
+  const token = localStorage.getItem('neko_token');
+  if (!token) return null;
+  try {
+    const res = await fetch(`${WISHLIST_API}/wishlist/toggle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ productId })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    window.wishlistState[Number(productId)] = data.wishlisted;
+    return data;
+  } catch (err) {
+    console.error('Wishlist toggle error:', err);
+    return null;
+  }
+};
+
+window.isWishlistedById = function (productId) {
+  return !!window.wishlistState[Number(productId)];
+};

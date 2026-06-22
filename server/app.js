@@ -21,7 +21,8 @@ app.use('/api/products', require('./src/routes/productRoutes'));
 app.use('/api/cart',     require('./src/routes/cartRoutes'));
 app.use('/api/orders',   require('./src/routes/orderRoutes'));
 app.use('/api/admin',    require('./src/routes/adminRoutes'));
-app.use('/api/users',    require('./src/routes/userRoutes'));  // ← correct path
+app.use('/api/users',    require('./src/routes/userRoutes')); 
+app.use('/api/wishlist', require('./src/routes/wishlistRoutes'));
 
 // ─── Newsletter ───────────────────────────────────────────────
 app.post('/api/newsletter', async (req, res) => {

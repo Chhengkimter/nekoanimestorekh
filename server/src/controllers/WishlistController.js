@@ -31,7 +31,7 @@ class WishlistController {
   // POST /api/wishlist/toggle  { productId }
   static async toggle(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { productId } = req.body;
       if (!productId) return res.status(400).json({ error: 'productId is required' });
 

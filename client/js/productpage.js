@@ -270,6 +270,7 @@ function renderSimilarProducts(similarProducts) {
     return;
   }
 
+  // ← also mark already-wishlisted cards on render
   grid.innerHTML = similarProducts.map(p => `
     <div class="product-card" data-id="${p.id}" style="cursor:pointer">
       <div class="card-img-wrapper">
@@ -279,7 +280,8 @@ function renderSimilarProducts(similarProducts) {
         <p class="card-name">${p.name}</p>
         <div class="card-bottom">
           <span class="card-price">${formatPrice(p.price)}</span>
-          <button class="card-wishlist" data-id="${p.id}" title="Add to Wishlist">
+          <button class="card-wishlist ${window.isWishlistedById(p.id) ? 'active' : ''}"
+            data-id="${p.id}" title="Add to Wishlist">
             <i></i>
           </button>
         </div>
@@ -287,7 +289,7 @@ function renderSimilarProducts(similarProducts) {
     </div>
   `).join('');
 
-  // Navigate to product page on card click
+  // Navigate on card click
   grid.querySelectorAll('.product-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (e.target.closest('.card-wishlist')) return;
@@ -295,34 +297,20 @@ function renderSimilarProducts(similarProducts) {
     });
   });
 
-  // Wishlist buttons on similar cards — wired to real API now
+  // Wishlist buttons — single clean handler
   grid.querySelectorAll('.card-wishlist').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!isLoggedIn()) {
+      if (!localStorage.getItem('neko_token')) {
         showToast('Please log in to save wishlists');
         setTimeout(() => { window.location.href = '../pages/login.html'; }, 1500);
         return;
       }
-      const id = btn.dataset.id;
-      try {
-        const res = await fetch(`${PRODUCT_API}/wishlist/toggle`, {
-          method:  'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${getToken()}`
-          },
-          body: JSON.stringify({ productId: id })
-        });
-        if (!res.ok) { showToast('Failed to update wishlist'); return; }
-        const data = await res.json();
-        cardWishlist[id] = data.wishlisted;
-        btn.classList.toggle('active', data.wishlisted);
-        showToast(data.wishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
-      } catch (err) {
-        showToast('Network error. Please try again.');
-        console.error(err);
-      }
+      const id = btn.dataset.id;   // ← get id from the btn itself
+      const data = await window.toggleWishlistItem(id);
+      if (!data) { showToast('Failed to update wishlist'); return; }
+      btn.classList.toggle('active', data.wishlisted);
+      showToast(data.wishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
     });
   });
 }
@@ -379,18 +367,9 @@ function initQuantityControls() {
    WISHLIST — now wired to real backend
    ===================== */
 async function loadWishlistStatus(productId) {
-  if (!isLoggedIn()) { isWishlisted = false; syncWishlist(); return; }
-  try {
-    const res = await fetch(`${PRODUCT_API}/wishlist/ids`, {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
-    });
-    if (!res.ok) return;
-    const ids = await res.json();
-    isWishlisted = ids.includes(productId);
-    syncWishlist();
-  } catch (err) {
-    console.error('Failed to load wishlist status:', err);
-  }
+  await window.loadWishlistIds();
+  isWishlisted = window.isWishlistedById(productId);
+  syncWishlist();
 }
 
 function initWishlist() {
@@ -401,27 +380,11 @@ function initWishlist() {
       return;
     }
     if (!currentProduct) return;
-
-    try {
-      const res = await fetch(`${PRODUCT_API}/wishlist/toggle`, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${getToken()}`
-        },
-        body: JSON.stringify({ productId: currentProduct.product_id })
-      });
-
-      if (!res.ok) { showToast('Failed to update wishlist'); return; }
-
-      const data = await res.json();
-      isWishlisted = data.wishlisted;
-      syncWishlist();
-      showToast(isWishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
-    } catch (err) {
-      showToast('Network error. Please try again.');
-      console.error(err);
-    }
+    const data = await window.toggleWishlistItem(currentProduct.product_id);
+    if (!data) { showToast('Failed to update wishlist'); return; }
+    isWishlisted = data.wishlisted;
+    syncWishlist();
+    showToast(isWishlisted ? 'Added to wishlist ❤️' : 'Removed from wishlist');
   }
 
   document.getElementById('wishlist-btn')?.addEventListener('click', toggleWishlist);
