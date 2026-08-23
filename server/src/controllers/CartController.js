@@ -85,8 +85,6 @@ class CartController {
       const userId     = req.user.id;
       const cartItemId = req.params.cartItemId;
       const { quantity } = req.body;
-
-      await Cart.updateItem(cartItemId, userId, { quantity, note });
       
       if (!quantity || quantity < 1) {
         return res.status(400).json({ error: 'Quantity must be at least 1' });

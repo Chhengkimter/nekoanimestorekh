@@ -206,7 +206,7 @@ async function saveProduct() {
   const desc = document.getElementById('f-desc').value.trim();
   const discount = parseFloat(document.getElementById('f-discount').value) || 0;
   const discountFlat = document.getElementById('f-discount-type').checked;
-  const promotion = document.getElementById('f-promotion').value || null;
+  const promotion = document.getElementById('f-promotion')?.value || null;
 
   if (!name || isNaN(price)) { toast('Fill in name and price', true); return; }
   if (modalCats.length === 0) { toast('Select at least one category', true); return; }

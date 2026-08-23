@@ -43,7 +43,7 @@ async function apiFetch(path, opts = {}) {
 
 /* ── INIT ────────────────────────────────────────────────── */
 async function init() {
-    await Promise.all([loadProfile(), loadOrders()]);
+    await Promise.all([loadProfile(), loadOrders(), loadWishlist()]);
 }
 
 /* ── PROFILE ─────────────────────────────────────────────── */
@@ -119,6 +119,7 @@ function renderOrders() {
 function renderOrderCard(o) {
     const statusMap = {
         pending:   { label: 'Awaiting confirmation', cls: 'badge-purple' },
+        modified:  { label: 'Action Required',       cls: 'badge-amber'  },
         confirmed: { label: 'Confirmed',             cls: 'badge-blue'   },
         shipped:   { label: 'Shipped',               cls: 'badge-blue'   },
         delivered: { label: 'Delivered',             cls: 'badge-green'  },
@@ -150,15 +151,32 @@ function renderOrderCard(o) {
             </label>
         </div>` : '';
 
-    const actionsHtml = canEdit ? `
+    const payBalanceHtml = (o.payment_method === 'half_upfront' && o.payment_status !== 'full_paid') ? `
+        <div style="margin-top: 10px;">
+            <button class="order-act-btn" style="background:#673ab7; color:white; width:auto; padding: 6px 12px; border-radius:4px;" onclick="payOrderBalance(${o.order_id})"><i class="fas fa-wallet"></i> Pay Remaining Balance</button>
+        </div>` : '';
+
+    let actionsHtml = '';
+    if (o.order_status === 'modified') {
+        actionsHtml = `
+        <div class="order-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px;">
+            <button class="order-act-btn" style="background:#4caf50; color:white; width:auto; padding: 6px 12px; border-radius:4px;" onclick="confirmOrderMod(${o.order_id})"><i class="fas fa-check"></i> Confirm</button>
+            <button class="order-act-btn" style="background:#f44336; color:white; width:auto; padding: 6px 12px; border-radius:4px;" onclick="cancelOrderMod(${o.order_id})"><i class="fas fa-times"></i> Cancel</button>
+            <a class="order-act-btn" href="https://t.me/NekoAnimeBot" target="_blank" style="background:#2196F3; color:white; text-decoration:none; width:auto; padding: 6px 12px; border-radius:4px;"><i class="fab fa-telegram-plane"></i> Contact Store</a>
+        </div>`;
+    } else if (canEdit) {
+        actionsHtml = `
         <div class="order-actions">
             <button class="order-act-btn" onclick="openAddrModal(${o.order_id}, '${o.order_code}')">
                 <i class="fas fa-map-marker-alt"></i> Update address / phone
             </button>
-        </div>` : (o.order_status === 'shipped' || o.order_status === 'delivered') ? `
+        </div>`;
+    } else if (o.order_status === 'shipped' || o.order_status === 'delivered') {
+        actionsHtml = `
         <div class="order-locked-note">
             <i class="fas fa-lock"></i> Order ${o.order_status} — contact us to make changes
-        </div>` : '';
+        </div>`;
+    }
 
     return `<div class="order-card">
         ${awaitingBanner}
@@ -171,6 +189,7 @@ function renderOrderCard(o) {
             <span class="order-total">${total}</span>
             <span class="order-date">${date}</span>
         </div>
+        ${payBalanceHtml}
         ${shipNotifRow}
         ${actionsHtml}
     </div>`;
@@ -193,6 +212,43 @@ async function saveNotifPref(enabled) {
    per-order notification preferences to the backend */
 function saveOrderNotif(orderId, enabled) {
     showToast(enabled ? 'You\'ll be notified when this order ships' : 'Notification off for this order');
+}
+
+/* ── ORDER ACTIONS (MODIFIED / PAY) ──────────────────────── */
+async function confirmOrderMod(orderId) {
+    if (!confirm('Are you sure you want to confirm these changes?')) return;
+    try {
+        const res = await apiFetch(`/orders/${orderId}/confirm`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        showToast('Order confirmed ✓');
+        loadOrders();
+    } catch {
+        showToast('Failed to confirm order', true);
+    }
+}
+
+async function cancelOrderMod(orderId) {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+    try {
+        const res = await apiFetch(`/orders/${orderId}/cancel`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        showToast('Order cancelled ✓');
+        loadOrders();
+    } catch {
+        showToast('Failed to cancel order', true);
+    }
+}
+
+async function payOrderBalance(orderId) {
+    if (!confirm('Proceed to pay the remaining balance?')) return;
+    try {
+        const res = await apiFetch(`/orders/${orderId}/pay-balance`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        showToast('Balance paid successfully ✓');
+        loadOrders();
+    } catch {
+        showToast('Failed to pay balance', true);
+    }
 }
 
 /* ── ADDRESS / PHONE EDIT MODAL ──────────────────────────── */
@@ -518,12 +574,83 @@ async function disconnectTelegram() {
     }
 }
 
+/* ── WISHLIST ─────────────────────────────────────────────── */
+let wishlistItems = [];
+
+async function loadWishlist() {
+    try {
+        const res = await apiFetch('/wishlist');
+        if (!res.ok) throw new Error();
+        wishlistItems = await res.json();
+        renderWishlist();
+    } catch {
+        const list = document.getElementById('wishlist-list');
+        if (list) list.innerHTML =
+            `<div class="up-empty"><i class="fas fa-exclamation-circle"></i><p>Could not load wishlist. Please refresh.</p></div>`;
+    }
+}
+
+function renderWishlist() {
+    const list = document.getElementById('wishlist-list');
+    if (!list) return;
+
+    if (!wishlistItems.length) {
+        list.innerHTML = `<div class="up-empty">
+            <i class="fas fa-heart"></i>
+            <p>Your wishlist is empty.</p>
+            <a href="index.html" style="color:#82659D;text-decoration:underline;font-size:14px;margin-top:8px;display:inline-block">Browse products</a>
+        </div>`;
+        return;
+    }
+
+    list.innerHTML = wishlistItems.map(item => {
+        const price = parseFloat(item.product_price || 0).toFixed(2);
+        const img = item.primary_image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg';
+        const stockBadge = item.stock_status === 'preorder'
+            ? '<span class="wl-stock wl-preorder">Pre-order</span>'
+            : (item.product_stock === 0
+                ? '<span class="wl-stock wl-out">Out of stock</span>'
+                : '');
+
+        return `<div class="wl-card" data-product-id="${item.product_id}">
+            <a href="productpage.html?id=${item.product_id}" class="wl-img-link">
+                <img src="${img}" alt="${item.product_name}" class="wl-img">
+            </a>
+            <div class="wl-info">
+                <a href="productpage.html?id=${item.product_id}" class="wl-name">${item.product_name}</a>
+                <div class="wl-price-row">
+                    <span class="wl-price">$${price}</span>
+                    ${stockBadge}
+                </div>
+            </div>
+            <button class="wl-remove-btn" onclick="removeWishlistItem(${item.product_id})" title="Remove from wishlist">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>`;
+    }).join('');
+}
+
+async function removeWishlistItem(productId) {
+    try {
+        const res = await apiFetch(`/wishlist/${productId}`, { method: 'DELETE' });
+        if (!res.ok) { showToast('Could not remove item', true); return; }
+        wishlistItems = wishlistItems.filter(i => i.product_id !== productId);
+        renderWishlist();
+        showToast('Removed from wishlist');
+    } catch {
+        showToast('Could not remove item', true);
+    }
+}
+
 /* ── PANEL SWITCHER ──────────────────────────────────────── */
 function switchPanel(panel, btn) {
     document.querySelectorAll('.up-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.up-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('panel-' + panel).classList.add('active');
     btn.classList.add('active');
+
+    // Refresh wishlist when switching to that tab
+    if (panel === 'wishlist') loadWishlist();
 }
 
 /* ── LOGOUT ──────────────────────────────────────────────── */

@@ -5,7 +5,7 @@ class WishlistController {
   // GET /api/wishlist — full wishlist with joined product data
   static async getAll(req, res) {
     try {
-      const userId = req.user.userId; // set by requireAuth middleware
+      const userId = req.user.id;
       const items = await Wishlist.findByUser(userId);
       res.json(items);
     } catch (err) {
@@ -19,7 +19,7 @@ class WishlistController {
   // without fetching full product rows it already has)
   static async getIds(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const ids = await Wishlist.findProductIdsByUser(userId);
       res.json(ids);
     } catch (err) {
@@ -46,7 +46,7 @@ class WishlistController {
   // DELETE /api/wishlist/:productId — explicit remove (used on wishlist page)
   static async remove(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { productId } = req.params;
       await Wishlist.remove(userId, productId);
       res.json({ wishlisted: false });

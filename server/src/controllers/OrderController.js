@@ -12,7 +12,8 @@ class OrderController {
         mapsLink, mapsDetail,
         phone1, phone2,
         shippingMethod, shippingCost,
-        orderNote
+        orderNote,
+        paymentMethod, isPhnomPenh
       } = req.body;
 
       if (!phone1) return res.status(400).json({ error: 'Phone number is required' });
@@ -30,7 +31,8 @@ class OrderController {
         mapsLink, mapsDetail,
         phone1, phone2,
         shippingMethod, shippingCost,
-        orderNote
+        orderNote,
+        paymentMethod, isPhnomPenh
       });
 
       const order = await Order.findByCode(orderCode, userId);
@@ -69,6 +71,38 @@ class OrderController {
     } catch (err) {
       console.error('getOrder error:', err.message);
       res.status(500).json({ error: 'Failed to fetch order' });
+    }
+  }
+  static async confirmModification(req, res) {
+    try {
+      const order = await Order.updateStatus(req.params.id, req.user.id, 'confirmed');
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      res.status(200).json({ message: 'Order confirmed successfully', order });
+    } catch (err) {
+      console.error('confirmModification error:', err.message);
+      res.status(500).json({ error: 'Failed to confirm order' });
+    }
+  }
+
+  static async cancelModification(req, res) {
+    try {
+      const order = await Order.updateStatus(req.params.id, req.user.id, 'cancelled');
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      res.status(200).json({ message: 'Order cancelled successfully', order });
+    } catch (err) {
+      console.error('cancelModification error:', err.message);
+      res.status(500).json({ error: 'Failed to cancel order' });
+    }
+  }
+
+  static async payBalance(req, res) {
+    try {
+      const order = await Order.payBalance(req.params.id, req.user.id);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      res.status(200).json({ message: 'Balance paid successfully', order });
+    } catch (err) {
+      console.error('payBalance error:', err.message);
+      res.status(500).json({ error: 'Failed to pay balance' });
     }
   }
 }

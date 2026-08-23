@@ -131,10 +131,12 @@ function render() {
 
         div.innerHTML = `
             <div class="item-top">
-                <img src="${item.img}" alt="${item.name}" class="item-img">
+                <a href="productpage.html?id=${item.productId}" class="item-img-link">
+                    <img src="${item.img}" alt="${item.name}" class="item-img">
+                </a>
                 <div class="item-details">
-                    <div class="item-name" title="${item.name}">${item.name}</div>
-                    <span class="item-option">${item.option}</span>
+                    <a href="productpage.html?id=${item.productId}" class="item-name-link" title="${item.name}">${item.name}</a>
+                    ${item.option && item.option !== '—' ? `<span class="item-option">${item.option}</span>` : ''}
                     <div class="item-price-unit">$${item.price.toFixed(2)} each ${driftBadge}</div>
                 </div>
             </div>

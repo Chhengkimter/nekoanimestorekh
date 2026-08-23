@@ -251,10 +251,13 @@ class AdminController {
     // Update order-level fields: address, phone, shipping, notes
     static async updateOrderFields(req, res) {
       try {
-        const updated = await Order.adminUpdateFields(req.params.id, req.body);
-        if (!updated) {
-          return res.status(404).json({ error: 'Order not found' });
+        const orderCheck = await db.query(`SELECT order_status FROM orders WHERE order_id = $1`, [req.params.id]);
+        if (!orderCheck.rows[0]) return res.status(404).json({ error: 'Order not found' });
+        if (orderCheck.rows[0].order_status !== 'pending') {
+          return res.status(400).json({ error: 'Cannot modify an order that has already been confirmed or shipped.' });
         }
+
+        const updated = await Order.adminUpdateFields(req.params.id, req.body);
         res.status(200).json({ message: 'Order updated', order: updated });
       } catch (err) {
         console.error('updateOrderFields error:', err.message);
@@ -268,6 +271,12 @@ class AdminController {
     // adjusts stock accordingly, recalculates totals
     static async updateOrderItems(req, res) {
       try {
+        const orderCheck = await db.query(`SELECT order_status FROM orders WHERE order_id = $1`, [req.params.id]);
+        if (!orderCheck.rows[0]) return res.status(404).json({ error: 'Order not found' });
+        if (orderCheck.rows[0].order_status !== 'pending') {
+          return res.status(400).json({ error: 'Cannot modify an order that has already been confirmed or shipped.' });
+        }
+
         const { items } = req.body;
         if (!Array.isArray(items)) {
           return res.status(400).json({ error: 'items must be an array' });

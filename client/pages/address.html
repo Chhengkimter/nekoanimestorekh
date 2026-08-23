@@ -116,6 +116,23 @@
                     </div>
                 </div>
 
+                <!-- ── LOCATION FLAG ── -->
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-map-marker-alt card-icon"></i>
+                        <h2>Delivery Location</h2>
+                    </div>
+                    <p class="card-sub" style="margin-bottom:12px;">Is this delivery address in Phnom Penh?</p>
+                    <div class="field-group" style="display:flex; gap:16px; margin-bottom: 0;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:500;">
+                            <input type="radio" name="is_phnom_penh" value="yes" checked style="width:16px; height:16px;"> Yes
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:500;">
+                            <input type="radio" name="is_phnom_penh" value="no" style="width:16px; height:16px;"> No
+                        </label>
+                    </div>
+                </div>
+
                 <!-- ── SHIPPING ── -->
                 <div class="form-card">
                     <div class="card-header">
@@ -219,6 +236,23 @@
                     </div>
                 </div>
 
+                <!-- ── PAYMENT METHOD ── -->
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-wallet card-icon"></i>
+                        <h2>Payment Method</h2>
+                    </div>
+                    <p class="card-sub" id="payment-hint">Select how you'd like to pay.</p>
+                    
+                    <div id="payment-recommendation" style="display: none; background: #e6f4ea; color: #137333; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 500;">
+                        <i class="fas fa-info-circle"></i> For smoother and faster processing, we highly recommend choosing Full Payment!
+                    </div>
+
+                    <div class="shipping-options" id="payment-options">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+
                 <!-- ── ORDER NOTE ── -->
                 <div class="form-card">
                     <div class="card-header">
@@ -276,7 +310,6 @@
 <script src="../js/auth.js"></script>
 <script src="../js/partials.js"></script>
 <script src="../js/cart-badge.js"></script>
-<script src="../js/cart.js"></script>
 <script src="../js/address.js"></script>
 
 </body>

@@ -32,39 +32,56 @@ function updateCartBadgeUI(count, animate = false) {
 // elements to actually exist before touching them.
 function whenCartBadgesReady(callback) {
   if (getCartBadgeEls().length) { callback(); return; }
-  const root = document.getElementById('header-root');
-  if (!root) { callback(); return; }
 
-  const observer = new MutationObserver(() => {
-    if (getCartBadgeEls().length) {
-      observer.disconnect();
-      callback();
+  // Strategy 1: MutationObserver on the header root
+  const root = document.getElementById('header-root');
+  let settled = false;
+  const settle = () => {
+    if (settled) return;
+    settled = true;
+    callback();
+  };
+
+  if (root) {
+    const observer = new MutationObserver(() => {
+      if (getCartBadgeEls().length) {
+        observer.disconnect();
+        settle();
+      }
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    setTimeout(() => observer.disconnect(), 10000); // safety net
+  }
+
+  // Strategy 2: Listen for custom event from partials.js
+  document.addEventListener('partials:loaded', () => {
+    if (getCartBadgeEls().length) settle();
+  }, { once: true });
+
+  // Strategy 3: Polling fallback in case observer misses it
+  let polls = 0;
+  const poller = setInterval(() => {
+    polls++;
+    if (getCartBadgeEls().length || polls > 40) { // 40 × 250ms = 10s
+      clearInterval(poller);
+      if (getCartBadgeEls().length) settle();
     }
-  });
-  observer.observe(root, { childList: true, subtree: true });
-  setTimeout(() => observer.disconnect(), 5000); // safety net
+  }, 250);
 }
 
 async function loadInitialCartCount() {
   if (typeof isLoggedIn !== 'function' || !isLoggedIn()) { updateCartBadgeUI(0); return; }
   try {
-    const res = await fetch(`${CART_BADGE_API}/cart`, {
+    const res = await fetch(`${CART_BADGE_API}/cart/count`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
-    if (!res.ok) return;
+    if (!res.ok) { updateCartBadgeUI(0); return; }
     const data = await res.json();
-
-    let count = 0;
-    if (Array.isArray(data)) {
-      count = data.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    } else if (Array.isArray(data.items)) {
-      count = data.items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    } else if (typeof data.cartCount === 'number') {
-      count = data.cartCount;
-    }
+    const count = typeof data.count === 'number' ? data.count : 0;
     updateCartBadgeUI(count);
   } catch (err) {
     console.error('Failed to load cart count:', err);
+    updateCartBadgeUI(0);
   }
 }
 

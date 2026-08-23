@@ -57,6 +57,52 @@ body {
 .search-box-mobile input::placeholder { color: #999; }
 .header-icons-mobile { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 8px 0; min-height: 80px; position: relative; }
 
+/* Cart badge (red dot) — must match customer.css */
+.icon-link { position: relative; overflow: visible; }
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e05c5c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  display: none;
+  pointer-events: none;
+  z-index: 5;
+}
+.cart-badge.visible { display: inline-block; }
+.cart-badge.bump { animation: cartBadgeBump .35s ease; }
+@keyframes cartBadgeBump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+.fly-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e05c5c;
+  z-index: 9999;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.fly-dot.flying {
+  transition: transform 0.6s cubic-bezier(0.55, 0, 0.1, 1), opacity 0.6s ease;
+}
+
 /* =====================
    MAIN CONTENT
    ===================== */
@@ -101,12 +147,15 @@ body {
 /* =====================
    CART ITEMS
    ===================== */
-.cart-items-col { display: flex; flex-direction: column; gap: 14px; }
+.cart-items-col { display: flex; flex-direction: column; gap: 32px; }
+
+#cart-items-list { display: flex; flex-direction: column; gap: 24px; }
 
 .cart-item {
     background: white;
     border-radius: 12px;
     padding: 18px 20px;
+    margin-bottom: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: flex;
     flex-direction: column;
@@ -133,7 +182,16 @@ body {
 
 .item-details { flex: 1; min-width: 0; }
 
-.item-name {
+.item-img-link {
+    display: block;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: opacity 0.2s;
+}
+.item-img-link:hover { opacity: 0.8; }
+
+.item-name, .item-name-link {
     font-size: 15px;
     font-weight: 600;
     color: #333;
@@ -142,7 +200,13 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
 }
+.item-name-link {
+    text-decoration: none;
+    cursor: pointer;
+}
+.item-name-link:hover { color: #82659D; text-decoration: underline; }
 
 .item-option {
     font-size: 12px;

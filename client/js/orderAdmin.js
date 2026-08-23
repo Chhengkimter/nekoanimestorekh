@@ -141,6 +141,21 @@ function renderOrderDetail() {
   else renderOrderDetailView();
 }
 
+async function confirmIncomingOrder(orderId) {
+  if (!confirm('Confirm this order?')) return;
+  const res = await apiFetch(`/admin/orders/${orderId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'confirmed' })
+  });
+  if (!res.ok) {
+    toast('Failed to confirm order', true);
+    return;
+  }
+  toast('Order confirmed ✓');
+  await viewOrderDetail(orderId);
+  loadOrders().then(renderOrders);
+}
+
 // ── READ-ONLY RECEIPT VIEW ──
 function renderOrderDetailView() {
   const o = viewingOrder;
@@ -196,7 +211,7 @@ function renderOrderDetailView() {
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             ${statusBadge(o.order_status)}
-            <button class="btn-save" style="padding:7px 14px;font-size:12px" onclick="enterEditMode()">Modify</button>
+            ${o.order_status === 'pending' ? `<button class="btn-save" style="padding:7px 14px;font-size:12px" onclick="enterEditMode()">Modify</button>` : ''}
           </div>
         </div>
         <div class="receipt-divider"></div>
@@ -532,7 +547,11 @@ async function saveOrderEdits(orderId) {
     method: 'PATCH',
     body:   JSON.stringify(fieldsPayload)
   });
-  if (!fieldsRes.ok) { toast('Failed to save order details', true); return; }
+  if (!fieldsRes.ok) {
+    const errData = await fieldsRes.json().catch(()=>({}));
+    toast(errData.error || 'Failed to save order details', true);
+    return;
+  }
 
   const itemsPayload = {
     items: orderEditItems.map(it => ({
@@ -548,7 +567,11 @@ async function saveOrderEdits(orderId) {
     method: 'PUT',
     body:   JSON.stringify(itemsPayload)
   });
-  if (!itemsRes.ok) { toast('Failed to save items', true); return; }
+  if (!itemsRes.ok) {
+    const errData = await itemsRes.json().catch(()=>({}));
+    toast(errData.error || 'Failed to save items', true);
+    return;
+  }
 
   toast('Order updated ✓');
   orderEditDirty = false;

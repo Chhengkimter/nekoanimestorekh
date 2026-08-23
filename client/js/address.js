@@ -42,6 +42,12 @@ async function initCart() {
     }
 
     renderMiniSummary();
+    renderPaymentOptions();
+    
+    // Listen for location changes
+    document.querySelectorAll('input[name="is_phnom_penh"]').forEach(radio => {
+      radio.addEventListener('change', renderPaymentOptions);
+    });
 
   } catch (err) {
     console.error('initCart error:', err.message);
@@ -140,6 +146,85 @@ document.getElementById('verify-maps-btn').addEventListener('click', () => {
 document.querySelectorAll('input[name="shipping"]').forEach(radio => {
   radio.addEventListener('change', updateTotals);
 });
+
+/* =====================
+   PAYMENT METHOD RENDER
+   ===================== */
+function renderPaymentOptions() {
+  const isPP = document.querySelector('input[name="is_phnom_penh"]:checked')?.value === 'yes';
+  const hasPreOrder = cartItems.some(i => i.stock_status === 'preorder');
+  // Note: if hasPreOrder is true, we treat the whole cart as mixed/preorder
+
+  const container = document.getElementById('payment-options');
+  let html = '';
+
+  if (hasPreOrder) {
+    html = `
+      <label class="shipping-opt">
+          <input type="radio" name="payment" value="full" checked>
+          <div class="ship-content">
+              <div class="ship-left">
+                  <div class="ship-name">Full Payment</div>
+                  <div class="ship-desc">Pay 100% upfront (includes shipping)</div>
+              </div>
+          </div>
+      </label>
+      <label class="shipping-opt">
+          <input type="radio" name="payment" value="half_upfront">
+          <div class="ship-content">
+              <div class="ship-left">
+                  <div class="ship-name">50% Upfront</div>
+                  <div class="ship-desc">Pay half now, and the rest when ready to ship</div>
+              </div>
+          </div>
+      </label>
+    `;
+  } else {
+    // In-stock
+    html = `
+      <label class="shipping-opt">
+          <input type="radio" name="payment" value="full" checked>
+          <div class="ship-content">
+              <div class="ship-left">
+                  <div class="ship-name">Full Payment</div>
+                  <div class="ship-desc">Pay 100% upfront (includes shipping)</div>
+              </div>
+          </div>
+      </label>
+    `;
+    if (isPP) {
+      html += `
+        <label class="shipping-opt">
+            <input type="radio" name="payment" value="cod">
+            <div class="ship-content">
+                <div class="ship-left">
+                    <div class="ship-name">Cash on Delivery (COD)</div>
+                    <div class="ship-desc">Pay cash when the item arrives</div>
+                </div>
+            </div>
+        </label>
+      `;
+    }
+  }
+
+  container.innerHTML = html;
+
+  // Add listeners for recommendation banner
+  const radios = container.querySelectorAll('input[name="payment"]');
+  const banner = document.getElementById('payment-recommendation');
+  radios.forEach(r => {
+    r.addEventListener('change', () => {
+      if (r.value === 'half_upfront') {
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    });
+  });
+  
+  // reset banner if redrawn
+  banner.style.display = 'none';
+}
 
 /* =====================
    ORDER NOTE CHARACTER COUNT
@@ -242,7 +327,11 @@ document.getElementById('submit-order-btn').addEventListener('click', async () =
                     : '',
 
         // note
-        orderNote: document.getElementById('order-note').value.trim()
+        orderNote: document.getElementById('order-note').value.trim(),
+
+        // payment and location
+        isPhnomPenh: document.querySelector('input[name="is_phnom_penh"]:checked')?.value === 'yes',
+        paymentMethod: document.querySelector('input[name="payment"]:checked')?.value || 'full'
     };
 
     const res = await fetch('/api/orders', {

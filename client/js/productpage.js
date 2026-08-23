@@ -212,6 +212,10 @@ function updateStockUI() {
       const btn = document.getElementById(id);
       if (btn) { btn.disabled = true; btn.textContent = 'Out of stock'; }
     });
+  } else {
+    stockBadge.textContent = 'In stock';
+    stockBadge.style.background = '#d4edda';
+    stockBadge.style.color = '#155724';
   }
 
   if (nameEl && stockBadge.textContent) nameEl.appendChild(stockBadge);
@@ -419,7 +423,7 @@ function initAddToCart() {
         },
         body: JSON.stringify({
           productId: currentProduct.product_id,
-          variantId: selectedVariant ? selectedVariant.variant_id : null,
+          selectedOption: selectedVariant ? selectedVariant.variant_name : null,
           quantity
         })
       });
@@ -439,9 +443,6 @@ function initAddToCart() {
       if (typeof updateCartBadgeUI === 'function') {
         updateCartBadgeUI(data.cartCount, true);
       }
-
-      const cartBadge = document.getElementById('cart-count');
-      if (cartBadge) cartBadge.textContent = data.cartCount;
 
     } catch (err) {
       showToast('Network error. Please try again.');

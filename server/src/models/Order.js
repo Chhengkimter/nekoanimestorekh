@@ -9,10 +9,11 @@ class Order {
     mapsLink, mapsDetail,
     phone1, phone2,
     shippingMethod, shippingCost,
-    orderNote
+    orderNote,
+    paymentMethod, isPhnomPenh
   }) {
     await db.query(
-      `CALL sp_place_order($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      `CALL sp_place_order($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
         userId, orderCode,
         addrType        || 'manual',
@@ -26,9 +27,29 @@ class Order {
         phone2          || null,
         shippingMethod  || 'express',
         shippingCost    || null,
-        orderNote       || null
+        orderNote       || null,
+        paymentMethod   || 'full',
+        isPhnomPenh     || false
       ]
     );
+  }
+
+  // ─── Update Order Status (Customer confirming/cancelling modified order) ──
+  static async updateStatus(orderId, userId, status) {
+    const result = await db.query(
+      `UPDATE orders SET order_status = $1 WHERE order_id = $2 AND user_id = $3 RETURNING *`,
+      [status, orderId, userId]
+    );
+    return result.rows[0] || null;
+  }
+
+  // ─── Pay Remaining Balance ──────────────────────────────────────────
+  static async payBalance(orderId, userId) {
+    const result = await db.query(
+      `UPDATE orders SET payment_status = 'full_paid' WHERE order_id = $1 AND user_id = $2 RETURNING *`,
+      [orderId, userId]
+    );
+    return result.rows[0] || null;
   }
 
   // ─── Get one order by code (confirmation page) ────────────────
