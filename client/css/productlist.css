@@ -114,10 +114,28 @@
     gap: 6px;
 }
 
+.card-prices {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .card-price {
-    font-size: 13px;
-    font-weight: bold;
-    color: #555;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+}
+
+.card-price.sale {
+    color: #e05c7a;
+}
+
+.card-price-original {
+    font-size: 12px;
+    font-weight: 500;
+    color: #999;
+    text-decoration: line-through;
 }
 
 /* Wishlist button */

@@ -851,17 +851,33 @@ function renderWishlist() {
     }
 
     list.innerHTML = wishlistItems.map(item => {
-        const price = parseFloat(item.product_price || 0).toFixed(2);
+        const price = parseFloat(item.product_price || 0);
+        const originalPrice = item.original_price ? parseFloat(item.original_price) : null;
         const img = item.primary_image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg';
+        
+        const discountBadge = originalPrice && originalPrice > price
+            ? `<span class="card-badge sale">SALE</span>` : '';
+
         const stockBadge = item.stock_status === 'preorder'
             ? '<span class="card-badge preorder">Pre-order</span>'
-            : (item.product_stock === 0
-                ? '<span class="card-badge sale">Out of stock</span>'
-                : '');
+            : (item.stock_status === 'instock'
+                ? '<span class="card-badge instock">In stock</span>'
+                : (item.product_stock === 0
+                    ? '<span class="card-badge sale">Out of stock</span>'
+                    : ''));
+
+        let pricesHtml = '';
+        if (originalPrice && originalPrice > price) {
+            pricesHtml = `<span class="card-price sale">$${price.toFixed(2)}</span>
+                          <span class="card-price-original">$${originalPrice.toFixed(2)}</span>`;
+        } else {
+            pricesHtml = `<span class="card-price">$${price.toFixed(2)}</span>`;
+        }
 
         return `<div class="product-card" data-id="${item.product_id}" onclick="window.location.href='productpage.html?id=${item.product_id}'" style="cursor:pointer;">
             <div class="card-img-wrapper">
                 <div class="card-badges">
+                    ${discountBadge}
                     ${stockBadge}
                 </div>
                 <img src="${img}" alt="${item.product_name}" loading="lazy">
@@ -870,10 +886,10 @@ function renderWishlist() {
                 <p class="card-name" title="${item.product_name}">${item.product_name}</p>
                 <div class="card-bottom">
                     <div class="card-prices">
-                        <span class="card-price">$${price}</span>
+                        ${pricesHtml}
                     </div>
                     <button class="card-wishlist active" onclick="event.stopPropagation(); removeWishlistItem(${item.product_id})" title="Remove from wishlist" aria-label="wishlist">
-                        <i class="fas fa-heart" style="color:var(--red)"></i>
+                        <i></i>
                     </button>
                 </div>
             </div>

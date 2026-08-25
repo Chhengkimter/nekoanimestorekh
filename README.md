@@ -73,3 +73,5 @@ next is fill in the tracking number and auto fill in the date to the current dat
 from the customer page they will get all this info too. oh make sure there is a paste button to paste the tracking number in admin page. and copy button to copy the tracking number in customer page.
 
 ~ once product is noted as shipped the buttons should show from the main page not just the detailed page (customer user page).
+
+in admin paanel, the order detail, i want it to be larger to fill the entire screen (on phone not sure how the current is but on laptop the current layout is too small). make the product clickable and also provide productID , the detail of the order should be enchanced instead of being small but don't make it out of place too much. also both of the notes to customer and admin are all not working properly. 

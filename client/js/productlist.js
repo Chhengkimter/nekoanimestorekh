@@ -101,8 +101,8 @@ function buildCard(product) {
       <div class="card-bottom">
         <div class="card-prices">
           ${product.originalPrice && product.originalPrice > product.price
-            ? `<span class="card-price-original">${formatPrice(product.originalPrice)}</span>
-               <span class="card-price sale">${formatPrice(product.price)}</span>`
+            ? `<span class="card-price sale">${formatPrice(product.price)}</span>
+               <span class="card-price-original">${formatPrice(product.originalPrice)}</span>`
             : `<span class="card-price">${formatPrice(product.price)}</span>`
           }
         </div>
