@@ -407,21 +407,27 @@ function renderVariantEditor(p) {
       }
 
       <div class="variant-add-row">
-        <input type="text" id="new-variant-name-${p.id}"
-               placeholder="Variant name (e.g. Size M / Red)"
-               class="search-input" style="flex:1;width:auto">
+        <div class="variant-add-col" style="flex: 2; min-width: 150px;">
+          <label>Variant Name</label>
+          <input type="text" id="new-variant-name-${p.id}" class="search-input" style="width:100%">
+        </div>
         ${isPreorder ? '' : `
-        <input type="number" id="new-variant-stock-${p.id}"
-               placeholder="Stock" min="0"
-               class="inv-qty-input" style="width:72px">`}
-        <input type="number" id="new-variant-price-${p.id}"
-               placeholder="Price (optional)" min="0" step="0.01"
-               class="search-input" style="width:120px">
-        <input type="text" id="new-variant-sku-${p.id}"
-               placeholder="SKU (optional)"
-               class="search-input" style="width:110px">
-        <button class="add-btn" style="padding:7px 14px;font-size:12px"
-                onclick="addVariant('${p.id}', ${p.dbId}, ${isPreorder})">+ Add</button>
+        <div class="variant-add-col">
+          <label>Stock</label>
+          <input type="number" id="new-variant-stock-${p.id}" min="0" class="inv-qty-input" style="width:100%">
+        </div>`}
+        <div class="variant-add-col">
+          <label>Price Override</label>
+          <input type="number" id="new-variant-price-${p.id}" min="0" step="0.01" class="search-input" style="width:100%">
+        </div>
+        <div class="variant-add-col">
+          <label>SKU (Optional)</label>
+          <input type="text" id="new-variant-sku-${p.id}" class="search-input" style="width:100%">
+        </div>
+        <div class="variant-add-col" style="flex: 0 0 auto; min-width: auto;">
+          <button class="add-btn" style="padding: 9px 16px; font-size: 13px; height: 38px;"
+                  onclick="addVariant('${p.id}', ${p.dbId}, ${isPreorder})">+ Add Variant</button>
+        </div>
       </div>
     </div>`;
 }
@@ -435,7 +441,7 @@ function renderVariantRow(productLocalId, productDbId, v, isPreorder) {
        <button class="action-btn" style="font-size:10px"
                title="Clear override — fall back to base price"
                onclick="clearVariantPrice('${productLocalId}', ${productDbId}, ${v.variant_id})">↺</button>`
-    : `<input class="inv-qty-input" type="number" min="0" step="0.01" placeholder="base"
+    : `<input class="inv-qty-input" type="number" min="0" step="0.01"
          style="width:80px"
          id="variant-price-input-${v.variant_id}"
          onchange="setVariantPrice('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">`;
@@ -443,32 +449,44 @@ function renderVariantRow(productLocalId, productDbId, v, isPreorder) {
   if (isPreorder) {
     return `
       <div class="variant-row" id="variant-row-${v.variant_id}">
-        <div style="flex:1;font-size:13px;font-weight:600">${v.variant_name}</div>
-        ${v.variant_sku ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${v.variant_sku}</div>` : ''}
-        <div style="display:flex;align-items:center;gap:4px">${priceHtml}</div>
-        <button class="action-btn del" style="font-size:10px"
-                onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
+        <div class="vr-col-name">
+          <div class="vr-name">${v.variant_name}</div>
+          ${v.variant_sku ? `<div class="vr-sku">${v.variant_sku}</div>` : ''}
+        </div>
+        <div class="vr-col-price">${priceHtml}</div>
+        <div class="vr-col-action">
+          <button class="action-btn del" style="font-size:10px"
+                  onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
+        </div>
       </div>`;
   }
 
   return `
     <div class="variant-row" id="variant-row-${v.variant_id}">
-      <div style="flex:1;font-size:13px;font-weight:600">${v.variant_name}</div>
-      ${v.variant_sku ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${v.variant_sku}</div>` : ''}
-      <div class="inv-qty-col" style="min-width:auto">
-        <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, -1)">−</button>
-        <input class="inv-qty-input" type="number" min="0" value="${v.variant_stock}"
-               id="variant-stock-input-${v.variant_id}"
-               onchange="setVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">
-        <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, 1)">+</button>
+      <div class="vr-col-name">
+        <div class="vr-name">${v.variant_name}</div>
+        ${v.variant_sku ? `<div class="vr-sku">${v.variant_sku}</div>` : ''}
       </div>
-      <div style="display:flex;align-items:center;gap:4px">${priceHtml}</div>
-      <span class="badge ${v.variant_stock === 0 ? 'badge-red' : v.variant_stock <= 3 ? 'badge-amber' : 'badge-green'}"
-            id="variant-badge-${v.variant_id}">
-        ${v.variant_stock === 0 ? 'Out' : v.variant_stock <= 3 ? 'Low' : 'OK'}
-      </span>
-      <button class="action-btn del" style="font-size:10px"
-              onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
+      <div class="vr-col-status">
+        <span class="badge ${v.variant_stock === 0 ? 'badge-red' : v.variant_stock <= 3 ? 'badge-amber' : 'badge-green'}"
+              id="variant-badge-${v.variant_id}">
+          ${v.variant_stock === 0 ? 'Out' : v.variant_stock <= 3 ? 'Low' : 'OK'}
+        </span>
+      </div>
+      <div class="vr-col-stock">
+        <div class="inv-qty-col" style="min-width:auto">
+          <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, -1)">−</button>
+          <input class="inv-qty-input" type="number" min="0" value="${v.variant_stock}"
+                 id="variant-stock-input-${v.variant_id}"
+                 onchange="setVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, this.value)">
+          <button class="inv-adj-btn" onclick="adjustVariantStock('${productLocalId}', ${productDbId}, ${v.variant_id}, 1)">+</button>
+        </div>
+      </div>
+      <div class="vr-col-price">${priceHtml}</div>
+      <div class="vr-col-action">
+        <button class="action-btn del" style="font-size:10px"
+                onclick="deleteVariant('${productLocalId}', ${productDbId}, ${v.variant_id})">✕</button>
+      </div>
     </div>`;
 }
 

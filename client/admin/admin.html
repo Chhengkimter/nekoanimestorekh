@@ -6,7 +6,7 @@
 <title>Neko_Animestore Admin — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/admin.css">
+<link rel="stylesheet" href="../css/admin.css?v=9">
 </head>
 <body data-page="admin">
 
@@ -23,11 +23,11 @@
       <div class="field">
         <!-- admin.html -->
         <label>Email</label>
-        <input type="text" id="login-user" placeholder="" autocomplete="email">
+        <input type="text" id="login-user" autocomplete="email">
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="login-pass" placeholder="" autocomplete="current-password">
+        <input type="password" id="login-pass" autocomplete="current-password">
       </div>
       <button type="submit" class="login-btn">Sign in →</button>
       <p class="login-error" id="login-err">Incorrect credentials</p>
@@ -74,7 +74,7 @@
       <div class="topbar">
         <div class="topbar-title">Products</div>
         <div class="topbar-actions">
-          <input class="search-input" placeholder="Search products…" id="prod-search" oninput="renderProducts()">
+          <input class="search-input" id="prod-search" oninput="renderProducts()">
           <button class="add-btn" onclick="openModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add product
@@ -98,7 +98,7 @@
       <div class="topbar">
         <div class="topbar-title">Inventory</div>
         <div class="topbar-actions">
-          <input class="search-input" id="inv-search" placeholder="Search inventory…" oninput="renderInventory()">
+          <input class="search-input" id="inv-search" oninput="renderInventory()">
           <button class="add-btn" onclick="openAddToInventoryModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add to Inventory
@@ -142,7 +142,7 @@
       <div class="topbar">
         <div class="topbar-title">Orders</div>
         <div class="topbar-actions">
-          <input class="search-input" id="ord-search" placeholder="Search by code or customer…" oninput="renderOrders()">
+          <input class="search-input" id="ord-search" oninput="renderOrders()">
           <button class="add-btn" onclick="openCreateOrderModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add order
@@ -199,7 +199,7 @@
     <div class="form-grid">
       <div class="form-group">
         <label>Product name *</label>
-        <input type="text" id="f-name" placeholder="e.g. Naruto Hokage Figure">
+        <input type="text" id="f-name">
       </div>
       <div class="form-group form-full">
         <label>Categories * (select one or more)</label>
@@ -207,12 +207,12 @@
       </div>
       <div class="form-group">
         <label>Original price ($) *</label>
-        <input type="number" id="f-price" placeholder="0.00" min="0" step="0.01" oninput="updateSalePreview()">
+        <input type="number" id="f-price" min="0" step="0.01" oninput="updateSalePreview()">
       </div>
       <div class="form-group">
         <label>Discount</label>
         <div class="discount-row">
-          <input type="number" id="f-discount" placeholder="0" min="0" max="100" step="1" oninput="updateSalePreview()">
+          <input type="number" id="f-discount" min="0" max="100" step="1" oninput="updateSalePreview()">
           <label class="discount-toggle"><input type="checkbox" id="f-discount-type" onchange="updateSalePreview()"> flat $ (unchecked = %)</label>
         </div>
         <div class="sale-price" id="sale-preview"></div>
@@ -237,11 +237,11 @@
     <!-- Inventory qty — wrap in a div with id for show/hide -->
     <div class="form-group" id="inv-group">
       <label>Inventory qty *</label>
-      <input type="number" id="f-inv" placeholder="0" min="0">
+      <input type="number" id="f-inv" min="0">
     </div>
       <div class="form-group form-full">
         <label>Description</label>
-        <textarea id="f-desc" rows="3" placeholder="Product description…"></textarea>
+        <textarea id="f-desc" rows="3"></textarea>
       </div>
       <div class="form-group form-full">
         <p style="font-size:11px;color:var(--muted);font-family:var(--mono)">
@@ -259,7 +259,7 @@
         <div class="img-preview-row" id="img-preview-row"></div>
         <p style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:10px">Or paste Cloudinary / image URL:</p>
         <div class="option-add-row" style="margin-top:4px">
-          <input type="text" id="url-input" placeholder="https://res.cloudinary.com/...">
+          <input type="text" id="url-input">
           <button onclick="addImageUrl()">Add URL</button>
         </div>
       </div>
@@ -301,7 +301,6 @@
       <input
         class="search-input"
         id="add-inv-search"
-        placeholder="Search by name or ID…"
         oninput="renderAddInvList()"
         style="flex:1;width:auto"
       >
@@ -337,12 +336,12 @@
     <div class="form-grid" style="margin-top:18px">
       <div class="form-group">
         <label>Set price ($) <span class="optional">(leave blank to skip)</span></label>
-        <input type="number" id="bulk-price" placeholder="Leave blank to skip" min="0" step="0.01">
+        <input type="number" id="bulk-price" min="0" step="0.01">
       </div>
       <div class="form-group">
         <label>Set discount <span class="optional">(leave blank to skip)</span></label>
         <div class="discount-row">
-          <input type="number" id="bulk-discount" placeholder="0" min="0" max="100" step="1">
+          <input type="number" id="bulk-discount" min="0" max="100" step="1">
           <label class="discount-toggle"><input type="checkbox" id="bulk-discount-type"> flat $ (unchecked = %)</label>
         </div>
       </div>
@@ -374,7 +373,6 @@
       <input
         class="search-input"
         id="add-prod-search"
-        placeholder="Search by name or ID…"
         oninput="renderAddProductList()"
         style="flex:1;width:auto"
       >
@@ -417,8 +415,7 @@
     </div>
  
     <div id="new-ord-search-panel" style="margin-top:12px">
-      <input type="text" class="field-input" id="new-ord-customer-search"
-             placeholder="Search by name or email…" oninput="searchNewOrderCustomer()"
+      <input type="text" class="field-input" id="new-ord-customer-search" oninput="searchNewOrderCustomer()"
              style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none">
       <div id="new-ord-customer-results" style="margin-top:8px;max-height:140px;overflow-y:auto"></div>
     </div>
@@ -426,28 +423,28 @@
     <div id="new-ord-guest-panel" class="form-grid hidden" style="margin-top:12px">
       <div class="form-group">
         <label>Guest name *</label>
-        <input type="text" id="new-ord-guest-name" placeholder="Customer name">
+        <input type="text" id="new-ord-guest-name">
       </div>
       <div class="form-group">
         <label>Guest email <span class="optional">(optional)</span></label>
-        <input type="email" id="new-ord-guest-email" placeholder="email@example.com">
+        <input type="email" id="new-ord-guest-email">
       </div>
     </div>
  
     <div class="form-grid" style="margin-top:14px">
       <div class="form-group">
         <label>Phone 1 *</label>
-        <input type="text" id="new-ord-phone1" placeholder="+855 12 345 678">
+        <input type="text" id="new-ord-phone1">
       </div>
       <div class="form-group">
         <label>Phone 2 <span class="optional">(optional)</span></label>
-        <input type="text" id="new-ord-phone2" placeholder="+855 16 755 194">
+        <input type="text" id="new-ord-phone2">
       </div>
     </div>
  
     <div class="form-group form-full" style="margin-top:14px">
       <label>Address line 1 *</label>
-      <input type="text" id="new-ord-addr-line1" placeholder="House No, Street, Village">
+      <input type="text" id="new-ord-addr-line1">
     </div>
     <div class="form-grid" style="margin-top:10px">
       <div class="form-group">
@@ -509,7 +506,7 @@
 
 <!-- VARIANT MANAGER MODAL -->
 <div class="modal-overlay" id="variant-modal-overlay" onclick="if(event.target===this)closeVariantModal()">
-  <div class="modal">
+  <div class="modal modal-large">
     <div class="modal-header">
       <span class="modal-title" id="variant-modal-title">Variants</span>
       <button class="modal-close" onclick="closeVariantModal()">✕</button>
@@ -521,9 +518,9 @@
   </div>
 </div>
  
-<script src="../js/auth.js"></script>
-<script src="../js/admin.js"></script>
-<script src="../js/orderAdmin.js"></script>
+<script src="../js/auth.js?v=9"></script>
+<script src="../js/admin.js?v=9"></script>
+<script src="../js/orderAdmin.js?v=9"></script>
 
 </body>
 </html>

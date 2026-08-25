@@ -327,7 +327,7 @@ function openShipModal(orderId) {
             <div class="form-group">
               <label>Tracking Number</label>
               <div style="display:flex; gap:5px;">
-                <input type="text" id="ship-tracking" placeholder="Enter tracking number" style="flex:1;">
+                <input type="text" id="ship-tracking" style="flex:1;">
                 <button type="button" class="btn-save" style="padding:0 10px;" onclick="pasteTracking()">Paste</button>
               </div>
             </div>
@@ -453,7 +453,7 @@ function renderOrderDetailView() {
     return `<div class="ord-item-row">
       ${thumb}
       <div style="flex:1;min-width:0">
-        <div class="ord-item-name">${it.product_name} ${variant}</div>
+        <div class="ord-item-name"><a href="../pages/productpage.html?id=${it.product_id}" target="_blank" style="color:var(--accent);text-decoration:none;">${it.product_name}</a> <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">#${it.product_id}</span> ${variant}</div>
         <div class="ord-item-meta">Qty ${it.product_quantity} × $${Number(it.price_at_purchase).toFixed(2)}</div>
         ${note}
       </div>
@@ -509,7 +509,7 @@ function renderOrderDetailView() {
         ${o.order_note ? `<div class="ord-detail-row"><span>Order note</span><span>${o.order_note}</span></div>` : ''}
       </div>
 
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Items</h3>
         ${itemsHtml || '<p style="font-size:12px;color:var(--muted)">No items found</p>'}
       </div>
@@ -521,19 +521,25 @@ function renderOrderDetailView() {
         <div class="ord-detail-row receipt-total"><span>Total</span><span>$${Number(o.total || 0).toFixed(2)}</span></div>
       </div>
 
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Payments</h3>
         <div class="ord-detail-row"><span>Total paid</span><span style="font-weight:700">$${totalPaid.toFixed(2)}</span></div>
         <div class="ord-detail-row"><span>Balance</span><span style="font-weight:700;color:${balance > 0 ? 'var(--red)' : 'var(--green)'}">$${balance.toFixed(2)}</span></div>
       </div>
 
+      ${o.customer_note ? `
+      <div class="receipt-card receipt-full-width">
+        <h3>Note to customer <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(customer will see this)</span></h3>
+        <p style="font-size:13px">${o.customer_note}</p>
+      </div>` : ''}
+
       ${o.admin_note ? `
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Admin note <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(internal only)</span></h3>
         <p style="font-size:13px">${o.admin_note}</p>
       </div>` : ''}
 
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Status</h3>
         <select class="ord-status-select" id="ord-status-select" onchange="handleStatusChange(${o.order_id}, this.value)">
           ${['pending','confirmed','shipped','delivered','cancelled','refunded'].map(s =>
@@ -568,8 +574,8 @@ function renderOrderDetailEdit() {
     return `<div class="ord-edit-item-row">
       ${thumb}
       <div style="flex:1;min-width:0">
-        <div class="ord-item-name">${it.productName} ${it.selectedOption ? `<span class="ord-item-variant">${it.selectedOption}</span>` : ''}</div>
-        <input type="text" class="ord-item-note-input" placeholder="Item note…" value="${it.itemNote || ''}"
+        <div class="ord-item-name"><a href="../pages/productpage.html?id=${it.productId}" target="_blank" style="color:var(--accent);text-decoration:none;">${it.productName}</a> <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">#${it.productId}</span> ${it.selectedOption ? `<span class="ord-item-variant">${it.selectedOption}</span>` : ''}</div>
+        <input type="text" class="ord-item-note-input" value="${it.itemNote || ''}"
                onchange="updateItemNote(${i}, this.value)">
       </div>
       <div class="ord-item-qty-col">
@@ -663,7 +669,7 @@ function renderOrderDetailEdit() {
         </div>
       </div>
 
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Items</h3>
         ${itemsHtml || '<p style="font-size:12px;color:var(--muted)">No items</p>'}
         <div class="ord-add-item-row">
@@ -680,24 +686,24 @@ function renderOrderDetailEdit() {
         <div class="ord-detail-row receipt-total"><span>Total</span><span>$${total.toFixed(2)}</span></div>
       </div>
 
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Payments</h3>
         ${paymentsHtml}
         <div class="ord-detail-row" style="margin-top:10px"><span>Total paid</span><span style="font-weight:700">$${totalPaid.toFixed(2)}</span></div>
         <div class="ord-detail-row"><span>Balance</span><span style="font-weight:700;color:${balance > 0 ? 'var(--red)' : 'var(--green)'}">$${balance.toFixed(2)}</span></div>
         <div class="ord-add-payment-row">
-          <input type="number" id="ord-payment-amount" placeholder="Amount" min="0" step="0.01" style="width:90px">
-          <input type="text" id="ord-payment-note" placeholder="Note (optional)" style="flex:1">
+          <input type="number" id="ord-payment-amount" min="0" step="0.01" style="width:90px">
+          <input type="text" id="ord-payment-note" style="flex:1">
           <button class="add-btn" style="padding:8px 14px;font-size:12px" onclick="addPayment(${o.order_id})">Record</button>
         </div>
       </div>
 
-      <div class="receipt-card">
+      <div class="receipt-card receipt-full-width">
         <h3>Note to customer <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(customer will see this)</span></h3>
-        <textarea id="edit-customer-note" rows="3" placeholder="Explain any modifications made to this order or add a public note..." onchange="markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.customer_note || ''}</textarea>
+        <textarea id="edit-customer-note" rows="3" onchange="viewingOrder.customer_note = this.value; markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.customer_note || ''}</textarea>
         
         <h3 style="margin-top:15px">Internal admin note <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(not visible to customer)</span></h3>
-        <textarea id="edit-admin-note" rows="3" placeholder="Internal notes for admin use..." onchange="markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.admin_note || ''}</textarea>
+        <textarea id="edit-admin-note" rows="3" onchange="viewingOrder.admin_note = this.value; markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.admin_note || ''}</textarea>
       </div>
 
       ${orderEditDirty ? `
@@ -815,7 +821,10 @@ async function saveOrderEdits(orderId) {
     shippingCost:   parseFloat(document.getElementById('edit-shipping-cost').value) || 0,
     orderNote:      document.getElementById('edit-order-note').value.trim(),
     customerNote:   document.getElementById('edit-customer-note').value.trim(),
-    adminNote:      document.getElementById('edit-admin-note').value.trim()
+    adminNote:      document.getElementById('edit-admin-note').value.trim(),
+    addrType:       viewingOrder.addr_type ?? null,
+    mapsLink:       viewingOrder.maps_link ?? null,
+    mapsDetail:     viewingOrder.maps_detail ?? null
   };
 
   const fieldsRes = await apiFetch(`/admin/orders/${orderId}/edit`, {

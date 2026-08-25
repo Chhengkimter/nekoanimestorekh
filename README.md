@@ -74,4 +74,12 @@ from the customer page they will get all this info too. oh make sure there is a 
 
 ~ once product is noted as shipped the buttons should show from the main page not just the detailed page (customer user page).
 
-in admin paanel, the order detail, i want it to be larger to fill the entire screen (on phone not sure how the current is but on laptop the current layout is too small). make the product clickable and also provide productID , the detail of the order should be enchanced instead of being small but don't make it out of place too much. also both of the notes to customer and admin are all not working properly. 
+~ in admin panel, the order detail, i want it to be larger to fill the entire screen (on phone not sure how the current is but on laptop the current layout is too small). make the product clickable and also provide productID , the detail of the order should be enchanced instead of being small but don't make it out of place too much. also both of the notes to customer and admin are all not working properly. 
+
+in the admin product page i want the status to be pre order instead of out of stock for pre order product, however if the product is mark as instock product and we ran out of inventory it suppose to still show out of stock. (pre order does not mean out of stock). for the top 4 display i want to add another card counting pre order product, instock product instead of only having total product. 
+
+small bug when admin anually add order. add product button has a little glitch, check it. 
+
+Both of the note in admin modify order is not working, after filling it and unclick on it it will clear back to blank.
+
+in admin order page, the status box of the order is not styled. give it some css. also i want to make each order a bit larger currently i find it too small. maybe 1.5 times bigger.

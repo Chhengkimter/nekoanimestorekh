@@ -193,9 +193,9 @@ class Order {
          customer_note    = COALESCE($14, customer_note)
        WHERE order_id = $15
        RETURNING *`,
-      [addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
-       mapsLink, mapsDetail, phone1, phone2,
-       shippingMethod, shippingCost, orderNote, adminNote, customerNote,
+      [addrType ?? null, addrLine1 ?? null, addrDistrict ?? null, addrCity ?? null, addrLandmark ?? null,
+       mapsLink ?? null, mapsDetail ?? null, phone1 ?? null, phone2 ?? null,
+       shippingMethod ?? null, shippingCost ?? null, orderNote ?? null, adminNote ?? null, customerNote ?? null,
        orderId]
     );
     return result.rows[0] || null;
