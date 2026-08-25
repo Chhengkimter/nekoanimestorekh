@@ -132,13 +132,22 @@ class Order {
          o.order_date,
          o.total,
          o.shipping_method,
+         o.shipping_company,
+         o.tracking_number,
+         o.shipping_date,
+         o.shipping_image,
+         o.refund_date,
+         o.refund_image,
          COUNT(oi.order_item_id)  AS total_lines,
          SUM(oi.product_quantity) AS total_units
        FROM orders o
        JOIN order_items oi ON oi.order_id = o.order_id
        WHERE o.user_id = $1
        GROUP BY o.order_id, o.order_code, o.order_status,
-                o.order_date, o.total, o.shipping_method
+                o.order_date, o.total, o.shipping_method,
+                o.shipping_company, o.tracking_number,
+                o.shipping_date, o.shipping_image,
+                o.refund_date, o.refund_image
        ORDER BY o.order_date DESC`,
       [userId]
     );
@@ -163,7 +172,7 @@ class Order {
     const {
       addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
       mapsLink, mapsDetail, phone1, phone2,
-      shippingMethod, shippingCost, orderNote, adminNote
+      shippingMethod, shippingCost, orderNote, adminNote, customerNote
     } = fields;
 
     const result = await db.query(
@@ -180,12 +189,13 @@ class Order {
          shipping_method  = COALESCE($10, shipping_method),
          shipping_cost    = COALESCE($11, shipping_cost),
          order_note       = COALESCE($12, order_note),
-         admin_note       = COALESCE($13, admin_note)
-       WHERE order_id = $14
+         admin_note       = COALESCE($13, admin_note),
+         customer_note    = COALESCE($14, customer_note)
+       WHERE order_id = $15
        RETURNING *`,
       [addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
        mapsLink, mapsDetail, phone1, phone2,
-       shippingMethod, shippingCost, orderNote, adminNote,
+       shippingMethod, shippingCost, orderNote, adminNote, customerNote,
        orderId]
     );
     return result.rows[0] || null;

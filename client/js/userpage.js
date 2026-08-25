@@ -119,8 +119,7 @@ function renderOrders() {
 function renderOrderCard(o) {
     const statusMap = {
         pending:   { label: 'Awaiting confirmation', cls: 'badge-purple' },
-        modified:  { label: 'Action Required',       cls: 'badge-amber'  },
-        confirmed: { label: 'Confirmed',             cls: 'badge-blue'   },
+        confirmed: { label: 'Confirmed',             cls: 'badge-green'  },
         shipped:   { label: 'Shipped',               cls: 'badge-blue'   },
         delivered: { label: 'Delivered',             cls: 'badge-green'  },
         cancelled: { label: 'Cancelled',             cls: 'badge-red'    },
@@ -143,7 +142,7 @@ function renderOrderCard(o) {
 
     // Per-order ship notification for confirmed orders
     const shipNotifRow = o.order_status === 'confirmed' ? `
-        <div class="order-ship-notif">
+        <div class="order-ship-notif" onclick="event.stopPropagation()">
             <span><i class="fas fa-bell" style="margin-right:5px"></i> Notify me when shipped</span>
             <label class="up-toggle" title="Shipping notification for this order">
                 <input type="checkbox" checked onchange="saveOrderNotif(${o.order_id}, this.checked)">
@@ -151,34 +150,82 @@ function renderOrderCard(o) {
             </label>
         </div>` : '';
 
-    const payBalanceHtml = (o.payment_method === 'half_upfront' && o.payment_status !== 'full_paid') ? `
-        <div style="margin-top: 10px;">
-            <button class="order-act-btn" style="background:#673ab7; color:white; width:auto; padding: 6px 12px; border-radius:4px;" onclick="payOrderBalance(${o.order_id})"><i class="fas fa-wallet"></i> Pay Remaining Balance</button>
-        </div>` : '';
-
     let actionsHtml = '';
-    if (o.order_status === 'modified') {
-        actionsHtml = `
-        <div class="order-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px;">
-            <button class="order-act-btn" style="background:#4caf50; color:white; width:auto; padding: 6px 12px; border-radius:4px;" onclick="confirmOrderMod(${o.order_id})"><i class="fas fa-check"></i> Confirm</button>
-            <button class="order-act-btn" style="background:#f44336; color:white; width:auto; padding: 6px 12px; border-radius:4px;" onclick="cancelOrderMod(${o.order_id})"><i class="fas fa-times"></i> Cancel</button>
-            <a class="order-act-btn" href="https://t.me/NekoAnimeBot" target="_blank" style="background:#2196F3; color:white; text-decoration:none; width:auto; padding: 6px 12px; border-radius:4px;"><i class="fab fa-telegram-plane"></i> Contact Store</a>
-        </div>`;
-    } else if (canEdit) {
+    if (canEdit) {
         actionsHtml = `
         <div class="order-actions">
-            <button class="order-act-btn" onclick="openAddrModal(${o.order_id}, '${o.order_code}')">
+            <button class="order-act-btn" onclick="event.stopPropagation(); openAddrModal(${o.order_id}, '${o.order_code}')">
                 <i class="fas fa-map-marker-alt"></i> Update address / phone
             </button>
         </div>`;
     } else if (o.order_status === 'shipped' || o.order_status === 'delivered') {
+        let shipmentTrackingHtml = '';
+        if (o.tracking_number || o.shipping_company) {
+            const shipDate = o.shipping_date ? new Date(o.shipping_date).toLocaleString() : 'N/A';
+            shipmentTrackingHtml = `
+            <div class="od-tracking-card" style="margin-top:12px;" onclick="event.stopPropagation()">
+                <div class="od-section-title"><i class="fas fa-truck"></i> Shipment Tracking</div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Company</span>
+                    <span class="od-tracking-value">${o.shipping_company || 'Unknown'}</span>
+                </div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Tracking No</span>
+                    <span class="od-tracking-value">
+                        ${o.tracking_number || 'N/A'}
+                        ${o.tracking_number ? `<button class="od-copy-btn" onclick="event.stopPropagation(); navigator.clipboard.writeText('${o.tracking_number}').then(()=>showToast('Tracking number copied ✓'))"><i class="fas fa-copy"></i> Copy</button>` : ''}
+                    </span>
+                </div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Shipped On</span>
+                    <span class="od-tracking-value">${shipDate}</span>
+                </div>
+                ${o.shipping_image ? `<a href="${o.shipping_image}" target="_blank" onclick="event.stopPropagation();" class="od-proof-link"><i class="fas fa-image"></i> View Shipping Proof</a>` : ''}
+            </div>`;
+        }
+
+        let actionButtonsHtml = '';
+        if (o.order_status === 'shipped') {
+            actionButtonsHtml = `
+            <div class="od-actions" onclick="event.stopPropagation()">
+                <button class="od-btn od-btn-success" onclick="event.stopPropagation(); markOrderReceived(${o.order_id})">
+                    <i class="fas fa-box-open"></i> Package Received
+                </button>
+                <a href="https://t.me/NekoAnimeBot" target="_blank" onclick="event.stopPropagation();" class="od-btn od-btn-telegram">
+                    <i class="fab fa-telegram-plane"></i> Contact Store
+                </a>
+            </div>`;
+        }
+
         actionsHtml = `
         <div class="order-locked-note">
             <i class="fas fa-lock"></i> Order ${o.order_status} — contact us to make changes
-        </div>`;
+        </div>
+        ${shipmentTrackingHtml}
+        ${actionButtonsHtml}`;
+    } else if (o.order_status === 'refunded') {
+        let refundTrackingHtml = '';
+        if (o.refund_date || o.refund_image) {
+            const rDate = o.refund_date ? new Date(o.refund_date).toLocaleString() : 'N/A';
+            refundTrackingHtml = `
+            <div class="od-tracking-card" style="margin-top:12px;" onclick="event.stopPropagation()">
+                <div class="od-section-title"><i class="fas fa-undo-alt"></i> Refund Details</div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Refunded On</span>
+                    <span class="od-tracking-value">${rDate}</span>
+                </div>
+                ${o.refund_image ? `<a href="${o.refund_image}" target="_blank" onclick="event.stopPropagation();" class="od-proof-link"><i class="fas fa-image"></i> View Refund Proof</a>` : ''}
+            </div>`;
+        }
+
+        actionsHtml = `
+        <div class="order-locked-note">
+            <i class="fas fa-lock"></i> Order refunded
+        </div>
+        ${refundTrackingHtml}`;
     }
 
-    return `<div class="order-card">
+    return `<div class="order-card" onclick="openOrderDetailModal(${o.order_id})" style="cursor:pointer; position:relative;">
         ${awaitingBanner}
         <div class="order-top">
             <span class="order-code">${o.order_code}</span>
@@ -189,7 +236,6 @@ function renderOrderCard(o) {
             <span class="order-total">${total}</span>
             <span class="order-date">${date}</span>
         </div>
-        ${payBalanceHtml}
         ${shipNotifRow}
         ${actionsHtml}
     </div>`;
@@ -222,6 +268,7 @@ async function confirmOrderMod(orderId) {
         if (!res.ok) throw new Error();
         showToast('Order confirmed ✓');
         loadOrders();
+        closeOrderDetailModal();
     } catch {
         showToast('Failed to confirm order', true);
     }
@@ -234,6 +281,7 @@ async function cancelOrderMod(orderId) {
         if (!res.ok) throw new Error();
         showToast('Order cancelled ✓');
         loadOrders();
+        closeOrderDetailModal();
     } catch {
         showToast('Failed to cancel order', true);
     }
@@ -246,10 +294,209 @@ async function payOrderBalance(orderId) {
         if (!res.ok) throw new Error();
         showToast('Balance paid successfully ✓');
         loadOrders();
+        closeOrderDetailModal();
     } catch {
         showToast('Failed to pay balance', true);
     }
 }
+
+async function markOrderReceived(orderId) {
+    if (!confirm('Confirm you have received the package?')) return;
+    try {
+        const res = await apiFetch(`/orders/${orderId}/received`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        showToast('Order marked as delivered ✓');
+        loadOrders();
+        closeOrderDetailModal();
+    } catch {
+        showToast('Failed to mark received', true);
+    }
+}
+
+// ── ORDER DETAIL MODAL ────────────────────────────────────
+function closeOrderDetailModal() {
+    const m = document.getElementById('order-detail-modal');
+    if (m) {
+        m.classList.remove('open');
+        m.setAttribute('aria-hidden', 'true');
+    }
+}
+
+async function openOrderDetailModal(orderId) {
+    try {
+        const res = await apiFetch(`/orders/${orderId}`);
+        if (!res.ok) throw new Error('Failed to fetch order');
+        const o = await res.json();
+        
+        const body = document.getElementById('order-detail-modal-body');
+        
+        // ── Status config ──
+        const statusConfig = {
+            pending:   { icon: 'fas fa-clock',        label: 'Awaiting confirmation',   cls: 'status-pending',   msg: 'Waiting for our team to confirm your order.' },
+            confirmed: { icon: 'fas fa-check-circle', label: 'Order Confirmed',          cls: 'status-confirmed', msg: 'Your order has been confirmed and is being prepared.' },
+            shipped:   { icon: 'fas fa-shipping-fast', label: 'Shipped',                 cls: 'status-shipped',   msg: 'Your package is on its way!' },
+            delivered: { icon: 'fas fa-box-open',     label: 'Delivered',                cls: 'status-delivered', msg: 'Your order has been delivered. Thank you for shopping with us!' },
+            cancelled: { icon: 'fas fa-times-circle', label: 'Cancelled',                cls: 'status-cancelled', msg: 'This order has been cancelled.' },
+            refunded:  { icon: 'fas fa-undo',         label: 'Refunded',                 cls: 'status-cancelled', msg: 'This order has been refunded.' },
+        };
+        const sc = statusConfig[o.order_status] || { icon: 'fas fa-info-circle', label: o.order_status, cls: 'status-pending', msg: '' };
+
+        // ── Admin note ──
+        let adminNoteHtml = '';
+        if (o.customer_note) {
+            adminNoteHtml = `
+            <div class="od-admin-note">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <div class="od-admin-note-title">Modified by Admin</div>
+                    <div>${o.customer_note}</div>
+                </div>
+            </div>`;
+        }
+
+        // ── Items ──
+        let itemsHtml = (o.items || []).map(it => `
+            <div class="od-item-row">
+                <img class="od-item-img" src="${it.image || 'https://via.placeholder.com/44'}" onerror="this.style.opacity=.3">
+                <div class="od-item-info">
+                    <div class="od-item-name">${it.product_name}</div>
+                    <div class="od-item-meta">Qty: ${it.product_quantity} &times; $${Number(it.price_at_purchase).toFixed(2)} ${it.selected_option ? `| ${it.selected_option}` : ''}</div>
+                </div>
+                <div class="od-item-price">$${(it.product_quantity * it.price_at_purchase).toFixed(2)}</div>
+            </div>
+        `).join('');
+
+        // ── Tracking card (shipped & delivered) ──
+        let trackingHtml = '';
+        if ((o.order_status === 'shipped' || o.order_status === 'delivered') && (o.tracking_number || o.shipping_company)) {
+            const shipDate = o.shipping_date ? new Date(o.shipping_date).toLocaleString() : 'N/A';
+            trackingHtml = `
+            <div class="od-tracking-card">
+                <div class="od-section-title"><i class="fas fa-truck"></i> Shipment Tracking</div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Delivery Company</span>
+                    <span class="od-tracking-value">${o.shipping_company || 'Unknown'}</span>
+                </div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Tracking No</span>
+                    <span class="od-tracking-value">
+                        ${o.tracking_number || 'N/A'}
+                        ${o.tracking_number ? `<button class="od-copy-btn" onclick="navigator.clipboard.writeText('${o.tracking_number}').then(()=>showToast('Tracking number copied ✓'))"><i class="fas fa-copy"></i> Copy</button>` : ''}
+                    </span>
+                </div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Shipped On</span>
+                    <span class="od-tracking-value">${shipDate}</span>
+                </div>
+                ${o.shipping_image ? `<a href="${o.shipping_image}" target="_blank" class="od-proof-link"><i class="fas fa-image"></i> View Shipping Proof</a>` : ''}
+            </div>`;
+        }
+        
+        let refundTrackingHtml = '';
+        if (o.order_status === 'refunded' && (o.refund_date || o.refund_image)) {
+            const rDate = o.refund_date ? new Date(o.refund_date).toLocaleString() : 'N/A';
+            refundTrackingHtml = `
+            <div class="od-tracking-card">
+                <div class="od-section-title"><i class="fas fa-undo-alt"></i> Refund Details</div>
+                <div class="od-tracking-row">
+                    <span class="od-tracking-label">Refunded On</span>
+                    <span class="od-tracking-value">${rDate}</span>
+                </div>
+                ${o.refund_image ? `<a href="${o.refund_image}" target="_blank" class="od-proof-link"><i class="fas fa-image"></i> View Refund Proof</a>` : ''}
+            </div>`;
+        }
+
+        // ── Actions (consistent across statuses) ──
+        let actionsHtml = '';
+        if (o.order_status === 'pending') {
+            actionsHtml = `
+            <div class="od-actions">
+                <button class="od-btn od-btn-outline" onclick="openAddrModal(${o.order_id}, '${o.order_code}'); closeOrderDetailModal();">
+                    <i class="fas fa-map-marker-alt"></i> Update Address
+                </button>
+                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                    <i class="fab fa-telegram-plane"></i> Contact Store
+                </a>
+            </div>`;
+        } else if (o.order_status === 'confirmed') {
+            actionsHtml = `
+            <div class="od-actions">
+                <button class="od-btn od-btn-outline" onclick="openAddrModal(${o.order_id}, '${o.order_code}'); closeOrderDetailModal();">
+                    <i class="fas fa-map-marker-alt"></i> Update Address
+                </button>
+                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                    <i class="fab fa-telegram-plane"></i> Contact Store
+                </a>
+            </div>`;
+        } else if (o.order_status === 'shipped') {
+            actionsHtml = `
+            <div class="od-actions">
+                <button class="od-btn od-btn-success" onclick="markOrderReceived(${o.order_id})">
+                    <i class="fas fa-box-open"></i> Package Received
+                </button>
+                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                    <i class="fab fa-telegram-plane"></i> Contact Store
+                </a>
+            </div>`;
+        } else if (o.order_status === 'delivered') {
+            actionsHtml = `
+            <div class="od-actions">
+                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                    <i class="fab fa-telegram-plane"></i> Contact Store
+                </a>
+            </div>`;
+        } else if (o.order_status === 'refunded') {
+            actionsHtml = `
+            <div class="od-actions">
+                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                    <i class="fab fa-telegram-plane"></i> Contact Store
+                </a>
+            </div>`;
+        }
+
+        body.innerHTML = `
+            ${adminNoteHtml}
+
+            <div class="od-header">
+                <span class="od-code">${o.order_code}</span>
+                <span class="od-date">${new Date(o.order_date).toLocaleDateString()}</span>
+            </div>
+
+            <div class="od-status-banner ${sc.cls}">
+                <i class="${sc.icon}"></i>
+                <span>${sc.msg}</span>
+            </div>
+
+            <div class="od-section">
+                <div class="od-section-title"><i class="fas fa-shopping-bag"></i> Items</div>
+                ${itemsHtml || '<p style="font-size:13px; color:#aaa;">No items found.</p>'}
+                <div class="od-total-row">
+                    <span>Total</span>
+                    <span class="od-total-amount">$${Number(o.total || 0).toFixed(2)}</span>
+                </div>
+            </div>
+
+            <div class="od-section">
+                <div class="od-section-title"><i class="fas fa-map-marker-alt"></i> Delivery Address</div>
+                <div class="od-detail-row"><strong>Address</strong> <span>${o.addr_line1 || '—'}${o.addr_district ? ', ' + o.addr_district : ''}${o.addr_city ? ', ' + o.addr_city : ''}</span></div>
+                ${o.addr_landmark ? `<div class="od-detail-row"><strong>Landmark</strong> <span>${o.addr_landmark}</span></div>` : ''}
+                <div class="od-detail-row"><strong>Phone</strong> <span>${o.phone1 || '—'}${o.phone2 ? ' / ' + o.phone2 : ''}</span></div>
+            </div>
+
+            ${trackingHtml}
+            ${refundTrackingHtml}
+
+            ${actionsHtml}
+        `;
+
+        const m = document.getElementById('order-detail-modal');
+        m.classList.add('open');
+        m.removeAttribute('aria-hidden');
+    } catch (e) {
+        showToast('Failed to load order details', true);
+    }
+}
+
 
 /* ── ADDRESS / PHONE EDIT MODAL ──────────────────────────── */
 function openAddrModal(orderId, orderCode) {

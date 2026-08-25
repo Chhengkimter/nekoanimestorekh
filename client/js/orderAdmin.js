@@ -50,23 +50,28 @@ function renderOrders() {
       </div>
       <div class="ord-date">${date}</div>
       <div class="ord-total">${total}</div>
-      <div class="ord-status-col">${statusBadge(o.order_status)}</div>
+      <div class="ord-status-col" onclick="event.stopPropagation()">
+        <select class="ord-status-select-inline ${statusBadge(o.order_status).cls}" onchange="handleInlineStatusChange(${o.order_id}, this.value, '${o.order_status}', this)">
+          ${['pending','confirmed','shipped','delivered','cancelled','refunded'].map(s => 
+            `<option value="${s}" ${o.order_status === s ? 'selected' : ''} style="background:#fff;color:#333">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+          ).join('')}
+        </select>
+      </div>
     </div>`;
   }).join('');
 }
 
 function statusBadge(status) {
   const map = {
-    pending:   'badge-amber',
-    confirmed: 'badge-purple',
-    shipped:   'badge-purple',
-    delivered: 'badge-green',
-    cancelled: 'badge-red',
-    refunded:  'badge-red'
+    pending:   { cls: 'badge-amber', label: 'Pending' },
+    confirmed: { cls: 'badge-purple', label: 'Confirmed' },
+    shipped:   { cls: 'badge-purple', label: 'Shipped' },
+    delivered: { cls: 'badge-green', label: 'Delivered' },
+    cancelled: { cls: 'badge-red', label: 'Cancelled' },
+    refunded:  { cls: 'badge-red', label: 'Refunded' }
   };
-  const cls = map[status] || 'badge-amber';
-  const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
-  return `<span class="badge ${cls}">${label}</span>`;
+  const s = map[status] || { cls: 'badge-amber', label: status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown' };
+  return `<span class="badge ${s.cls}">${s.label}</span>`;
 }
 // ── ORDER DETAIL — read-only by default, edit mode via Modify button ──
 
@@ -156,6 +161,272 @@ async function confirmIncomingOrder(orderId) {
   loadOrders().then(renderOrders);
 }
 
+async function handleStatusChange(orderId, newStatus) {
+  if (newStatus === 'shipped') {
+    document.getElementById('ord-status-select').value = viewingOrder.order_status;
+    openShipModal(orderId);
+    return;
+  }
+  
+  if (newStatus === 'refunded') {
+    document.getElementById('ord-status-select').value = viewingOrder.order_status;
+    openRefundModal(orderId);
+    return;
+  }
+
+  if (!confirm(`Change order status to ${newStatus}?`)) {
+    // Revert select visually
+    document.getElementById('ord-status-select').value = viewingOrder.order_status;
+    return;
+  }
+  const res = await apiFetch(`/admin/orders/${orderId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: newStatus })
+  });
+  if (!res.ok) {
+    toast('Failed to change status', true);
+    document.getElementById('ord-status-select').value = viewingOrder.order_status;
+    return;
+  }
+  toast('Status updated ✓');
+  await viewOrderDetail(orderId);
+  loadOrders().then(renderOrders);
+}
+
+function handleInlineStatusChange(orderId, newStatus, oldStatus, selectElement) {
+  if (newStatus === 'shipped') {
+    selectElement.value = oldStatus; 
+    openShipModal(orderId);
+  } else if (newStatus === 'refunded') {
+    selectElement.value = oldStatus;
+    openRefundModal(orderId);
+  } else {
+    // Other statuses use the standard confirm
+    if (!confirm(`Change order status to ${newStatus}?`)) {
+      selectElement.value = oldStatus;
+      return;
+    }
+    // We can just call handleStatusChange, but we don't have viewingOrder set correctly here
+    // Let's do a direct fetch for inline
+    apiFetch(`/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus })
+    }).then(res => {
+      if (!res.ok) {
+        toast('Failed to change status', true);
+        selectElement.value = oldStatus;
+        return;
+      }
+      toast('Status updated ✓');
+      loadOrders().then(renderOrders);
+    });
+  }
+}
+
+// ── REFUND MODAL LOGIC ──
+function openRefundModal(orderId) {
+  if (!document.getElementById('refund-modal-overlay')) {
+    const modalHtml = `
+      <div class="modal-overlay" id="refund-modal-overlay">
+        <div class="modal" style="max-width: 400px; padding: 20px;">
+          <div class="modal-header">
+            <span class="modal-title" style="font-size:18px; font-weight:700;">Refund Order</span>
+            <button class="modal-close" onclick="closeRefundModal()">✕</button>
+          </div>
+          <div class="modal-body" style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
+            <input type="hidden" id="refund-order-id">
+            
+            <div class="form-group">
+              <label>Refund Date</label>
+              <input type="datetime-local" id="refund-date">
+            </div>
+
+            <div class="form-group">
+              <label>Refund Proof Picture (Optional)</label>
+              <input type="file" id="refund-image" accept="image/*">
+            </div>
+
+            <button class="btn-save" style="margin-top:10px; width:100%;" onclick="submitRefundModal()" id="refund-submit-btn">Submit & Mark as Refunded</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+  
+  document.getElementById('refund-order-id').value = orderId;
+  
+  // Set date to now (local time)
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('refund-date').value = now.toISOString().slice(0,16);
+  
+  document.getElementById('refund-modal-overlay').classList.add('open');
+}
+
+function closeRefundModal() {
+  const modal = document.getElementById('refund-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+async function submitRefundModal() {
+  const orderId = document.getElementById('refund-order-id').value;
+  const refundDate = document.getElementById('refund-date').value;
+  const refundImage = document.getElementById('refund-image').files[0];
+
+  const btn = document.getElementById('refund-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const formData = new FormData();
+  if (refundDate) formData.append('refundDate', new Date(refundDate).toISOString());
+  if (refundImage) formData.append('refundImage', refundImage);
+
+  try {
+    const res = await fetch(`${API}/admin/orders/${orderId}/refund`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+      body: formData
+    });
+
+    if (!res.ok) throw new Error('Failed to refund order');
+
+    toast('Order marked as refunded ✓');
+    closeRefundModal();
+    loadOrders().then(renderOrders);
+  } catch (e) {
+    toast('Failed to refund order', true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit & Mark as Refunded';
+  }
+}
+
+// ── SHIP MODAL LOGIC ──
+function openShipModal(orderId) {
+  if (!document.getElementById('ship-modal-overlay')) {
+    const modalHtml = `
+      <div class="modal-overlay" id="ship-modal-overlay">
+        <div class="modal" style="max-width: 400px; padding: 20px;">
+          <div class="modal-header">
+            <span class="modal-title" style="font-size:18px; font-weight:700;">Ship Order</span>
+            <button class="modal-close" onclick="closeShipModal()">✕</button>
+          </div>
+          <div class="modal-body" style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
+            <input type="hidden" id="ship-order-id">
+            
+            <div class="form-group">
+              <label>Delivery Company</label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <label><input type="radio" name="ship-company" value="J&T express" checked> J&T Express</label>
+                <label><input type="radio" name="ship-company" value="VET express"> VET Express</label>
+                <label><input type="radio" name="ship-company" value="Jalat express"> Jalat Express</label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Tracking Number</label>
+              <div style="display:flex; gap:5px;">
+                <input type="text" id="ship-tracking" placeholder="Enter tracking number" style="flex:1;">
+                <button type="button" class="btn-save" style="padding:0 10px;" onclick="pasteTracking()">Paste</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Shipping Date</label>
+              <input type="datetime-local" id="ship-date">
+            </div>
+
+            <div class="form-group">
+              <label>Shipping Picture (Optional)</label>
+              <input type="file" id="ship-image" accept="image/*">
+            </div>
+
+            <button class="btn-save" style="margin-top:10px; width:100%;" onclick="submitShipModal()" id="ship-submit-btn">Submit & Mark as Shipped</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+  
+  document.getElementById('ship-order-id').value = orderId;
+  document.getElementById('ship-tracking').value = '';
+  
+  // Set date to now (local time)
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('ship-date').value = now.toISOString().slice(0, 16);
+  
+  document.getElementById('ship-image').value = '';
+  document.getElementById('ship-modal-overlay').classList.add('open');
+}
+
+function closeShipModal() {
+  const modal = document.getElementById('ship-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+async function pasteTracking() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('ship-tracking').value = text;
+  } catch (err) {
+    toast('Failed to read clipboard', true);
+  }
+}
+
+async function submitShipModal() {
+  const orderId = document.getElementById('ship-order-id').value;
+  const company = document.querySelector('input[name="ship-company"]:checked').value;
+  const tracking = document.getElementById('ship-tracking').value.trim();
+  const date = document.getElementById('ship-date').value;
+  const fileInput = document.getElementById('ship-image');
+
+  if (!tracking) {
+    toast('Tracking number is required', true);
+    return;
+  }
+
+  const btn = document.getElementById('ship-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const formData = new FormData();
+  formData.append('shippingCompany', company);
+  formData.append('trackingNumber', tracking);
+  formData.append('shippingDate', date);
+  if (fileInput.files[0]) {
+    formData.append('shippingImage', fileInput.files[0]);
+  }
+
+  try {
+    const res = await fetch(`${API}/admin/orders/${orderId}/ship`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+      body: formData
+    });
+
+    if (!res.ok) {
+      toast('Failed to ship order', true);
+    } else {
+      toast('Order marked as shipped ✓');
+      closeShipModal();
+      
+      // If we are currently viewing this order in the modal, refresh it
+      if (viewingOrder && viewingOrder.order_id == orderId) {
+        await viewOrderDetail(orderId);
+      }
+      loadOrders().then(renderOrders);
+    }
+  } catch (err) {
+    toast('Network error', true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit & Mark as Shipped';
+  }
+}
+
 // ── READ-ONLY RECEIPT VIEW ──
 function renderOrderDetailView() {
   const o = viewingOrder;
@@ -211,7 +482,7 @@ function renderOrderDetailView() {
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             ${statusBadge(o.order_status)}
-            ${o.order_status === 'pending' ? `<button class="btn-save" style="padding:7px 14px;font-size:12px" onclick="enterEditMode()">Modify</button>` : ''}
+            ${['pending', 'confirmed'].includes(o.order_status) ? `<button class="btn-save" style="padding:7px 14px;font-size:12px" onclick="enterEditMode()">Modify</button>` : ''}
           </div>
         </div>
         <div class="receipt-divider"></div>
@@ -422,8 +693,11 @@ function renderOrderDetailEdit() {
       </div>
 
       <div class="receipt-card">
-        <h3>Admin note <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(internal only — customer never sees this)</span></h3>
-        <textarea id="edit-admin-note" rows="3" placeholder="Internal notes about this order…" onchange="markDirty()">${o.admin_note || ''}</textarea>
+        <h3>Note to customer <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(customer will see this)</span></h3>
+        <textarea id="edit-customer-note" rows="3" placeholder="Explain any modifications made to this order or add a public note..." onchange="markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.customer_note || ''}</textarea>
+        
+        <h3 style="margin-top:15px">Internal admin note <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(not visible to customer)</span></h3>
+        <textarea id="edit-admin-note" rows="3" placeholder="Internal notes for admin use..." onchange="markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.admin_note || ''}</textarea>
       </div>
 
       ${orderEditDirty ? `
@@ -540,6 +814,7 @@ async function saveOrderEdits(orderId) {
     shippingMethod: document.getElementById('edit-shipping-method').value,
     shippingCost:   parseFloat(document.getElementById('edit-shipping-cost').value) || 0,
     orderNote:      document.getElementById('edit-order-note').value.trim(),
+    customerNote:   document.getElementById('edit-customer-note').value.trim(),
     adminNote:      document.getElementById('edit-admin-note').value.trim()
   };
 
@@ -576,5 +851,13 @@ async function saveOrderEdits(orderId) {
   toast('Order updated ✓');
   orderEditDirty = false;
   orderViewMode = 'view';
+  await viewOrderDetail(orderId);
+}
+
+async function requestFinalPayment(orderId) {
+  if (!confirm('Request final payment from customer?')) return;
+  const res = await apiFetch(`/admin/orders/${orderId}/request-payment`, { method: 'POST' });
+  if (!res.ok) { toast('Failed to request payment', true); return; }
+  toast('Final payment requested');
   await viewOrderDetail(orderId);
 }

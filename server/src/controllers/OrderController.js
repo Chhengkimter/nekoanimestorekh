@@ -105,6 +105,17 @@ class OrderController {
       res.status(500).json({ error: 'Failed to pay balance' });
     }
   }
+
+  static async markReceived(req, res) {
+    try {
+      const order = await Order.updateStatus(req.params.id, req.user.id, 'delivered');
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      res.status(200).json({ message: 'Order marked as received', order });
+    } catch (err) {
+      console.error('markReceived error:', err.message);
+      res.status(500).json({ error: 'Failed to mark order as received' });
+    }
+  }
 }
 
 module.exports = OrderController;

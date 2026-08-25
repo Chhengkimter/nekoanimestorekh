@@ -3,9 +3,20 @@ const db = require('../config/db');
 
 const express          = require('express');
 const router           = express.Router();
+const multer           = require('multer');
 const AdminController  = require('../controllers/AdminController');
 const ProductController = require('../controllers/ProductController');
 const { requireAuth, adminOnly } = require('../middleware/auth');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+  }
+});
 
 // All admin routes require login + admin role
 router.use(requireAuth, adminOnly);
@@ -22,8 +33,11 @@ router.get('/orders',                   AdminController.getAllOrders);
 router.post('/orders',                  AdminController.createOrder);
 router.get('/orders/:id',               AdminController.getOrder);
 router.patch('/orders/:id/status',      AdminController.updateOrderStatus);
+router.post('/orders/:id/ship',         upload.single('shippingImage'), AdminController.shipOrder);
+router.post('/orders/:id/refund',       upload.single('refundImage'), AdminController.refundOrder);
 router.patch('/orders/:id/edit',        AdminController.updateOrderFields);
 router.put('/orders/:id/items',         AdminController.updateOrderItems);
+router.post('/orders/:id/request-payment', AdminController.requestFinalPayment);
 router.get('/orders/:id/payments',      AdminController.getOrderPayments);
 router.post('/orders/:id/payments',     AdminController.addOrderPayment);
 router.delete('/orders/:id/payments/:paymentId', AdminController.deleteOrderPayment);

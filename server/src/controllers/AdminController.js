@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const Order = require('../models/Order');
+const ImageUploader = require('../services/ImageUploader');
 
 class AdminController {
 
@@ -111,6 +112,71 @@ class AdminController {
     } catch (err) {
       console.error('updateOrderStatus error:', err.message);
       res.status(500).json({ error: 'Failed to update order status' });
+    }
+  }
+
+
+  // ─── POST /api/admin/orders/:id/ship ──────────────────────────
+  static async shipOrder(req, res) {
+    try {
+      const { shippingCompany, trackingNumber, shippingDate } = req.body;
+      const orderId = req.params.id;
+
+      let shippingImage = null;
+      if (req.file) {
+        shippingImage = await ImageUploader.upload(req.file);
+      }
+
+      const result = await db.query(
+        `UPDATE orders SET 
+          order_status = 'shipped',
+          shipping_company = $1,
+          tracking_number = $2,
+          shipping_date = $3,
+          shipping_image = COALESCE($4, shipping_image)
+         WHERE order_id = $5 RETURNING *`,
+        [shippingCompany, trackingNumber, shippingDate || new Date().toISOString(), shippingImage, orderId]
+      );
+
+      if (!result.rows[0]) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      res.status(200).json({ message: 'Order shipped', order: result.rows[0] });
+    } catch (err) {
+      console.error('shipOrder error:', err.message);
+      res.status(500).json({ error: 'Failed to ship order' });
+    }
+  }
+
+  // ─── POST /api/admin/orders/:id/refund ────────────────────────
+  static async refundOrder(req, res) {
+    try {
+      const { refundDate } = req.body;
+      const orderId = req.params.id;
+
+      let refundImage = null;
+      if (req.file) {
+        refundImage = await ImageUploader.upload(req.file);
+      }
+
+      const result = await db.query(
+        `UPDATE orders SET 
+          order_status = 'refunded',
+          refund_date = $1,
+          refund_image = COALESCE($2, refund_image)
+         WHERE order_id = $3 RETURNING *`,
+        [refundDate || new Date().toISOString(), refundImage, orderId]
+      );
+
+      if (!result.rows[0]) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      res.status(200).json({ message: 'Order refunded', order: result.rows[0] });
+    } catch (err) {
+      console.error('refundOrder error:', err.message);
+      res.status(500).json({ error: 'Failed to refund order' });
     }
   }
 
@@ -253,11 +319,13 @@ class AdminController {
       try {
         const orderCheck = await db.query(`SELECT order_status FROM orders WHERE order_id = $1`, [req.params.id]);
         if (!orderCheck.rows[0]) return res.status(404).json({ error: 'Order not found' });
-        if (orderCheck.rows[0].order_status !== 'pending') {
-          return res.status(400).json({ error: 'Cannot modify an order that has already been confirmed or shipped.' });
+        const currentStatus = orderCheck.rows[0].order_status;
+        if (currentStatus !== 'pending' && currentStatus !== 'confirmed' && currentStatus !== 'modified') {
+          return res.status(400).json({ error: 'Cannot modify an order that has already been shipped or delivered.' });
         }
 
         const updated = await Order.adminUpdateFields(req.params.id, req.body);
+        
         res.status(200).json({ message: 'Order updated', order: updated });
       } catch (err) {
         console.error('updateOrderFields error:', err.message);
@@ -273,8 +341,9 @@ class AdminController {
       try {
         const orderCheck = await db.query(`SELECT order_status FROM orders WHERE order_id = $1`, [req.params.id]);
         if (!orderCheck.rows[0]) return res.status(404).json({ error: 'Order not found' });
-        if (orderCheck.rows[0].order_status !== 'pending') {
-          return res.status(400).json({ error: 'Cannot modify an order that has already been confirmed or shipped.' });
+        const currentStatus = orderCheck.rows[0].order_status;
+        if (currentStatus !== 'pending' && currentStatus !== 'confirmed' && currentStatus !== 'modified') {
+          return res.status(400).json({ error: 'Cannot modify an order that has already been shipped or delivered.' });
         }
 
         const { items } = req.body;
@@ -289,6 +358,21 @@ class AdminController {
       } catch (err) {
         console.error('updateOrderItems error:', err.message);
         res.status(500).json({ error: err.message || 'Failed to update order items' });
+      }
+    }
+
+    // ─── POST /api/admin/orders/:id/request-payment ─────────────────
+    static async requestFinalPayment(req, res) {
+      try {
+        const orderId = req.params.id;
+        const orderCheck = await db.query(`SELECT order_status, payment_method, payment_status FROM orders WHERE order_id = $1`, [orderId]);
+        if (!orderCheck.rows[0]) return res.status(404).json({ error: 'Order not found' });
+        
+        await db.query(`UPDATE orders SET order_status = 'awaiting_final_payment' WHERE order_id = $1`, [orderId]);
+        res.status(200).json({ message: 'Final payment requested' });
+      } catch (err) {
+        console.error('requestFinalPayment error:', err.message);
+        res.status(500).json({ error: 'Failed to request final payment' });
       }
     }
 

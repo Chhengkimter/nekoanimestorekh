@@ -176,6 +176,22 @@
         </div>
     </main>
 
+    <!-- ── ORDER DETAIL MODAL ── -->
+    <div class="up-modal-overlay" id="order-detail-modal" role="dialog" aria-modal="true" aria-labelledby="order-detail-modal-title">
+        <div class="up-modal" style="max-width: 600px; width: 90%;">
+            <div class="up-modal-header">
+                <h3 class="up-modal-title" id="order-detail-modal-title">Order Details</h3>
+                <button class="up-modal-close" onclick="closeOrderDetailModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="up-modal-body" id="order-detail-modal-body">
+                <!-- Content injected via JS -->
+            </div>
+            <div class="up-modal-footer">
+                <button class="up-btn-cancel" onclick="closeOrderDetailModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ── ORDER EDIT ADDRESS MODAL ── -->
     <div class="up-modal-overlay" id="addr-modal" role="dialog" aria-modal="true" aria-labelledby="addr-modal-title">
         <div class="up-modal">

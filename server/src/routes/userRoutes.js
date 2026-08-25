@@ -14,10 +14,8 @@ router.put('/me',  UserController.updateMe);
 
 // ─── Order address edit (customer-facing) ────────────────────
 // PATCH /api/orders/:id/address → update address/phone on unshipped order
-// NOTE: this is mounted on userRoutes so it goes through customer auth,
-//       not admin auth. If you already have /api/orders mounted elsewhere,
-//       add this line to orderRoutes.js instead (see comment below).
-router.patch('/orders/:id/address', UserController.updateOrderAddress);
+// NOTE: This route has been moved to orderRoutes.js so it correctly matches
+// the /api/orders/:id/address path used by the frontend.
 
 module.exports = router;
 

@@ -85,9 +85,13 @@ function buildCard(product) {
   const promoBadge = product.promotion && product.promotion !== 'discount'
     ? `<span class="card-badge promo">${product.promotion.replace('_', ' ')}</span>` : '';
 
+  const stockBadge = product.stockStatus === 'preorder'
+    ? `<span class="card-badge" style="background:#ff9800; color:white; top:10px; right:10px; left:auto;">Pre-order</span>`
+    : (product.stockStatus === 'instock' ? `<span class="card-badge" style="background:#4caf50; color:white; top:10px; right:10px; left:auto;">In stock</span>` : '');
+
   div.innerHTML = `
     <div class="card-img-wrapper">
-      ${discountBadge}${promoBadge}
+      ${discountBadge}${promoBadge}${stockBadge}
       <img src="${product.image}" alt="${product.name}" loading="lazy">
     </div>
     <div class="card-body">
