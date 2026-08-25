@@ -59,11 +59,11 @@ As for admin flow in case we need to modify order  (modify only available if ord
 
 i notice if a product is pre order it show in the product page but instock doesnt have instock label, i want each all to have its own label so customer will know.
 
-clicking on order from the order history will show full detail of order and what has been modified by admin check show rather customer confirm/reject/contact store (if the order was modify by admin before or after confirming it has to be in the customer awaiting action status, this status is waiting for customer to answer to the modified and also use when awaiting the other half payment sent by admin by making the order status "awaiting final payment" and show pay final bill button to them) 
+~ clicking on order from the order history will show full detail of order and what has been modified by admin check show rather customer confirm/reject/contact store (if the order was modify by admin before or after confirming it has to be in the customer awaiting action status, this status is waiting for customer to answer to the modified and also use when awaiting the other half payment sent by admin by making the order status "awaiting final payment" and show pay final bill button to them) 
 
 mobile ui move submit order button to the button instead of the top
 
-clicking update address/phone and the motify button should not open the order detial (currently it opened both) i think whatever click on thebig card will always open the detail page.
+~ clicking update address/phone and the motify button should not open the order detial (currently it opened both) i think whatever click on thebig card will always open the detail page.
 
 ~ allowing to change order status from the main order page instead of having to click it (keep the original just add more on the main page so i can easily click it) if i set the status to shipped it will pop up a fill in page for me. in that page i have the option for 3 delivered company on top for me to click which one i used 
 1. J&T express

@@ -854,25 +854,29 @@ function renderWishlist() {
         const price = parseFloat(item.product_price || 0).toFixed(2);
         const img = item.primary_image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg';
         const stockBadge = item.stock_status === 'preorder'
-            ? '<span class="wl-stock wl-preorder">Pre-order</span>'
+            ? '<span class="card-badge preorder">Pre-order</span>'
             : (item.product_stock === 0
-                ? '<span class="wl-stock wl-out">Out of stock</span>'
+                ? '<span class="card-badge sale">Out of stock</span>'
                 : '');
 
-        return `<div class="wl-card" data-product-id="${item.product_id}">
-            <a href="productpage.html?id=${item.product_id}" class="wl-img-link">
-                <img src="${img}" alt="${item.product_name}" class="wl-img">
-            </a>
-            <div class="wl-info">
-                <a href="productpage.html?id=${item.product_id}" class="wl-name">${item.product_name}</a>
-                <div class="wl-price-row">
-                    <span class="wl-price">$${price}</span>
+        return `<div class="product-card" data-id="${item.product_id}" onclick="window.location.href='productpage.html?id=${item.product_id}'" style="cursor:pointer;">
+            <div class="card-img-wrapper">
+                <div class="card-badges">
                     ${stockBadge}
                 </div>
+                <img src="${img}" alt="${item.product_name}" loading="lazy">
             </div>
-            <button class="wl-remove-btn" onclick="removeWishlistItem(${item.product_id})" title="Remove from wishlist">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            <div class="card-body">
+                <p class="card-name" title="${item.product_name}">${item.product_name}</p>
+                <div class="card-bottom">
+                    <div class="card-prices">
+                        <span class="card-price">$${price}</span>
+                    </div>
+                    <button class="card-wishlist active" onclick="event.stopPropagation(); removeWishlistItem(${item.product_id})" title="Remove from wishlist" aria-label="wishlist">
+                        <i class="fas fa-heart" style="color:var(--red)"></i>
+                    </button>
+                </div>
+            </div>
         </div>`;
     }).join('');
 }

@@ -1116,7 +1116,7 @@ body {
 
     body { padding-bottom: 70px; }
 
-    .similar-grid { grid-template-columns: repeat(2, 1fr); }
+
 
     .footer-content { grid-template-columns: repeat(2, 1fr); }
 
@@ -1770,7 +1770,7 @@ body {
 
     body { padding-bottom: 70px; }
 
-    .similar-grid { grid-template-columns: repeat(2, 1fr); }
+
 
     .footer-content { grid-template-columns: repeat(2, 1fr); }
 
