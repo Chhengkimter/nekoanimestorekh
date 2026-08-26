@@ -23,6 +23,34 @@ app.use('/api/orders',   require('./src/routes/orderRoutes'));
 app.use('/api/admin',    require('./src/routes/adminRoutes'));
 app.use('/api/users',    require('./src/routes/userRoutes')); 
 app.use('/api/wishlist', require('./src/routes/wishlistRoutes'));
+app.use('/api/coupons',  require('./src/routes/couponRoutes'));
+app.use('/api/quests',   require('./src/routes/questRoutes'));
+app.use('/api/reviews',  require('./src/routes/reviewRoutes'));
+
+// ─── Product Views Tracking ──────────────────────────────────
+app.post('/api/products/:id/view', async (req, res) => {
+  try {
+    const db = require('./src/config/db');
+    const authHeader = req.headers.authorization;
+    let userId = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const jwt = require('jsonwebtoken');
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (e) { /* ignore */ }
+    }
+    const ip = req.ip || req.connection.remoteAddress;
+    await db.query(
+      `INSERT INTO product_views (product_id, user_id, ip_address) VALUES ($1, $2, $3)`,
+      [req.params.id, userId, ip]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to track view' });
+  }
+});
 
 // ─── Newsletter ───────────────────────────────────────────────
 app.post('/api/newsletter', async (req, res) => {

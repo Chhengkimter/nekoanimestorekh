@@ -36,6 +36,10 @@
                             <i class="fas fa-heart"></i>
                             <span>Wishlist</span>
                         </button>
+                        <button class="up-nav-item" data-panel="rewards" onclick="switchPanel('rewards', this)">
+                            <i class="fas fa-gift"></i>
+                            <span>Rewards & Quests</span>
+                        </button>
                         <button class="up-nav-item" data-panel="settings" onclick="switchPanel('settings', this)">
                             <i class="fas fa-cog"></i>
                             <span>Settings</span>
@@ -97,6 +101,27 @@
                         </div>
                         <div id="wishlist-list" class="product-grid">
                             <div class="up-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading wishlist…</div>
+                        </div>
+                    </div>
+
+                    <!-- ── REWARDS & QUESTS PANEL ── -->
+                    <div class="up-panel" id="panel-rewards">
+                        <div class="up-panel-header">
+                            <h2 class="up-panel-title">Rewards & Quests</h2>
+                        </div>
+                        
+                        <div class="rewards-section">
+                            <h3 class="rewards-section-title">Active Quests</h3>
+                            <div id="quests-list">
+                                <div class="up-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading quests…</div>
+                            </div>
+                        </div>
+
+                        <div class="rewards-section" style="margin-top: 40px;">
+                            <h3 class="rewards-section-title">My Coupons</h3>
+                            <div id="coupons-list">
+                                <div class="up-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading coupons…</div>
+                            </div>
                         </div>
                     </div>
 

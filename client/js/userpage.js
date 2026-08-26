@@ -918,6 +918,7 @@ function switchPanel(panel, btn) {
 
     // Refresh wishlist when switching to that tab
     if (panel === 'wishlist') loadWishlist();
+    if (panel === 'rewards') loadRewards();
 }
 
 /* ── LOGOUT ──────────────────────────────────────────────── */
@@ -945,6 +946,104 @@ document.getElementById('addr-modal').addEventListener('click', e => {
 document.getElementById('edit-modal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeEditModal();
 });
+
+/* ── REWARDS & QUESTS ────────────────────────────────────── */
+async function loadRewards() {
+    try {
+        const [questsRes, couponsRes] = await Promise.all([
+            apiFetch('/quests/mine'),
+            apiFetch('/coupons/mine')
+        ]);
+        
+        if (questsRes.ok) {
+            const quests = await questsRes.json();
+            renderQuests(quests);
+        }
+        if (couponsRes.ok) {
+            const coupons = await couponsRes.json();
+            renderCoupons(coupons);
+        }
+    } catch {
+        showToast('Could not load rewards', true);
+    }
+}
+
+function renderQuests(quests) {
+    const list = document.getElementById('quests-list');
+    if (!quests.length) {
+        list.innerHTML = `<div class="up-empty"><p>No active quests at the moment.</p></div>`;
+        return;
+    }
+
+    list.innerHTML = quests.map(q => {
+        const pct = Math.min(100, (q.current_value / q.target_value) * 100);
+        const rewardText = q.reward_coupon_code ? `Reward: ${q.reward_discount_type === 'percent' ? q.reward_discount_value + '%' : '$' + q.reward_discount_value} off` : 'Reward: Surprise';
+        
+        let actionBtn = '';
+        if (q.reward_claimed) {
+            actionBtn = `<button class="reward-btn" disabled>Claimed ✓</button>`;
+        } else if (q.completed) {
+            actionBtn = `<button class="reward-btn" onclick="claimQuestReward(${q.quest_id})">Claim Reward</button>`;
+        } else {
+            actionBtn = `<button class="reward-btn" disabled>${q.current_value} / ${q.target_value}</button>`;
+        }
+
+        return `<div class="quest-card">
+            <div class="reward-info">
+                <div class="reward-title">${q.quest_name}</div>
+                <div class="reward-desc">${q.description || ''} &bull; ${rewardText}</div>
+                <div class="quest-progress-bar">
+                    <div class="quest-progress-fill" style="width: ${pct}%"></div>
+                </div>
+                <div class="quest-progress-text">${q.current_value} / ${q.target_value} completed</div>
+            </div>
+            <div class="reward-action">
+                ${actionBtn}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function claimQuestReward(questId) {
+    try {
+        const res = await apiFetch(`/quests/${questId}/claim`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        showToast('Reward claimed! Check your coupons.');
+        loadRewards();
+    } catch {
+        showToast('Could not claim reward', true);
+    }
+}
+
+function renderCoupons(coupons) {
+    const list = document.getElementById('coupons-list');
+    if (!coupons.length) {
+        list.innerHTML = `<div class="up-empty"><p>You don't have any coupons.</p></div>`;
+        return;
+    }
+
+    list.innerHTML = coupons.map(c => {
+        const isUsed = c.used_at !== null;
+        const discountStr = c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `$${c.discount_value} OFF`;
+        
+        let statusHtml = '';
+        if (isUsed) {
+            statusHtml = `<div style="font-size:12px;color:var(--muted);margin-top:6px">Used on ${new Date(c.used_at).toLocaleDateString()}</div>`;
+        } else {
+            statusHtml = `<div class="coupon-code-box">${c.coupon_code}</div>`;
+        }
+
+        return `<div class="coupon-card" style="${isUsed ? 'opacity:0.6' : ''}">
+            <div class="reward-info">
+                <div class="reward-title">${discountStr}</div>
+                <div class="reward-desc">${c.description || ''} <br> Min spend: $${c.min_spent} &bull; Valid on: ${c.applicable_categories}</div>
+            </div>
+            <div class="reward-action">
+                ${statusHtml}
+            </div>
+        </div>`;
+    }).join('');
+}
 
 /* ── BOOT ────────────────────────────────────────────────── */
 init();

@@ -6,6 +6,9 @@ const router           = express.Router();
 const multer           = require('multer');
 const AdminController  = require('../controllers/AdminController');
 const ProductController = require('../controllers/ProductController');
+const CouponController  = require('../controllers/CouponController');
+const QuestController   = require('../controllers/QuestController');
+const ReviewController  = require('../controllers/ReviewController');
 const { requireAuth, adminOnly } = require('../middleware/auth');
 
 const upload = multer({
@@ -87,5 +90,26 @@ router.delete('/categories/:id', async (req, res) => {
   await db.query('DELETE FROM categories WHERE category_id = $1', [req.params.id]);
   res.json({ message: 'Category deleted' });
 });
+
+// ─── Coupons ─────────────────────────────────────────────────
+router.get('/coupons',                CouponController.getAll);
+router.get('/coupons/:id',            CouponController.getOne);
+router.post('/coupons',               CouponController.create);
+router.put('/coupons/:id',            CouponController.update);
+router.delete('/coupons/:id',         CouponController.remove);
+router.get('/coupons/:id/claims',     CouponController.getClaims);
+
+// ─── Quests ──────────────────────────────────────────────────
+router.get('/quests',                 QuestController.getAll);
+router.get('/quests/:id',             QuestController.getOne);
+router.post('/quests',                QuestController.create);
+router.put('/quests/:id',             QuestController.update);
+router.delete('/quests/:id',          QuestController.remove);
+router.get('/quests/:id/progress',    QuestController.getProgress);
+
+// ─── Reviews ─────────────────────────────────────────────────
+router.get('/reviews',                ReviewController.getAll);
+router.put('/reviews/:id',            ReviewController.update);
+router.delete('/reviews/:id',         ReviewController.remove);
 
 module.exports = router;

@@ -114,6 +114,14 @@ async function loadProduct() {
     populatePage(data);
     loadSimilarProducts(data);
     await loadWishlistStatus(data.product_id);
+    
+    // Track product view
+    fetch(`${PRODUCT_API}/products/${data.product_id}/view`, { 
+      method: 'POST',
+      headers: {
+        'Authorization': getToken() ? `Bearer ${getToken()}` : ''
+      }
+    }).catch(() => {});
   } catch (err) {
     showToast('Failed to load product');
     console.error(err);
@@ -488,3 +496,145 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncQuantity();
   syncWishlist();
 });
+
+/* =====================
+   REVIEWS LOGIC
+   ===================== */
+let currentRating = 0;
+
+async function loadReviews(productId) {
+  const list = document.getElementById('reviews-list');
+  if (!list) return;
+
+  try {
+    const res = await fetch(`${PRODUCT_API}/reviews/${productId}`);
+    if (!res.ok) throw new Error();
+    const reviews = await res.json();
+    renderReviews(reviews);
+  } catch (err) {
+    list.innerHTML = '<div class="reviews-loading">Failed to load reviews.</div>';
+  }
+}
+
+function renderReviews(reviews) {
+  const list = document.getElementById('reviews-list');
+  if (!reviews || reviews.length === 0) {
+    list.innerHTML = '<div class="reviews-loading">No reviews yet. Be the first to review!</div>';
+    return;
+  }
+
+  list.innerHTML = reviews.map(r => {
+    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+    const date = new Date(r.created_at).toLocaleDateString();
+    const name = `${r.first_name || 'Anonymous'} ${r.last_name ? r.last_name[0] + '.' : ''}`;
+    
+    let adminNoteHtml = '';
+    if (r.admin_note) {
+      adminNoteHtml = `<div class="review-admin-reply"><strong>Store Reply:</strong> ${r.admin_note}</div>`;
+    }
+
+    return `
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-author">${name}</span>
+          <span class="review-date">${date}</span>
+        </div>
+        <div class="review-rating">${stars}</div>
+        <div class="review-text">${r.review_text || ''}</div>
+        ${adminNoteHtml}
+      </div>
+    `;
+  }).join('');
+}
+
+function openReviewModal() {
+  if (!isLoggedIn()) {
+    showToast('Please log in to write a review');
+    return;
+  }
+  document.getElementById('review-modal-overlay').classList.add('open');
+  setRating(0);
+  document.getElementById('review-text').value = '';
+}
+
+function closeReviewModal() {
+  document.getElementById('review-modal-overlay').classList.remove('open');
+}
+
+function setRating(val) {
+  currentRating = val;
+  document.getElementById('review-rating').value = val;
+  document.querySelectorAll('#review-stars span').forEach(s => {
+    const sVal = parseInt(s.dataset.val);
+    s.textContent = sVal <= val ? '★' : '☆';
+  });
+}
+
+// Setup star hover effects
+document.addEventListener('DOMContentLoaded', () => {
+  const stars = document.querySelectorAll('#review-stars span');
+  stars.forEach(s => {
+    s.addEventListener('mouseover', function() {
+      const val = parseInt(this.dataset.val);
+      stars.forEach(st => {
+        const stVal = parseInt(st.dataset.val);
+        st.textContent = stVal <= val ? '★' : '☆';
+      });
+    });
+    s.addEventListener('mouseout', function() {
+      setRating(currentRating); // Reset to selected
+    });
+    s.addEventListener('click', function() {
+      setRating(parseInt(this.dataset.val));
+    });
+  });
+});
+
+async function submitReview() {
+  const rating = parseInt(document.getElementById('review-rating').value);
+  const text = document.getElementById('review-text').value.trim();
+
+  if (rating === 0) {
+    showToast('Please select a rating');
+    return;
+  }
+
+  const btn = document.querySelector('.modal .add-to-cart-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  try {
+    const res = await fetch(`${PRODUCT_API}/reviews`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({
+        productId: currentProduct.product_id,
+        rating: rating,
+        reviewText: text
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to submit review');
+
+    showToast(data.message || 'Review submitted successfully!');
+    closeReviewModal();
+    // Re-fetch reviews (though the new one won't appear until approved)
+    loadReviews(currentProduct.product_id);
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit Review';
+  }
+}
+
+// Trigger loadReviews when product is loaded
+const originalPopulatePage = populatePage;
+populatePage = function(p) {
+  originalPopulatePage(p);
+  loadReviews(p.product_id);
+};

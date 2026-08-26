@@ -49,6 +49,13 @@ function switchSection(name) {
   if (name === 'inventory') renderInventory();
   if (name === 'categories') renderCategories();
   if (name === 'orders') { loadOrders().then(renderOrders); }
+  if (name === 'coupons') { 
+    Promise.all([loadCoupons(), loadQuests()]).then(() => {
+      renderCoupons();
+      renderQuests();
+    });
+  }
+  if (name === 'reviews') { loadReviews(); }
 }
 
 // ── RENDER ALL ──
