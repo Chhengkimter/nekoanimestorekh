@@ -76,7 +76,7 @@ from the customer page they will get all this info too. oh make sure there is a 
 
 ~ in admin panel, the order detail, i want it to be larger to fill the entire screen (on phone not sure how the current is but on laptop the current layout is too small). make the product clickable and also provide productID , the detail of the order should be enchanced instead of being small but don't make it out of place too much. also both of the notes to customer and admin are all not working properly. 
 
-in the admin product page i want the status to be pre order instead of out of stock for pre order product, however if the product is mark as instock product and we ran out of inventory it suppose to still show out of stock. (pre order does not mean out of stock). for the top 4 display i want to add another card counting pre order product, instock product instead of only having total product. 
+~ in the admin product page i want the status to be pre order instead of out of stock for pre order product, however if the product is mark as instock product and we ran out of inventory it suppose to still show out of stock. (pre order does not mean out of stock). for the top 4 display i want to add another card counting pre order product, instock product instead of only having total product. 
 
 ~ small bug when admin manually add order. add product button has a little glitch where it opens another add order voerlay and i have to close it to see the add product pop up, check it. 
 

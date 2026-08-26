@@ -6,6 +6,7 @@ let modalImages = [];
 let modalOptions = [];
 let pendingDeleteId = null;
 let activeFilter = 'All';
+let activeStatusFilter = 'All Status';
 let invFilter = 'All';
 let allCategoryObjects = []; // stores { category_id, category_name }
 
@@ -57,22 +58,41 @@ function renderStats() {
   const total = products.length;
   const inStockCount = products.filter(p => p.stockStatus === 'instock' || p.stockStatus === 'both').length;
   const preOrderCount = products.filter(p => p.stockStatus === 'preorder' || p.stockStatus === 'both').length;
+  const totalVal = products.reduce((a,p) => a + p.price * p.inventory, 0);
+  const low = products.filter(p => p.inventory > 0 && p.inventory <= 5).length;
   const out = products.filter(p => p.inventory === 0 && (!p.stockStatus || p.stockStatus === 'instock')).length;
   document.getElementById('stats-row').innerHTML =
     `<div class="stat-card"><div class="stat-label">Total products</div><div class="stat-value">${total}</div><div class="stat-sub">across ${categories.length} categories</div></div>
      <div class="stat-card"><div class="stat-label">In-stock products</div><div class="stat-value">${inStockCount}</div><div class="stat-sub">available now</div></div>
      <div class="stat-card"><div class="stat-label">Pre-order products</div><div class="stat-value">${preOrderCount}</div><div class="stat-sub">taking orders</div></div>
-     <div class="stat-card"><div class="stat-label">Out of stock</div><div class="stat-value stat-low">${out}</div><div class="stat-sub">need restocking</div></div>`;
+     <div class="stat-card">
+       <div class="stat-label">Stock Value / Alerts</div>
+       <div class="stat-value" style="font-size:20px;">$${totalVal.toFixed(2)}</div>
+       <div class="stat-sub" style="display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">
+         <span><span class="stat-low" style="font-weight:700">${low}</span> Low</span>
+         <span><span class="stat-low" style="font-weight:700">${out}</span> Out</span>
+       </div>
+     </div>`;
 }
 
 // ── FILTERS ──
+
 function buildFilters() {
   const cats = ['All', ...categories];
-  document.getElementById('table-filters').innerHTML = cats.map(c =>
+  const catHtml = cats.map(c =>
     `<button class="filter-btn ${c===activeFilter?'active':''}" onclick="setFilter('${c}')">${c}</button>`
   ).join('');
+  
+  const statuses = ['All Status', 'In stock', 'Low stock', 'Out of stock', 'Pre-order', 'On Sale'];
+  const statusHtml = `<select class="search-input" style="width:auto; padding:5px 10px; height:auto; font-size:11px; margin-left:10px; border-radius:6px; cursor:pointer;" onchange="setStatusFilter(this.value)">` +
+    statuses.map(s => `<option value="${s}" ${s===activeStatusFilter?'selected':''}>${s}</option>`).join('') +
+    `</select>`;
+
+  document.getElementById('table-filters').innerHTML = catHtml + statusHtml;
 }
+
 function setFilter(c) { activeFilter = c; buildFilters(); renderProducts(); }
+function setStatusFilter(s) { activeStatusFilter = s; buildFilters(); renderProducts(); }
 
 // ── PRODUCTS TABLE ──
 function renderProducts() {
@@ -81,7 +101,23 @@ function renderProducts() {
     const mq = p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
     const cats = p.categories || (p.category ? [p.category] : []);
     const mc = activeFilter==='All' || cats.includes(activeFilter);
-    return mq && mc;
+    
+    let ms = true;
+    if (activeStatusFilter !== 'All Status') {
+      const isPreorder = p.stockStatus === 'preorder' || (p.stockStatus === 'both' && p.inventory === 0);
+      const isOut = p.inventory === 0 && !isPreorder;
+      const isLow = p.inventory > 0 && p.inventory <= 5 && !isPreorder;
+      const isIn = p.inventory > 0 && !isPreorder;
+      const isOnSale = p.discount > 0;
+
+      if (activeStatusFilter === 'Pre-order') ms = isPreorder;
+      else if (activeStatusFilter === 'Out of stock') ms = isOut;
+      else if (activeStatusFilter === 'Low stock') ms = isLow;
+      else if (activeStatusFilter === 'In stock') ms = isIn;
+      else if (activeStatusFilter === 'On Sale') ms = isOnSale;
+    }
+    
+    return mq && mc && ms;
   });
   if (!filtered.length) {
     document.getElementById('product-table-body').innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><p>No products found</p></div>`;
