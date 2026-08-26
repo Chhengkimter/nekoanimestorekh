@@ -793,10 +793,12 @@ function setInv(id, val) {
 // ── CATEGORIES ──
 let catDetailName = null;
 let catDetailPendingRemovals = [];
+let catDetailPendingAdditions = [];
 
 function openCategoryDetail(catName) {
   catDetailName = catName;
   catDetailPendingRemovals = [];
+  catDetailPendingAdditions = [];
   renderCategoryDetail();   // ← this runs FIRST, while sec-cat-detail is still hidden
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-cat-detail').classList.add('active');
@@ -805,12 +807,15 @@ function openCategoryDetail(catName) {
 function closeCategoryDetail() {
   catDetailName = null;
   catDetailPendingRemovals = [];
+  catDetailPendingAdditions = [];
   switchSection('categories');
 }
 
 function renderCategoryDetail() {
-  const prods = products.filter(p => (p.categories||[p.category]||[]).includes(catDetailName));
-  const hasPending = catDetailPendingRemovals.length > 0;
+  const prodsBase = products.filter(p => (p.categories||[p.category]||[]).includes(catDetailName));
+  const addedProds = products.filter(p => catDetailPendingAdditions.includes(p.id));
+  const prods = [...prodsBase, ...addedProds].filter((p, i, self) => self.findIndex(x => x.id === p.id) === i);
+  const hasPending = catDetailPendingRemovals.length > 0 || catDetailPendingAdditions.length > 0;
 
   document.getElementById('cat-detail-content').innerHTML = `
     <div class="cat-detail-header">
@@ -822,7 +827,11 @@ function renderCategoryDetail() {
         <div class="cat-detail-sub">${prods.length} product${prods.length!==1?'s':''}</div>
       </div>
       <div class="cat-detail-actions">
-        ${hasPending ? `<span class="pending-badge">⚠ ${catDetailPendingRemovals.length} pending removal</span>` : ''}
+        <button class="add-btn" onclick="openAddBulkCatModal()" style="margin-right:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add products
+        </button>
+        ${hasPending ? `<span class="pending-badge">⚠ ${catDetailPendingRemovals.length + catDetailPendingAdditions.length} pending changes</span>` : ''}
         <button class="btn-cancel" onclick="cancelCategoryEdits()" ${!hasPending?'style="opacity:.4;pointer-events:none"':''}>Cancel</button>
         <button class="btn-save" onclick="saveCategoryEdits()" ${!hasPending?'style="opacity:.4;pointer-events:none"':''}>Save changes</button>
       </div>
@@ -834,7 +843,8 @@ function renderCategoryDetail() {
             <th>Product</th><th>Price</th><th>Inventory</th><th>Status</th><th>Remove</th>
            </tr></thead><tbody>
            ${prods.map(p => {
-             const isPending = catDetailPendingRemovals.includes(p.id);
+             const isPendingRemoval = catDetailPendingRemovals.includes(p.id);
+             const isPendingAddition = catDetailPendingAdditions.includes(p.id);
              const thumb = p.images && p.images[0]
                ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
                : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
@@ -847,19 +857,21 @@ function renderCategoryDetail() {
              const priceHtml = p.discount > 0
                ? `<span style="text-decoration:line-through;color:var(--muted);font-size:11px">$${Number(p.price).toFixed(2)}</span><br><span style="color:var(--green);font-weight:700">$${salePrice}</span>`
                : `$${Number(p.price).toFixed(2)}`;
-             return `<tr style="${isPending ? 'opacity:.4;' : ''}">
+             return `<tr style="cursor:pointer; ${isPendingRemoval ? 'opacity:.4;' : ''}" onclick="openModal('${p.id}')">
                <td><div class="prod-cell">${thumb}
                  <div>
-                   <div class="prod-name" style="${isPending ? 'text-decoration:line-through' : ''}">${p.name}</div>
+                   <div class="prod-name" style="${isPendingRemoval ? 'text-decoration:line-through' : ''}">${p.name} ${isPendingAddition ? '<span class="badge badge-green" style="margin-left:5px">NEW</span>' : ''}</div>
                    <div class="prod-id">#${p.id}</div>
                  </div>
                </div></td>
                <td style="font-family:var(--mono)">${priceHtml}</td>
                <td style="font-family:var(--mono)">${p.inventory}</td>
                <td>${status}</td>
-               <td>
-                 ${isPending
+               <td onclick="event.stopPropagation()">
+                 ${isPendingRemoval
                    ? `<button class="action-btn" onclick="undoRemoveFromCat('${p.id}')">Undo</button>`
+                   : isPendingAddition
+                   ? `<button class="action-btn" onclick="undoAddToCat('${p.id}')">Undo</button>`
                    : `<button class="action-btn del" onclick="markRemoveFromCat('${p.id}')">Remove</button>`
                  }
                </td>
@@ -880,36 +892,118 @@ function undoRemoveFromCat(prodId) {
   renderCategoryDetail();
 }
 
+function undoAddToCat(prodId) {
+  catDetailPendingAdditions = catDetailPendingAdditions.filter(id => id !== prodId);
+  renderCategoryDetail();
+}
+
 function cancelCategoryEdits() {
   catDetailPendingRemovals = [];
+  catDetailPendingAdditions = [];
   renderCategoryDetail();
 }
 
 async function saveCategoryEdits() {
-  if (!catDetailPendingRemovals.length) return;
-  for (const prodId of catDetailPendingRemovals) {
+  if (!catDetailPendingRemovals.length && !catDetailPendingAdditions.length) return;
+  
+  const allChanges = [...catDetailPendingRemovals, ...catDetailPendingAdditions].filter((v, i, a) => a.indexOf(v) === i);
+  
+  for (const prodId of allChanges) {
     const p   = products.find(x => x.id === prodId);
     const cat = allCategoryObjects.find(c => c.category_name === catDetailName);
     if (!p || !cat) continue;
-    const newCats = p.categories
-      .filter(c => c !== catDetailName)
+    
+    let updatedCatNames = [...(p.categories || [p.category] || [])];
+    
+    if (catDetailPendingRemovals.includes(prodId)) {
+      updatedCatNames = updatedCatNames.filter(c => c !== catDetailName);
+    }
+    if (catDetailPendingAdditions.includes(prodId) && !updatedCatNames.includes(catDetailName)) {
+      updatedCatNames.push(catDetailName);
+    }
+    
+    const newCats = updatedCatNames
       .map(c => allCategoryObjects.find(x => x.category_name === c)?.category_id)
       .filter(Boolean);
+      
     await apiFetch(`/admin/products/${p.dbId}`, {
       method: 'PUT',
       body:   JSON.stringify({ categories: newCats })
     });
   }
-  const count = catDetailPendingRemovals.length;
+  
+  const remCount = catDetailPendingRemovals.length;
+  const addCount = catDetailPendingAdditions.length;
   catDetailPendingRemovals = [];
+  catDetailPendingAdditions = [];
   await loadProducts();
   renderAll(); buildFilters();
-  toast(`Removed ${count} product${count!==1?'s':''} from "${catDetailName}" ✓`);
+  toast(`Updated ${remCount + addCount} product(s) ✓`);
+  renderCategoryDetail();
+}
+
+// ── BULK ADD PRODUCTS TO CATEGORY MODAL ──
+let addBulkCatSelected = [];
+
+function openAddBulkCatModal() {
+  addBulkCatSelected = [];
+  document.getElementById('add-bulk-cat-search').value = '';
+  renderAddBulkCatList();
+  document.getElementById('add-bulk-cat-overlay').classList.add('open');
+}
+
+function closeAddBulkCatModal() {
+  document.getElementById('add-bulk-cat-overlay').classList.remove('open');
+}
+
+function renderAddBulkCatList() {
+  const q = document.getElementById('add-bulk-cat-search').value.toLowerCase();
+  
+  const available = products.filter(p => {
+    const cats = p.categories || (p.category ? [p.category] : []);
+    if (cats.includes(catDetailName) && !catDetailPendingRemovals.includes(p.id)) return false;
+    if (catDetailPendingAdditions.includes(p.id)) return false;
+    return !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+  });
+  
+  document.getElementById('add-bulk-cat-list').innerHTML = available.map(p => {
+    const isChecked = addBulkCatSelected.includes(p.id);
+    const thumb = p.images&&p.images[0] ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">` : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+    
+    return `<div class="add-inv-row" style="cursor:pointer;" onclick="toggleAddBulkCat('${p.id}')">
+      <input type="checkbox" style="margin-right:12px; pointer-events:none;" ${isChecked ? 'checked' : ''}>
+      ${thumb}
+      <div style="flex:1">
+        <div class="vr-name">${p.name}</div>
+        <div class="vr-sku">#${p.id}</div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('add-bulk-cat-count').textContent = addBulkCatSelected.length;
+}
+
+function toggleAddBulkCat(id) {
+  if (addBulkCatSelected.includes(id)) {
+    addBulkCatSelected = addBulkCatSelected.filter(x => x !== id);
+  } else {
+    addBulkCatSelected.push(id);
+  }
+  renderAddBulkCatList();
+}
+
+function submitAddBulkCat() {
+  if (!addBulkCatSelected.length) return closeAddBulkCatModal();
+  catDetailPendingAdditions = [...catDetailPendingAdditions, ...addBulkCatSelected];
+  // Filter out any pending removals that were just re-added
+  catDetailPendingRemovals = catDetailPendingRemovals.filter(id => !addBulkCatSelected.includes(id));
+  
+  closeAddBulkCatModal();
   renderCategoryDetail();
 }
 
 function renderCategories() {
-  document.getElementById('cat-table-body').innerHTML = `<table>
+  document.getElementById('cat-table-body').innerHTML = `<table class="large-table">
     <thead><tr><th>Category name</th><th>Products</th><th>Actions</th></tr></thead>
     <tbody>${categories.map((c, i) => {
       const count = products.filter(p => (p.categories||[p.category]||[]).includes(c)).length;

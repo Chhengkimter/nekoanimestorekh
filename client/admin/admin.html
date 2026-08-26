@@ -6,7 +6,7 @@
 <title>Neko_Animestore Admin — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/admin.css?v=13">
+<link rel="stylesheet" href="../css/admin.css?v=20">
 </head>
 <body data-page="admin">
 
@@ -396,6 +396,29 @@
   </div>
 </div>
 
+<!-- ADD PRODUCTS TO CATEGORY MODAL -->
+<div class="modal-overlay" id="add-bulk-cat-overlay" style="z-index: 220" onclick="if(event.target===this)closeAddBulkCatModal()">
+  <div class="modal add-inv-modal">
+    <div class="modal-header">
+      <span class="modal-title">Add products to category</span>
+      <button class="modal-close" onclick="closeAddBulkCatModal()">✕</button>
+    </div>
+    <div class="add-inv-toolbar">
+      <input class="search-input" id="add-bulk-cat-search" oninput="renderAddBulkCatList()" style="flex:1;width:auto" placeholder="Search products...">
+    </div>
+    <div class="add-inv-list-wrap">
+      <div id="add-bulk-cat-list"></div>
+    </div>
+    <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:12px; color:var(--muted); font-family:var(--mono)"><span id="add-bulk-cat-count" style="font-weight:700; color:var(--text)">0</span> selected</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-cancel" onclick="closeAddBulkCatModal()">Cancel</button>
+        <button class="btn-save" onclick="submitAddBulkCat()">Add selected</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="create-order-overlay" onclick="if(event.target===this)closeCreateOrderModal()">
   <div class="modal" style="max-width:680px">
     <div class="modal-header">
@@ -519,9 +542,9 @@
   </div>
 </div>
  
-<script src="../js/auth.js?v=19"></script>
-<script src="../js/admin.js?v=19"></script>
-<script src="../js/orderAdmin.js?v=19"></script>
+<script src="../js/auth.js?v=21"></script>
+<script src="../js/admin.js?v=21"></script>
+<script src="../js/orderAdmin.js?v=21"></script>
 
 </body>
 </html>

@@ -80,7 +80,7 @@ from the customer page they will get all this info too. oh make sure there is a 
 
 ~ small bug when admin manually add order. add product button has a little glitch where it opens another add order voerlay and i have to close it to see the add product pop up, check it. 
 
-Both of the note in admin modify order is not working, after filling it and unclick on it it will clear back to blank.
+~ Both of the note in admin modify order is not working, after filling it and unclick on it it will clear back to blank.
 
 ~ in admin order page, the status box of the order is not styled. give it some css. also i want to make each order a bit larger currently i find it too small. maybe 1.5 times bigger.
 

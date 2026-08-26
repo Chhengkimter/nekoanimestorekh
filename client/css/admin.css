@@ -102,6 +102,14 @@ td { padding: 18px 16px; font-size: 13px; border-bottom: 1px solid rgba(46,40,64
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: rgba(185,156,200,.04); }
 .prod-cell { display: flex; align-items: center; gap: 12px; }
+.large-table th { font-size: 15px; padding: 18px 24px; }
+.large-table td { padding: 27px 24px; font-size: 19px; }
+.large-table .prod-name { font-size: 19px; }
+.large-table .prod-id { font-size: 15px; }
+.large-table .prod-thumb { width: 84px; height: 84px; }
+.large-table .badge { font-size: 15px; padding: 5px 12px; }
+.large-table .action-btn { font-size: 16px; padding: 8px 15px; }
+.large-table td[style*="font-weight:600"] { font-size: 19px; }
 .prod-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--surface); flex-shrink: 0; border: 1px solid var(--border); }
 .prod-name { font-weight: 600; font-size: 13px; }
 .prod-id { font-size: 10px; color: var(--muted); font-family: var(--mono); }
