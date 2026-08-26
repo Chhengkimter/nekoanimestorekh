@@ -41,6 +41,12 @@ function renderOrders() {
     const phone = o.phone1 || o.phone_number || '';
     const date  = o.order_date ? new Date(o.order_date).toLocaleDateString() : '';
     const total = o.total != null ? `$${Number(o.total).toFixed(2)}` : '—';
+    
+    const statusMap = {
+      pending: 'badge-yellow', confirmed: 'badge-green', shipped: 'badge-blue',
+      delivered: 'badge-grey', cancelled: 'badge-red', refunded: 'badge-red'
+    };
+    const sCls = statusMap[o.order_status] || 'badge-amber';
 
     return `<div class="ord-row" onclick="viewOrderDetail(${o.order_id})">
       <div class="ord-code">${o.order_code}</div>
@@ -51,7 +57,7 @@ function renderOrders() {
       <div class="ord-date">${date}</div>
       <div class="ord-total">${total}</div>
       <div class="ord-status-col" onclick="event.stopPropagation()">
-        <select class="ord-status-select-inline ${statusBadge(o.order_status).cls}" onchange="handleInlineStatusChange(${o.order_id}, this.value, '${o.order_status}', this)">
+        <select class="ord-status-select-inline ${sCls}" onchange="handleInlineStatusChange(${o.order_id}, this.value, '${o.order_status}', this)">
           ${['pending','confirmed','shipped','delivered','cancelled','refunded'].map(s => 
             `<option value="${s}" ${o.order_status === s ? 'selected' : ''} style="background:#fff;color:#333">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
           ).join('')}
@@ -63,14 +69,14 @@ function renderOrders() {
 
 function statusBadge(status) {
   const map = {
-    pending:   { cls: 'badge-amber', label: 'Pending' },
-    confirmed: { cls: 'badge-purple', label: 'Confirmed' },
-    shipped:   { cls: 'badge-purple', label: 'Shipped' },
-    delivered: { cls: 'badge-green', label: 'Delivered' },
+    pending:   { cls: 'badge-yellow', label: 'Pending' },
+    confirmed: { cls: 'badge-green', label: 'Confirmed' },
+    shipped:   { cls: 'badge-blue', label: 'Shipped' },
+    delivered: { cls: 'badge-grey', label: 'Delivered' },
     cancelled: { cls: 'badge-red', label: 'Cancelled' },
     refunded:  { cls: 'badge-red', label: 'Refunded' }
   };
-  const s = map[status] || { cls: 'badge-amber', label: status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown' };
+  const s = map[status] || { cls: 'badge-yellow', label: status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown' };
   return `<span class="badge ${s.cls}">${s.label}</span>`;
 }
 // ── ORDER DETAIL — read-only by default, edit mode via Modify button ──
