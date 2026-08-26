@@ -55,13 +55,13 @@ function renderAll() { renderStats(); renderProducts(); buildFilters(); renderOr
 // ── STATS ──
 function renderStats() {
   const total = products.length;
-  const totalVal = products.reduce((a,p) => a + p.price * p.inventory, 0);
-  const low = products.filter(p => p.inventory > 0 && p.inventory <= 5).length;
-  const out = products.filter(p => p.inventory === 0).length;
+  const inStockCount = products.filter(p => p.stockStatus === 'instock' || p.stockStatus === 'both').length;
+  const preOrderCount = products.filter(p => p.stockStatus === 'preorder' || p.stockStatus === 'both').length;
+  const out = products.filter(p => p.inventory === 0 && (!p.stockStatus || p.stockStatus === 'instock')).length;
   document.getElementById('stats-row').innerHTML =
     `<div class="stat-card"><div class="stat-label">Total products</div><div class="stat-value">${total}</div><div class="stat-sub">across ${categories.length} categories</div></div>
-     <div class="stat-card"><div class="stat-label">Stock value</div><div class="stat-value">$${totalVal.toFixed(2)}</div><div class="stat-sub">retail estimate</div></div>
-     <div class="stat-card"><div class="stat-label">Low stock</div><div class="stat-value stat-low">${low}</div><div class="stat-sub">≤ 5 units left</div></div>
+     <div class="stat-card"><div class="stat-label">In-stock products</div><div class="stat-value">${inStockCount}</div><div class="stat-sub">available now</div></div>
+     <div class="stat-card"><div class="stat-label">Pre-order products</div><div class="stat-value">${preOrderCount}</div><div class="stat-sub">taking orders</div></div>
      <div class="stat-card"><div class="stat-label">Out of stock</div><div class="stat-value stat-low">${out}</div><div class="stat-sub">need restocking</div></div>`;
 }
 
@@ -94,9 +94,13 @@ function renderProducts() {
     const thumb = p.images&&p.images[0]
   ? `<img class="prod-thumb" src="${p.images[0]}" onerror="this.style.opacity=.3">`
   : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px">📦</div>`;
-    const status = p.inventory===0
+    const status = p.stockStatus === 'preorder'
+      ? `<span class="badge badge-purple">Pre-order</span>`
+      : p.stockStatus === 'both' && p.inventory === 0
+      ? `<span class="badge badge-purple">Pre-order</span>`
+      : p.inventory === 0
       ? `<span class="badge badge-red">Out of stock</span>`
-      : p.inventory<=5
+      : p.inventory <= 5
       ? `<span class="badge badge-amber">Low stock</span>`
       : `<span class="badge badge-green">In stock</span>`;
     const cats = (p.categories||[p.category]).filter(Boolean);

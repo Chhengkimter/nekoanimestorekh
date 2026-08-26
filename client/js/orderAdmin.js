@@ -331,7 +331,7 @@ function openShipModal(orderId) {
             </div>
 
             <div class="form-group">
-              <label>Tracking Number</label>
+              <label>Tracking Number <span class="optional" style="font-size:11px;color:var(--muted);font-weight:normal;">(Optional)</span></label>
               <div style="display:flex; gap:5px;">
                 <input type="text" id="ship-tracking" style="flex:1;">
                 <button type="button" class="btn-save" style="padding:0 10px;" onclick="pasteTracking()">Paste</button>
@@ -388,11 +388,6 @@ async function submitShipModal() {
   const tracking = document.getElementById('ship-tracking').value.trim();
   const date = document.getElementById('ship-date').value;
   const fileInput = document.getElementById('ship-image');
-
-  if (!tracking) {
-    toast('Tracking number is required', true);
-    return;
-  }
 
   const btn = document.getElementById('ship-submit-btn');
   btn.disabled = true;

@@ -78,8 +78,19 @@ from the customer page they will get all this info too. oh make sure there is a 
 
 in the admin product page i want the status to be pre order instead of out of stock for pre order product, however if the product is mark as instock product and we ran out of inventory it suppose to still show out of stock. (pre order does not mean out of stock). for the top 4 display i want to add another card counting pre order product, instock product instead of only having total product. 
 
-small bug when admin anually add order. add product button has a little glitch, check it. 
+~ small bug when admin manually add order. add product button has a little glitch where it opens another add order voerlay and i have to close it to see the add product pop up, check it. 
 
 Both of the note in admin modify order is not working, after filling it and unclick on it it will clear back to blank.
 
-in admin order page, the status box of the order is not styled. give it some css. also i want to make each order a bit larger currently i find it too small. maybe 1.5 times bigger.
+~ in admin order page, the status box of the order is not styled. give it some css. also i want to make each order a bit larger currently i find it too small. maybe 1.5 times bigger.
+
+Admin new page: quests and coupons area. define discount rate, min spent, max of dollar. expiration date. how many coupon can be used in a time. also how many times a user can claim a single coupon. see which user has claimed which coupon, used what. each coupon used will also be shown on record like how much was the order, how much saved. also for the coupon we can set on which categories of products the coupon can and can not used on. 
+
+for customer side of coupon. add a new page in userpage maybe below wishlist. the quest and coupon area. customer can see the coupons details and new quest waiting for completion. 
+
+review section of a product. each review will undergo admin approval to make sure the review is appropriate and belong to that product. admin can also link the same review to multiple products. if approved it will be shown on the product page, if rejected it will be hidden. admin will also have the right to delete a review. since some quest is linked to completing a review, only approved review will count of completion of the quest. 
+
+create a system where when a user creates an account, an email will be sent to their email address to verify their account.  this can later be used for account password reset or if user forgot their password. 
+
+admine new page: Finance. this page should have a calender for the admin to view revenue in a range of date and a bar chart showing total revenue. each order will now have a profit column where admin can manually enter how much they have earn from that single order. show profit and make a section to record spending such as ads and content ceator.
+make sure each have a filter for weekly, monthly and yearly. its like a finance corner of the store you know.
