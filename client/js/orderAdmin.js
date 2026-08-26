@@ -701,10 +701,10 @@ function renderOrderDetailEdit() {
 
       <div class="receipt-card receipt-full-width">
         <h3>Note to customer <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(customer will see this)</span></h3>
-        <textarea id="edit-customer-note" rows="3" onchange="viewingOrder.customer_note = this.value; markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.customer_note || ''}</textarea>
+        <textarea id="edit-customer-note" rows="3" style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); font-family:var(--font); font-size:13px; color:var(--text); outline:none;" onchange="viewingOrder.customer_note = this.value; markDirty()" ${orderViewMode === 'view' ? 'readonly style="width:100%; box-sizing:border-box; background:transparent;border:none;resize:none; padding:0;"' : ''}>${o.customer_note || ''}</textarea>
         
         <h3 style="margin-top:15px">Internal admin note <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(not visible to customer)</span></h3>
-        <textarea id="edit-admin-note" rows="3" onchange="viewingOrder.admin_note = this.value; markDirty()" ${orderViewMode === 'view' ? 'readonly style="background:transparent;border:none;resize:none;"' : ''}>${o.admin_note || ''}</textarea>
+        <textarea id="edit-admin-note" rows="3" style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); font-family:var(--font); font-size:13px; color:var(--text); outline:none;" onchange="viewingOrder.admin_note = this.value; markDirty()" ${orderViewMode === 'view' ? 'readonly style="width:100%; box-sizing:border-box; background:transparent;border:none;resize:none; padding:0;"' : ''}>${o.admin_note || ''}</textarea>
       </div>
 
       ${orderEditDirty ? `
