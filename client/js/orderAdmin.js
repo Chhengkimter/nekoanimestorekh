@@ -229,6 +229,21 @@ function handleInlineStatusChange(orderId, newStatus, oldStatus, selectElement) 
   }
 }
 
+async function saveOrderProfit(orderId) {
+  const val = document.getElementById('order-profit-input').value;
+  try {
+    const res = await apiFetch(`/admin/orders/${orderId}/profit`, {
+      method: 'PATCH',
+      body: JSON.stringify({ profit: val })
+    });
+    if (!res.ok) throw new Error();
+    toast('Profit saved ✓');
+    await viewOrderDetail(orderId);
+  } catch (err) {
+    toast('Failed to save profit', true);
+  }
+}
+
 // ── REFUND MODAL LOGIC ──
 function openRefundModal(orderId) {
   if (!document.getElementById('refund-modal-overlay')) {
@@ -539,6 +554,18 @@ function renderOrderDetailView() {
         <h3>Admin note <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(internal only)</span></h3>
         <p style="font-size:13px">${o.admin_note}</p>
       </div>` : ''}
+
+      <div class="receipt-card receipt-full-width">
+        <h3>Finance</h3>
+        <div class="ord-detail-row">
+          <span>Order Profit</span>
+          <div style="display:flex; gap:10px; align-items:center">
+            <span style="color:var(--muted)">$</span>
+            <input type="number" id="order-profit-input" step="0.01" class="profit-input" placeholder="0.00" value="${o.profit || ''}">
+            <button class="btn-save" style="padding:4px 10px; font-size:12px;" onclick="saveOrderProfit(${o.order_id})">Save</button>
+          </div>
+        </div>
+      </div>
 
       <div class="receipt-card receipt-full-width">
         <h3>Status</h3>

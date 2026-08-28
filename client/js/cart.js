@@ -1,6 +1,8 @@
 const BASE_URL = 'http://localhost:3000/api/cart';
 
 let cartItems = [];
+let appliedCoupon = null;
+let wishlistIds = [];
 
 /* =====================
    AUTH HELPER
@@ -47,7 +49,8 @@ async function fetchCart() {
             img:          item.image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
             note:         item.note || '',
             currentPrice: parseFloat(item.current_price),
-            stockStatus:  item.stock_status
+            stockStatus:  item.stock_status,
+            stockAmount:  item.product_stock
         }));
 
     } catch (err) {
@@ -123,6 +126,9 @@ function render() {
         const subtotal   = (item.price * item.qty).toFixed(2);
         const hasNote    = item.note && item.note.trim().length > 0;
         const priceDrift = item.currentPrice && item.currentPrice !== item.price;
+        const outOfStock = item.stockStatus === 'instock' && item.stockAmount <= 0;
+        const isWishlisted = wishlistIds.includes(item.productId);
+
         const driftBadge = priceDrift
             ? `<span class="price-drift-badge" title="Price changed since you added this item">
                    Current price: $${item.currentPrice.toFixed(2)}
@@ -130,7 +136,7 @@ function render() {
             : '';
 
         div.innerHTML = `
-            <div class="item-top">
+            <div class="item-top" style="${outOfStock ? 'opacity:0.5;' : ''}">
                 <a href="productpage.html?id=${item.productId}" class="item-img-link">
                     <img src="${item.img}" alt="${item.name}" class="item-img">
                 </a>
@@ -138,19 +144,25 @@ function render() {
                     <a href="productpage.html?id=${item.productId}" class="item-name-link" title="${item.name}">${item.name}</a>
                     ${item.option && item.option !== '—' ? `<span class="item-option">${item.option}</span>` : ''}
                     <div class="item-price-unit">$${item.price.toFixed(2)} each ${driftBadge}</div>
+                    ${outOfStock ? `<div style="color:#e53e3e; font-weight:bold; font-size:12px; margin-top:4px;">Out of Stock</div>` : ''}
                 </div>
             </div>
 
             <div class="item-controls">
-                <div class="qty-control">
+                <div class="qty-control" style="${outOfStock ? 'pointer-events:none; opacity:0.5;' : ''}">
                     <button class="qty-btn minus-btn" aria-label="Decrease">−</button>
                     <span class="qty-value">${item.qty}</span>
                     <button class="qty-btn plus-btn" aria-label="Increase">+</button>
                 </div>
                 <span class="item-subtotal">$${subtotal}</span>
-                <button class="remove-btn" title="Remove item">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <div style="display:flex; gap:8px;">
+                    <button class="wishlist-btn" title="Add to Wishlist" style="width:32px; height:32px; border-radius:50%; border:1px solid; ${isWishlisted ? 'color:#e05c7a; border-color:#e05c7a; background:#fff0f3;' : 'color:#ccc; border-color:#e0e0e0; background:white;'} display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'" onmouseout="${isWishlisted ? `this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'` : `this.style.color='#ccc'; this.style.borderColor='#e0e0e0'`}">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button class="remove-btn" title="Remove item">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="item-note-row">
@@ -172,6 +184,7 @@ function render() {
         div.querySelector('.minus-btn').addEventListener('click', () => changeQty(item.cartId, -1));
         div.querySelector('.plus-btn').addEventListener('click',  () => changeQty(item.cartId, +1));
         div.querySelector('.remove-btn').addEventListener('click', () => removeItem(item.cartId));
+        div.querySelector('.wishlist-btn').addEventListener('click', (e) => toggleWishlist(item.productId, e.currentTarget));
 
         const noteToggle = div.querySelector('.note-toggle');
         const noteArea   = div.querySelector('.note-area');
@@ -221,6 +234,9 @@ function renderSummary() {
     let total = 0;
 
     cartItems.forEach(item => {
+        const outOfStock = item.stockStatus === 'instock' && item.stockAmount <= 0;
+        if (outOfStock) return; // Exclude out of stock items from summary
+        
         const sub = item.price * item.qty;
         total += sub;
         const row = document.createElement('div');
@@ -235,13 +251,72 @@ function renderSummary() {
         summaryItems.appendChild(row);
     });
 
+    if (appliedCoupon) {
+        const row = document.createElement('div');
+        row.className = 'summary-row';
+        row.style.color = '#38a169';
+        row.innerHTML = `
+            <span class="item-label" style="font-weight:600;">Coupon (${appliedCoupon.code})
+                <button onclick="removeCoupon()" style="background:none; border:none; color:#e53e3e; margin-left:8px; cursor:pointer; font-size:11px;">[Remove]</button>
+            </span>
+            <span class="item-val">-$${appliedCoupon.discount.toFixed(2)}</span>
+        `;
+        summaryItems.appendChild(row);
+        total = Math.max(0, total - appliedCoupon.discount);
+    }
+
     totalEl.textContent = `$${total.toFixed(2)}`;
+}
+
+function removeCoupon() {
+    appliedCoupon = null;
+    document.getElementById('cart-coupon-input').value = '';
+    renderSummary();
+    showToast('Coupon removed');
+}
+
+async function applyCoupon() {
+    const code = document.getElementById('cart-coupon-input').value.trim();
+    if (!code) return;
+    
+    const cartTotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+    
+    try {
+        const res = await fetch('http://localhost:3000/api/coupons/validate', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ code, cartTotal, categoryIds: [] })
+        });
+        const data = await res.json();
+        
+        if (!res.ok || !data.valid) {
+            showToast(data.error || 'Invalid coupon', true);
+            appliedCoupon = null;
+            renderSummary();
+            return;
+        }
+        
+        appliedCoupon = { code, discount: data.discount, info: data.coupon };
+        showToast('Coupon applied!');
+        renderSummary();
+    } catch (err) {
+        showToast('Error applying coupon', true);
+    }
 }
 
 function updateAddressBtn() {
     const btn = document.getElementById('setup-address-btn');
     if (!btn) return;
+    const hasOutOfStock = cartItems.some(i => i.stockStatus === 'instock' && i.stockAmount <= 0);
+    // Don't disable the button if there are out-of-stock items, so they can click it to remove them
     btn.disabled = cartItems.length === 0;
+    if (hasOutOfStock) {
+        btn.innerHTML = `<i class="fas fa-exclamation-circle"></i> Remove out of stock items`;
+        btn.style.background = '#e53e3e';
+    } else {
+        btn.innerHTML = `<i class="fas fa-map-marker-alt"></i> Set Up Address`;
+        btn.style.background = '';
+    }
 }
 
 /* =====================
@@ -256,7 +331,10 @@ async function changeQty(cartId, delta) {
     if (newQty === prevQty) return;
 
     cartItems[idx].qty = newQty;
-    render();
+    
+    // Re-validate coupon if one is applied
+    if (appliedCoupon) applyCoupon();
+    else render();
 
     try {
         await apiUpdateQty(cartId, newQty);
@@ -271,7 +349,10 @@ async function changeQty(cartId, delta) {
 async function removeItem(cartId) {
     const snapshot = [...cartItems];
     cartItems = cartItems.filter(ci => ci.cartId !== cartId);
-    render();
+    
+    // Re-validate coupon if one is applied
+    if (appliedCoupon) applyCoupon();
+    else render();
     showToast('Item removed from cart');
 
     try {
@@ -281,6 +362,36 @@ async function removeItem(cartId) {
         cartItems = snapshot;
         render();
         showToast('Could not remove item. Please try again.');
+    }
+}
+
+async function toggleWishlist(productId, btn) {
+    try {
+        const res = await fetch('http://localhost:3000/api/wishlist/toggle', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ productId })
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        
+        if (data.wishlisted) {
+            if (!wishlistIds.includes(productId)) wishlistIds.push(productId);
+            showToast('Added to wishlist!');
+            btn.style.color = '#e05c7a';
+            btn.style.borderColor = '#e05c7a';
+            btn.style.background = '#fff0f3';
+            btn.onmouseout = function() { this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'; };
+        } else {
+            wishlistIds = wishlistIds.filter(id => id !== productId);
+            showToast('Removed from wishlist');
+            btn.style.color = '#ccc';
+            btn.style.borderColor = '#e0e0e0';
+            btn.style.background = 'white';
+            btn.onmouseout = function() { this.style.color='#ccc'; this.style.borderColor='#e0e0e0'; };
+        }
+    } catch (err) {
+        showToast('Error updating wishlist', true);
     }
 }
 
@@ -298,11 +409,40 @@ function showToast(msg) {
 /* =====================
    ADDRESS BUTTON
    ===================== */
-document.getElementById('setup-address-btn')?.addEventListener('click', () => {
+document.getElementById('setup-address-btn')?.addEventListener('click', async () => {
     if (cartItems.length === 0) return;
+    
+    // If there are out of stock items, clicking this button should remove them
+    const outOfStockItems = cartItems.filter(i => i.stockStatus === 'instock' && i.stockAmount <= 0);
+    if (outOfStockItems.length > 0) {
+        const btn = document.getElementById('setup-address-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+        
+        for (const item of outOfStockItems) {
+            await removeItem(item.cartId);
+        }
+        return; // Stop here, don't checkout yet
+    }
+
     sessionStorage.setItem('neko_cart_snapshot', JSON.stringify(cartItems));
+    
+    // Recalculate total for safe measure
     const total = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
-    sessionStorage.setItem('neko_cart_total', total.toFixed(2));
+    
+    // Calculate final total including coupon
+    const finalTotal = appliedCoupon ? Math.max(0, total - appliedCoupon.discount) : total;
+    sessionStorage.setItem('neko_cart_total', finalTotal.toFixed(2));
+    
+    if (appliedCoupon) {
+        sessionStorage.setItem('neko_cart_coupon', JSON.stringify({
+            code: appliedCoupon.code,
+            discount: appliedCoupon.discount
+        }));
+    } else {
+        sessionStorage.removeItem('neko_cart_coupon');
+    }
+    
     window.location.href = 'address.html';
 });
 
@@ -315,6 +455,12 @@ async function init() {
 
     const list = document.getElementById('cart-items-list');
     list.innerHTML = '<p style="color:#B99CC8;padding:1rem;">Loading cart…</p>';
+
+    // Load wishlist IDs to properly color the hearts
+    try {
+        const res = await fetch('http://localhost:3000/api/wishlist/ids', { headers: authHeaders() });
+        if (res.ok) wishlistIds = await res.json();
+    } catch(e) {}
 
     await fetchCart();
     render();

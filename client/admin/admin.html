@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/admin.css?v=22">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body data-page="admin">
 
@@ -66,6 +67,10 @@
     <div class="nav-item" data-section="reviews" onclick="switchSection('reviews')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
       <span>Reviews</span>
+    </div>
+    <div class="nav-item" data-section="finance" onclick="switchSection('finance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+      <span>Finance</span>
     </div>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="logout()">
@@ -150,13 +155,13 @@
       <div class="topbar">
         <div class="topbar-title">Coupons & Quests</div>
         <div class="topbar-actions">
-          <button class="add-btn" onclick="openCouponModal()" style="margin-right:10px;">
+          <button class="add-btn" onclick="openCouponModal()" style="margin-right:4px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add coupon
+            Add Coupon
           </button>
           <button class="add-btn" onclick="openQuestModal()" style="background:var(--accent)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add quest
+            Add Quest
           </button>
         </div>
       </div>
@@ -221,13 +226,56 @@
       </div>
       <div style="padding:28px 32px">
         <div class="ord-status-tabs" id="rev-status-tabs">
-          <button class="ord-tab active" data-status="pending" onclick="setReviewTab(this)">Pending</button>
+          <button class="ord-tab active" data-status="all" onclick="setReviewTab(this)">All</button>
+          <button class="ord-tab" data-status="pending" onclick="setReviewTab(this)">Pending</button>
           <button class="ord-tab" data-status="approved" onclick="setReviewTab(this)">Approved</button>
           <button class="ord-tab" data-status="rejected" onclick="setReviewTab(this)">Rejected</button>
         </div>
         <div class="table-wrap" style="margin-top:20px">
           <div id="review-table-body">
             <div class="ord-loading">Loading reviews…</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINANCE DASHBOARD -->
+    <section id="sec-finance" class="section">
+      <div class="topbar">
+        <div class="topbar-title">Finance Dashboard</div>
+      </div>
+      <div style="padding:28px 32px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <div class="ord-status-tabs" id="fin-range-tabs">
+            <button class="ord-tab active" data-range="last30" onclick="setFinanceRange(this)">Last 30 Days</button>
+            <button class="ord-tab" data-range="thisMonth" onclick="setFinanceRange(this)">This Month</button>
+            <button class="ord-tab" data-range="thisYear" onclick="setFinanceRange(this)">This Year</button>
+          </div>
+          <div class="form-group" style="flex-direction:row; align-items:center; gap:10px;">
+            <label style="margin:0; font-size:12px;">Group By:</label>
+            <select id="fin-group-by" onchange="loadFinanceSummary()" style="min-width:120px;">
+              <option value="day">Daily</option>
+              <option value="week">Weekly</option>
+              <option value="month">Monthly</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="stats-row" id="finance-stats-row">
+          <!-- Summary cards -->
+        </div>
+
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-top:20px; height: 350px;">
+          <canvas id="financeChart"></canvas>
+        </div>
+
+        <h3 style="margin-top:40px; margin-bottom:15px; font-size:16px; display:flex; justify-content:space-between;">
+          <span>Expenses / Spending</span>
+          <button class="add-btn" onclick="openExpenseModal()" style="font-size:12px; padding:6px 12px;">Add Expense</button>
+        </h3>
+        <div class="table-wrap">
+          <div id="expense-table-body">
+            <div class="ord-loading">Loading expenses...</div>
           </div>
         </div>
       </div>
@@ -615,6 +663,10 @@
         <input type="text" id="o-tracking">
       </div>
       <div class="form-group form-full">
+        <label>Order Profit ($)</label>
+        <input type="number" id="o-profit" step="0.01" min="0" placeholder="e.g. 5.00">
+      </div>
+      <div class="form-group form-full">
         <label>Admin note (sent to customer optionally)</label>
         <textarea id="o-admin-note" rows="2"></textarea>
       </div>
@@ -634,16 +686,81 @@
     </div>
     <div class="form-grid">
       <div class="form-group form-full">
-        <label>Link to other products (hold Ctrl to select multiple)</label>
-        <select id="rev-link-products" multiple style="height:120px"></select>
+        <label>Linked Products</label>
+        <div id="rev-linked-products-list" class="table-wrap" style="padding:4px 16px; min-height:50px;"></div>
+        <button class="add-btn" style="margin-top:10px;width:100%;justify-content:center;padding:10px;font-size:12px" onclick="openAddReviewProductModal()">
+          <i class="fas fa-link"></i> Link a product
+        </button>
       </div>
       <div class="form-group form-full">
         <label>Admin Note (Visible to customer/public)</label>
         <textarea id="rev-admin-note" rows="3"></textarea>
       </div>
       <div class="form-group form-full" style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:10px;">
-        <button class="del-btn" id="rev-delete-btn" style="border:none;background:transparent;color:#d94343;font-weight:600;cursor:pointer">Delete Review</button>
-        <button class="modal-save" onclick="saveReviewAction()">Save changes</button>
+        <button class="del-btn" id="rev-delete-btn" style="border:none;background:transparent;color:#d94343;font-weight:600;cursor:pointer"></button>
+        <button class="btn-save" onclick="saveReviewAction()">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRODUCT TO REVIEW MODAL -->
+<div class="modal-overlay" id="add-review-product-overlay" style="z-index: 210" onclick="if(event.target===this)closeAddReviewProductModal()">
+  <div class="modal add-inv-modal">
+    <div class="modal-header">
+      <span class="modal-title">Link product</span>
+      <button class="modal-close" onclick="closeAddReviewProductModal()">✕</button>
+    </div>
+    <div class="add-inv-toolbar">
+      <input class="search-input" id="add-rev-prod-search" oninput="renderAddReviewProductList()" style="flex:1;width:auto" placeholder="Search product...">
+      <select
+        id="add-rev-prod-cat-filter"
+        class="add-inv-cat-select"
+        onchange="renderAddReviewProductList()"
+      >
+        <option value="All">All categories</option>
+      </select>
+    </div>
+    <div class="add-inv-list-wrap">
+      <div id="add-review-product-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddReviewProductModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPENSE MODAL -->
+<div class="modal-overlay" id="expense-modal-overlay" onclick="if(event.target===this)closeExpenseModal()">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title">Record Expense</span>
+      <button class="modal-close" onclick="closeExpenseModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Amount ($) *</label>
+        <input type="number" id="exp-amount" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Category *</label>
+        <select id="exp-category">
+          <option value="ads">Ads / Marketing</option>
+          <option value="content_creator">Content Creator</option>
+          <option value="infrastructure">Infrastructure / Server</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label>Date *</label>
+        <input type="date" id="exp-date">
+      </div>
+      <div class="form-group form-full">
+        <label>Description</label>
+        <textarea id="exp-desc" rows="2" placeholder="What was this for?"></textarea>
+      </div>
+      <div class="form-group form-full" style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button class="btn-save" onclick="submitExpense()">Save Expense</button>
       </div>
     </div>
   </div>
@@ -792,11 +909,12 @@
   </div>
 </div>
  
-<script src="../js/auth.js?v=22"></script>
-<script src="../js/admin.js"></script>
-<script src="../js/orderAdmin.js"></script>
-<script src="../js/couponAdmin.js"></script>
-<script src="../js/reviewAdmin.js"></script>
+<script src="../js/auth.js?v=23"></script>
+<script src="../js/admin.js?v=23"></script>
+<script src="../js/orderAdmin.js?v=23"></script>
+<script src="../js/couponAdmin.js?v=23"></script>
+<script src="../js/reviewAdmin.js?v=23"></script>
+<script src="../js/financeAdmin.js?v=23"></script>
 
 </body>
 </html>

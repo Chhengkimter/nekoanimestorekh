@@ -34,6 +34,15 @@ class Order {
     );
   }
 
+  // ─── Update Order Profit (Admin) ──────────────────────────────────
+  static async updateProfit(orderId, profit) {
+    const result = await db.query(
+      `UPDATE orders SET profit = $1 WHERE order_id = $2 RETURNING *`,
+      [profit, orderId]
+    );
+    return result.rows[0] || null;
+  }
+
   // ─── Update Order Status (Customer confirming/cancelling modified order) ──
   static async updateStatus(orderId, userId, status) {
     const result = await db.query(

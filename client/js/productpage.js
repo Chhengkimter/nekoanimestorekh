@@ -533,6 +533,14 @@ function renderReviews(reviews) {
       adminNoteHtml = `<div class="review-admin-reply"><strong>Store Reply:</strong> ${r.admin_note}</div>`;
     }
 
+    let imageHtml = '';
+    if (r.image_url) {
+      const urls = r.image_url.split(',');
+      imageHtml = `<div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        ${urls.map(url => `<img src="${url}" style="max-width:150px; border-radius:8px; border:1px solid #eee; cursor:pointer;" onclick="window.open(this.src,'_blank')">`).join('')}
+      </div>`;
+    }
+
     return `
       <div class="review-card">
         <div class="review-header">
@@ -541,24 +549,59 @@ function renderReviews(reviews) {
         </div>
         <div class="review-rating">${stars}</div>
         <div class="review-text">${r.review_text || ''}</div>
+        ${imageHtml}
         ${adminNoteHtml}
       </div>
     `;
   }).join('');
 }
 
-function openReviewModal() {
+async function openReviewModal() {
   if (!isLoggedIn()) {
     showToast('Please log in to write a review');
     return;
   }
-  document.getElementById('review-modal-overlay').classList.add('open');
+  document.getElementById('inline-review-form').classList.add('open');
+  document.getElementById('write-review-btn').style.display = 'none';
+  
+  // Check for existing review
+  try {
+    const res = await fetch(`${PRODUCT_API}/reviews/my/${currentProduct.product_id}`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (res.ok) {
+      const myReview = await res.json();
+      if (myReview && myReview.status === 'pending') {
+        document.querySelector('#inline-review-form .modal-title').textContent = 'Edit Review (Pending)';
+        setRating(myReview.rating);
+        document.getElementById('review-text').value = myReview.review_text || '';
+        document.getElementById('edit-review-id').value = myReview.review_id;
+        
+        document.getElementById('review-text').disabled = false;
+        document.getElementById('review-image').style.display = 'block';
+        document.getElementById('review-image').value = '';
+        document.getElementById('review-submit-btn').style.display = 'block';
+        document.getElementById('review-submit-btn').textContent = 'Update Review';
+        return;
+      }
+    }
+  } catch (err) {}
+
+  // Defaults for new review
+  document.querySelector('#inline-review-form .modal-title').textContent = 'Write a Review';
+  document.getElementById('edit-review-id').value = '';
+  document.getElementById('review-text').disabled = false;
+  document.getElementById('review-image').style.display = 'block';
+  document.getElementById('review-image').value = '';
+  document.getElementById('review-submit-btn').style.display = 'block';
+  document.getElementById('review-submit-btn').textContent = 'Submit Review';
   setRating(0);
   document.getElementById('review-text').value = '';
 }
 
 function closeReviewModal() {
-  document.getElementById('review-modal-overlay').classList.remove('open');
+  document.getElementById('inline-review-form').classList.remove('open');
+  document.getElementById('write-review-btn').style.display = 'inline-block';
 }
 
 function setRating(val) {
@@ -593,28 +636,44 @@ document.addEventListener('DOMContentLoaded', () => {
 async function submitReview() {
   const rating = parseInt(document.getElementById('review-rating').value);
   const text = document.getElementById('review-text').value.trim();
+  const fileInput = document.getElementById('review-image');
+  const editId = document.getElementById('edit-review-id').value;
 
   if (rating === 0) {
     showToast('Please select a rating');
     return;
   }
 
-  const btn = document.querySelector('.modal .add-to-cart-btn');
+  const btn = document.getElementById('review-submit-btn');
   btn.disabled = true;
   btn.textContent = 'Submitting...';
 
+  const formData = new FormData();
+  formData.append('rating', rating);
+  formData.append('reviewText', text);
+  if (!editId) {
+    formData.append('productId', currentProduct.product_id);
+  }
+  if (fileInput.files.length > 5) {
+    showToast('You can only upload up to 5 images.');
+    btn.disabled = false;
+    btn.textContent = 'Submit Review';
+    return;
+  }
+  for (let i = 0; i < fileInput.files.length; i++) {
+    formData.append('reviewImage', fileInput.files[i]);
+  }
+
   try {
-    const res = await fetch(`${PRODUCT_API}/reviews`, {
-      method: 'POST',
+    const url = editId ? `${PRODUCT_API}/reviews/${editId}` : `${PRODUCT_API}/reviews`;
+    const method = editId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${getToken()}`
       },
-      body: JSON.stringify({
-        productId: currentProduct.product_id,
-        rating: rating,
-        reviewText: text
-      })
+      body: formData
     });
 
     const data = await res.json();

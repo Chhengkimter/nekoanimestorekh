@@ -56,6 +56,7 @@ function switchSection(name) {
     });
   }
   if (name === 'reviews') { loadReviews(); }
+  if (name === 'finance') { loadFinanceSummary(); }
 }
 
 // ── RENDER ALL ──

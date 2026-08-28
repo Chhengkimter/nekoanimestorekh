@@ -355,16 +355,28 @@ async function openOrderDetailModal(orderId) {
         }
 
         // ── Items ──
-        let itemsHtml = (o.items || []).map(it => `
-            <div class="od-item-row">
-                <img class="od-item-img" src="${it.image || 'https://via.placeholder.com/44'}" onerror="this.style.opacity=.3">
-                <div class="od-item-info">
-                    <div class="od-item-name">${it.product_name}</div>
+        let itemsHtml = (o.items || []).map(it => {
+            let reviewBtn = '';
+            if (o.order_status === 'shipped' || o.order_status === 'delivered') {
+                reviewBtn = `<button class="od-btn od-btn-outline" style="padding: 4px 10px; font-size: 12px; margin-top: 5px;" onclick="openReviewModal(${it.product_id})"><i class="fas fa-pen"></i> Write a review</button>`;
+            }
+            return `
+            <div class="od-item-row" style="align-items: center;">
+                <a href="productpage.html?id=${it.product_id}" style="display:block; flex-shrink:0;">
+                    <img class="od-item-img" src="${it.image || 'https://via.placeholder.com/44'}" onerror="this.style.opacity=.3">
+                </a>
+                <div class="od-item-info" style="flex:1;">
+                    <a href="productpage.html?id=${it.product_id}" class="od-item-name" style="text-decoration:none; color:var(--text); cursor:pointer; display:block;" onmouseover="this.style.color='#82659D'" onmouseout="this.style.color='var(--text)'">
+                        ${it.product_name}
+                    </a>
                     <div class="od-item-meta">Qty: ${it.product_quantity} &times; $${Number(it.price_at_purchase).toFixed(2)} ${it.selected_option ? `| ${it.selected_option}` : ''}</div>
                 </div>
-                <div class="od-item-price">$${(it.product_quantity * it.price_at_purchase).toFixed(2)}</div>
-            </div>
-        `).join('');
+                <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div class="od-item-price">$${(it.product_quantity * it.price_at_purchase).toFixed(2)}</div>
+                    ${reviewBtn}
+                </div>
+            </div>`;
+        }).join('');
 
         // ── Tracking card (shipped & delivered) ──
         let trackingHtml = '';
@@ -919,6 +931,7 @@ function switchPanel(panel, btn) {
     // Refresh wishlist when switching to that tab
     if (panel === 'wishlist') loadWishlist();
     if (panel === 'rewards') loadRewards();
+    if (panel === 'reviews') loadMyReviews();
 }
 
 /* ── LOGOUT ──────────────────────────────────────────────── */
@@ -1030,7 +1043,10 @@ function renderCoupons(coupons) {
         if (isUsed) {
             statusHtml = `<div style="font-size:12px;color:var(--muted);margin-top:6px">Used on ${new Date(c.used_at).toLocaleDateString()}</div>`;
         } else {
-            statusHtml = `<div class="coupon-code-box">${c.coupon_code}</div>`;
+            statusHtml = `<div style="display:flex; align-items:center; gap:8px;">
+                            <div class="coupon-code-box" style="margin:0;">${c.coupon_code}</div>
+                            <button class="od-btn od-btn-outline" style="padding:6px 10px; font-size:12px; border-radius:6px;" onclick="navigator.clipboard.writeText('${c.coupon_code}').then(()=>showToast('Coupon copied!'))"><i class="fas fa-copy"></i> Copy</button>
+                          </div>`;
         }
 
         return `<div class="coupon-card" style="${isUsed ? 'opacity:0.6' : ''}">
@@ -1043,6 +1059,186 @@ function renderCoupons(coupons) {
             </div>
         </div>`;
     }).join('');
+}
+
+/* ── REVIEWS ─────────────────────────────────────────────── */
+async function loadMyReviews() {
+    try {
+        const res = await apiFetch('/reviews/my');
+        if (!res.ok) throw new Error();
+        const reviews = await res.json();
+        renderMyReviews(reviews);
+    } catch {
+        const list = document.getElementById('reviews-list');
+        if (list) list.innerHTML =
+            `<div class="up-empty"><i class="fas fa-exclamation-circle"></i><p>Could not load reviews. Please refresh.</p></div>`;
+    }
+}
+
+function renderMyReviews(reviews) {
+    const list = document.getElementById('reviews-list');
+    if (!list) return;
+
+    if (!reviews || !reviews.length) {
+        list.innerHTML = `<div class="up-empty">
+            <i class="fas fa-star"></i>
+            <p>You haven't reviewed any products yet.</p>
+        </div>`;
+        return;
+    }
+
+    list.innerHTML = reviews.map(r => {
+        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+        const date = new Date(r.created_at).toLocaleDateString();
+        const productImg = r.primary_image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg';
+        
+        let statusBadge = '';
+        let editBtn = '';
+        if (r.status === 'pending') {
+            statusBadge = '<span class="badge badge-amber">Pending</span>';
+            editBtn = `<button class="od-btn od-btn-outline" style="padding: 4px 10px; font-size: 12px; margin-left: 10px;" onclick="openEditReviewModal(${r.review_id}, ${r.product_id}, ${r.rating}, '${(r.review_text || '').replace(/'/g, "\\'")}')"><i class="fas fa-pen"></i> Edit</button>`;
+        }
+        else if (r.status === 'approved') statusBadge = '<span class="badge badge-green">Approved</span>';
+        else if (r.status === 'rejected') statusBadge = '<span class="badge badge-red">Rejected</span>';
+
+        return `
+        <div class="review-card" style="display:flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e0e0e0;">
+            <img src="${productImg}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" alt="${r.product_name}">
+            <div style="flex: 1;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                    <a href="productpage.html?id=${r.product_id}" style="font-weight: bold; color: #333; text-decoration: none;">${r.product_name}</a>
+                    <span style="font-size:12px; color:#999;">${date}</span>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <span style="color:#ffd700; letter-spacing: 2px;">${stars}</span>
+                    <span style="margin-left: 8px;">${statusBadge}</span>
+                    ${editBtn}
+                </div>
+                <p style="font-size: 14px; color: #555; line-height: 1.5; margin-bottom: 0;">${r.review_text || ''}</p>
+                ${r.image_url ? `<div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">${r.image_url.split(',').map(url => `<img src="${url}" style="max-width:150px; border-radius:8px; border:1px solid #eee; cursor:pointer;" onclick="window.open(this.src,'_blank')">`).join('')}</div>` : ''}
+                ${r.admin_note ? `<div style="margin-top:10px; padding:10px; background:#f8f9fa; border-left:3px solid #82659D; font-size:13px; color:#444;"><strong>Store Reply:</strong> ${r.admin_note}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+/* ── REVIEW MODAL ────────────────────────────────────────── */
+let currentReviewRating = 0;
+
+function openReviewModal(productId) {
+    document.querySelector('#review-modal .up-modal-title').textContent = 'Write a Review';
+    document.getElementById('review-submit-btn').textContent = 'Submit Review';
+    document.getElementById('review-product-id').value = productId;
+    document.getElementById('edit-review-id').value = '';
+    setRating(0);
+    document.getElementById('review-text').value = '';
+    document.getElementById('review-image').value = '';
+    
+    document.getElementById('review-modal').classList.add('open');
+}
+
+function openEditReviewModal(reviewId, productId, rating, text) {
+    document.querySelector('#review-modal .up-modal-title').textContent = 'Edit Review (Pending)';
+    document.getElementById('review-submit-btn').textContent = 'Update Review';
+    document.getElementById('review-product-id').value = productId;
+    document.getElementById('edit-review-id').value = reviewId;
+    setRating(rating);
+    document.getElementById('review-text').value = text;
+    document.getElementById('review-image').value = '';
+    
+    document.getElementById('review-modal').classList.add('open');
+}
+
+function closeReviewModal() {
+    document.getElementById('review-modal').classList.remove('open');
+}
+
+function setRating(val) {
+    currentReviewRating = val;
+    document.getElementById('review-rating').value = val;
+    document.querySelectorAll('#review-stars span').forEach(s => {
+        const sVal = parseInt(s.dataset.val);
+        s.textContent = sVal <= val ? '★' : '☆';
+    });
+}
+
+// Setup star hover effects
+document.addEventListener('DOMContentLoaded', () => {
+    const stars = document.querySelectorAll('#review-stars span');
+    stars.forEach(s => {
+        s.addEventListener('mouseover', function() {
+            const val = parseInt(this.dataset.val);
+            stars.forEach(st => {
+                const stVal = parseInt(st.dataset.val);
+                st.textContent = stVal <= val ? '★' : '☆';
+            });
+        });
+        s.addEventListener('mouseout', function() {
+            setRating(currentReviewRating);
+        });
+        s.addEventListener('click', function() {
+            setRating(parseInt(this.dataset.val));
+        });
+    });
+});
+
+async function submitReview() {
+    const productId = document.getElementById('review-product-id').value;
+    const rating = parseInt(document.getElementById('review-rating').value);
+    const text = document.getElementById('review-text').value.trim();
+    const fileInput = document.getElementById('review-image');
+
+    const editId = document.getElementById('edit-review-id').value;
+
+    if (rating === 0) {
+        showToast('Please select a rating', true);
+        return;
+    }
+
+    if (fileInput.files.length > 5) {
+        showToast('You can only upload up to 5 images.', true);
+        return;
+    }
+
+    const btn = document.getElementById('review-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    const formData = new FormData();
+    if (!editId) {
+        formData.append('productId', productId);
+    }
+    formData.append('rating', rating);
+    formData.append('reviewText', text);
+    
+    for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('reviewImage', fileInput.files[i]);
+    }
+
+    try {
+        const url = editId ? `/api/reviews/${editId}` : `/api/reviews`;
+        const method = editId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Authorization': `Bearer ${getToken()}` },
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to submit review');
+
+        showToast(editId ? 'Review updated successfully!' : 'Review submitted successfully!');
+        closeReviewModal();
+        if (orderTab === 'reviews') {
+            loadMyReviews();
+        }
+    } catch (err) {
+        showToast(err.message, true);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit Review';
+    }
 }
 
 /* ── BOOT ────────────────────────────────────────────────── */

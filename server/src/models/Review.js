@@ -10,7 +10,7 @@ class Review {
              p.product_name, p.primary_image
       FROM reviews r
       JOIN users u ON u.user_id = r.user_id
-      JOIN products p ON p.product_id = r.product_id
+      JOIN vw_product_catalogue p ON p.product_id = r.product_id
       ORDER BY r.created_at DESC
     `);
     
@@ -21,7 +21,7 @@ class Review {
       const linkedRes = await db.query(`
         SELECT rp.review_id, rp.product_id, p.product_name
         FROM review_products rp
-        JOIN products p ON p.product_id = rp.product_id
+        JOIN vw_product_catalogue p ON p.product_id = rp.product_id
         WHERE rp.review_id = ANY($1)
       `, [reviewIds]);
       
@@ -43,7 +43,7 @@ class Review {
   static async getForProduct(productId) {
     // We want reviews where the product is the original target OR it's linked
     const result = await db.query(
-      `SELECT r.review_id, r.rating, r.review_text, r.created_at, r.admin_note,
+      `SELECT r.review_id, r.rating, r.review_text, r.image_url, r.created_at, r.admin_note,
               u.first_name, u.last_name
        FROM reviews r
        JOIN users u ON u.user_id = r.user_id
@@ -55,34 +55,61 @@ class Review {
     return result.rows;
   }
 
-  // ─── Create a review (customer) ──────────────────────────────
-  static async create(userId, productId, rating, reviewText) {
-    // Check if user actually bought the product
-    const boughtRes = await db.query(
-      `SELECT COUNT(*) FROM order_items oi
-       JOIN orders o ON o.order_id = oi.order_id
-       WHERE o.user_id = $1 AND oi.product_id = $2 AND o.order_status NOT IN ('cancelled')`,
+  // ─── Get review by user and product ──────────────────────────
+  static async findByUserAndProduct(userId, productId) {
+    const result = await db.query(
+      `SELECT * FROM reviews WHERE user_id = $1 AND product_id = $2 ORDER BY CASE WHEN status = 'pending' THEN 1 ELSE 0 END DESC, created_at DESC`,
       [userId, productId]
     );
-    
-    if (parseInt(boughtRes.rows[0].count) === 0) {
-      throw new Error('You can only review products you have purchased.');
-    }
+    return result.rows[0] || null;
+  }
 
-    // Check if already reviewed
-    const existing = await db.query(
-      `SELECT review_id FROM reviews WHERE user_id = $1 AND product_id = $2`,
-      [userId, productId]
+  // ─── Get all reviews by user ─────────────────────────────────
+  static async findByUser(userId) {
+    const result = await db.query(
+      `SELECT r.*, p.product_name, p.primary_image 
+       FROM reviews r 
+       JOIN vw_product_catalogue p ON p.product_id = r.product_id 
+       WHERE r.user_id = $1 
+       ORDER BY r.created_at DESC`,
+      [userId]
     );
-    if (existing.rows.length > 0) {
-      throw new Error('You have already submitted a review for this product.');
-    }
+    return result.rows;
+  }
+
+  // ─── Create a review (customer) ──────────────────────────────
+  static async create(userId, productId, rating, reviewText, imageUrl = null) {
+    // Removed purchase requirement constraint as requested
+    // (Users can now review any product regardless of purchase history)
+
+    // Multiple reviews are allowed.
 
     const result = await db.query(
-      `INSERT INTO reviews (user_id, product_id, rating, review_text)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [userId, productId, rating, reviewText]
+      `INSERT INTO reviews (user_id, product_id, rating, review_text, image_url)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [userId, productId, rating, reviewText, imageUrl]
     );
+    return result.rows[0];
+  }
+
+  // ─── Update a pending review (customer) ────────────────────────
+  static async update(reviewId, userId, rating, reviewText, imageUrl = null) {
+    // Only allow updating if it belongs to the user and is 'pending' or 'rejected'
+    const result = await db.query(
+      `UPDATE reviews SET
+         rating = $1,
+         review_text = $2,
+         image_url = COALESCE($3, image_url),
+         status = 'pending',
+         admin_note = NULL
+       WHERE review_id = $4 AND user_id = $5 AND status IN ('pending', 'rejected')
+       RETURNING *`,
+      [rating, reviewText, imageUrl, reviewId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Review not found or cannot be edited (already approved).');
+    }
     return result.rows[0];
   }
 

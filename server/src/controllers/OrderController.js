@@ -116,6 +116,19 @@ class OrderController {
       res.status(500).json({ error: 'Failed to mark order as received' });
     }
   }
+  static async updateProfit(req, res) {
+    try {
+      const { profit } = req.body;
+      const orderId = req.params.id;
+      // Admins only (enforced by route middleware)
+      const order = await Order.updateProfit(orderId, profit === '' ? null : profit);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      res.status(200).json({ message: 'Order profit updated successfully', order });
+    } catch (err) {
+      console.error('updateProfit error:', err.message);
+      res.status(500).json({ error: 'Failed to update order profit' });
+    }
+  }
 }
 
 module.exports = OrderController;

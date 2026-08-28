@@ -9,6 +9,8 @@ const ProductController = require('../controllers/ProductController');
 const CouponController  = require('../controllers/CouponController');
 const QuestController   = require('../controllers/QuestController');
 const ReviewController  = require('../controllers/ReviewController');
+const FinanceController = require('../controllers/FinanceController');
+const OrderController   = require('../controllers/OrderController');
 const { requireAuth, adminOnly } = require('../middleware/auth');
 
 const upload = multer({
@@ -36,12 +38,13 @@ router.get('/orders',                   AdminController.getAllOrders);
 router.post('/orders',                  AdminController.createOrder);
 router.get('/orders/:id',               AdminController.getOrder);
 router.patch('/orders/:id/status',      AdminController.updateOrderStatus);
+router.patch('/orders/:id/profit',      OrderController.updateProfit);
 router.post('/orders/:id/ship',         upload.single('shippingImage'), AdminController.shipOrder);
 router.post('/orders/:id/refund',       upload.single('refundImage'), AdminController.refundOrder);
 router.patch('/orders/:id/edit',        AdminController.updateOrderFields);
 router.put('/orders/:id/items',         AdminController.updateOrderItems);
 router.post('/orders/:id/request-payment', AdminController.requestFinalPayment);
-router.get('/orders/:id/payments',      AdminController.getOrderPayments);
+router.get('/orders/:id/payments',    AdminController.getOrderPayments);
 router.post('/orders/:id/payments',     AdminController.addOrderPayment);
 router.delete('/orders/:id/payments/:paymentId', AdminController.deleteOrderPayment);
 
@@ -111,5 +114,11 @@ router.get('/quests/:id/progress',    QuestController.getProgress);
 router.get('/reviews',                ReviewController.getAll);
 router.put('/reviews/:id',            ReviewController.update);
 router.delete('/reviews/:id',         ReviewController.remove);
+
+// ─── Finance ─────────────────────────────────────────────────
+router.get('/finance/summary',        FinanceController.getSummary);
+router.get('/finance/expenses',       FinanceController.getExpenses);
+router.post('/finance/expenses',      FinanceController.addExpense);
+router.delete('/finance/expenses/:id', FinanceController.deleteExpense);
 
 module.exports = router;

@@ -92,17 +92,35 @@ from the customer page they will get all this info too. oh make sure there is a 
 
 create a system where when a user creates an account, an email will be sent to their email address to verify their account.  this can later be used for account password reset or if user forgot their password. 
 
-admine new page: Finance. this page should have a calender for the admin to view revenue in a range of date and a bar chart showing total revenue. each order will now have a profit column where admin can manually enter how much they have earn from that single order. show profit and make a section to record spending such as ads and content ceator.
+~ admine new page: Finance. this page should have a calender for the admin to view revenue in a range of date and a bar chart showing total revenue. each order will now have a profit column where admin can manually enter how much they have earn from that single order. show profit and make a section to record spending such as ads and content ceator.
 make sure each have a filter for weekly, monthly and yearly. its like a finance corner of the store you know.
 
 In the cart view give the customer option to add that product into wishlist.
-In history order give customer to ability to click on the product to go to the product page.
+In order history detial give customer the ability to click on the product to go to the product page.
 
-currently i see only the coupon function. i want another quest function (can be in the same page but quest is sth user must complete and also check fro condition).
+~ currently i see only the coupon function. i want another quest function (can be in the same page but quest is sth user must complete and also check fro condition).
 the quest creation in admin can check based on review counts, purchase counts, wishlist counts, items in an order counts(ex: buy more than 3 products in a single order will get discount...)
 
-is it possible to track items per click? 
+~ is it possible to track items per click? 
 
 Bot function
 - Buy products that are not on website.
-- 
+- Combine order request (save on shipping for small order)
+
+~ Add submission of the review to include picture (optional) and then customer can edit the review before admin approve it (choose to add picture after submission but not yet approved by admin is allowed it).
+
+~ add css to componnent with no css such as the group by drop down and the action button in expense table. 
+
+~ 1. failed to load review
+~ 2. review ui in product page is horrible because it open up on top for no reason as img i provided
+~ 3. profit fit in is empty after successfully saved, i want it to display the profit afteer filling it and also give it a css. 
+~ 4. finance page adding expense save button does not show anything even after succeed, i want it to display message and close the fill in foam then reload the expense into the table right away.
+
+~ give css to the review in product page, maybe the whole review is deign placed in a single card and then other review follow by in another different card, give css to the write review button. make sure it matches the product page design. 
+
+~ admin review page: add a "All" button for showing all the reviews
+
+~ work on product page because review section ui is bad.
+
+fully work on coupon and quest logic. connect between customer and admin side. make sure all condition is correct and carry the discount values throught the entire order process and status and history and record. everything should be smooth and clean.
+
