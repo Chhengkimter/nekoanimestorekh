@@ -320,16 +320,27 @@ class Order {
          o.shipping_image,
          o.refund_date,
          o.refund_image,
+         o.addr_type,
+         o.addr_line1,
+         o.addr_district,
+         o.addr_city,
+         o.addr_landmark,
+         o.maps_link,
+         o.maps_detail,
+         o.phone1,
+         o.phone2,
          COUNT(oi.order_item_id)  AS total_lines,
-         SUM(oi.product_quantity) AS total_units
+         COALESCE(SUM(oi.product_quantity), 0) AS total_units
        FROM orders o
-       JOIN order_items oi ON oi.order_id = o.order_id
+       LEFT JOIN order_items oi ON oi.order_id = o.order_id
        WHERE o.user_id = $1
        GROUP BY o.order_id, o.order_code, o.order_status,
                 o.order_date, o.subtotal, o.discount_amount, o.coupon_code, o.total, o.shipping_method,
                 o.shipping_company, o.tracking_number,
                 o.shipping_date, o.shipping_image,
-                o.refund_date, o.refund_image
+                o.refund_date, o.refund_image,
+                o.addr_type, o.addr_line1, o.addr_district, o.addr_city, o.addr_landmark,
+                o.maps_link, o.maps_detail, o.phone1, o.phone2
        ORDER BY o.order_date DESC`,
       [userId]
     );

@@ -126,23 +126,41 @@ class UserController {
       }
 
       // 2. Build update from allowed fields only
-      const { phone1, addrLine1, addrDistrict, addrCity, addrLandmark } = req.body;
+      const {
+        addrType,
+        phone1,
+        phone2,
+        addrLine1,
+        addrDistrict,
+        addrCity,
+        addrLandmark,
+        mapsLink,
+        mapsDetail
+      } = req.body;
 
       const result = await db.query(
         `UPDATE orders SET
-           phone1        = COALESCE($1, phone1),
-           addr_line1    = COALESCE($2, addr_line1),
-           addr_district = COALESCE($3, addr_district),
-           addr_city     = COALESCE($4, addr_city),
-           addr_landmark = COALESCE($5, addr_landmark)
-         WHERE order_id = $6
-         RETURNING order_id, order_code, phone1, addr_line1, addr_district, addr_city, addr_landmark`,
+           addr_type     = COALESCE($1, addr_type),
+           phone1        = COALESCE($2, phone1),
+           phone2        = $3,
+           addr_line1    = $4,
+           addr_district = $5,
+           addr_city     = $6,
+           addr_landmark = $7,
+           maps_link     = $8,
+           maps_detail   = $9
+         WHERE order_id = $10
+         RETURNING order_id, order_code, addr_type, phone1, phone2, addr_line1, addr_district, addr_city, addr_landmark, maps_link, maps_detail`,
         [
-          phone1       || null,
-          addrLine1    || null,
-          addrDistrict || null,
-          addrCity     || null,
-          addrLandmark || null,
+          addrType || null,
+          phone1 || null,
+          phone2 !== undefined ? (phone2 || null) : null,
+          addrLine1 !== undefined ? (addrLine1 || null) : null,
+          addrDistrict !== undefined ? (addrDistrict || null) : null,
+          addrCity !== undefined ? (addrCity || null) : null,
+          addrLandmark !== undefined ? (addrLandmark || null) : null,
+          mapsLink !== undefined ? (mapsLink || null) : null,
+          mapsDetail !== undefined ? (mapsDetail || null) : null,
           orderId
         ]
       );

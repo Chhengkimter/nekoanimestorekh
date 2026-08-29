@@ -466,6 +466,16 @@ async function openOrderDetailModal(orderId) {
             </div>`;
         }
 
+        const isMapsAddr = o.addr_type === 'maps' || (!o.addr_line1 && o.maps_link);
+        const addressHtml = isMapsAddr
+            ? `<div class="od-detail-row">
+                 <strong>Google Maps Link</strong> 
+                 <span><a href="${o.maps_link}" target="_blank" rel="noopener" style="color:#82659D; font-weight:600; text-decoration:underline;"><i class="fas fa-external-link-alt"></i> Open Location in Google Maps</a></span>
+               </div>
+               ${o.maps_detail ? `<div class="od-detail-row"><strong>Location Details</strong> <span>${o.maps_detail}</span></div>` : ''}`
+            : `<div class="od-detail-row"><strong>Address</strong> <span>${o.addr_line1 || '—'}${o.addr_district ? ', ' + o.addr_district : ''}${o.addr_city ? ', ' + o.addr_city : ''}</span></div>
+               ${o.addr_landmark ? `<div class="od-detail-row"><strong>Landmark</strong> <span>${o.addr_landmark}</span></div>` : ''}`;
+
         body.innerHTML = `
             ${adminNoteHtml}
 
@@ -499,8 +509,7 @@ async function openOrderDetailModal(orderId) {
 
             <div class="od-section">
                 <div class="od-section-title"><i class="fas fa-map-marker-alt"></i> Delivery Address</div>
-                <div class="od-detail-row"><strong>Address</strong> <span>${o.addr_line1 || '—'}${o.addr_district ? ', ' + o.addr_district : ''}${o.addr_city ? ', ' + o.addr_city : ''}</span></div>
-                ${o.addr_landmark ? `<div class="od-detail-row"><strong>Landmark</strong> <span>${o.addr_landmark}</span></div>` : ''}
+                ${addressHtml}
                 <div class="od-detail-row"><strong>Phone</strong> <span>${o.phone1 || '—'}${o.phone2 ? ' / ' + o.phone2 : ''}</span></div>
             </div>
 
@@ -520,17 +529,53 @@ async function openOrderDetailModal(orderId) {
 
 
 /* ── ADDRESS / PHONE EDIT MODAL ──────────────────────────── */
+let upActiveAddrTab = 'manual';
+
+function switchUpAddrTab(tab) {
+    upActiveAddrTab = tab;
+    const btnManual = document.getElementById('up-tab-btn-manual');
+    const btnMaps   = document.getElementById('up-tab-btn-maps');
+    const pnlManual = document.getElementById('up-panel-manual');
+    const pnlMaps   = document.getElementById('up-panel-maps');
+
+    if (btnManual) btnManual.classList.toggle('active', tab === 'manual');
+    if (btnMaps)   btnMaps.classList.toggle('active', tab === 'maps');
+    if (pnlManual) pnlManual.style.display = tab === 'manual' ? 'block' : 'none';
+    if (pnlMaps)   pnlMaps.style.display   = tab === 'maps'   ? 'block' : 'none';
+}
+
+function verifyUpMapsLink() {
+    const link = document.getElementById('addr-maps-link').value.trim();
+    if (!link) {
+        showToast('Please paste a Google Maps link first.');
+        return;
+    }
+    if (link.includes('maps.google') || link.includes('goo.gl/maps') || link.includes('maps.app.goo.gl')) {
+        window.open(link, '_blank', 'noopener');
+    } else {
+        showToast("That doesn't look like a valid Google Maps link. Please check.");
+    }
+}
+
 function openAddrModal(orderId, orderCode) {
     addrEditId = orderId;
-    document.getElementById('addr-modal-ordcode').textContent = orderCode;
+    const codeEl = document.getElementById('addr-modal-ordcode');
+    if (codeEl) codeEl.textContent = `Order ${orderCode}`;
 
-    // Pre-fill from order data if available
     const o = orders.find(x => x.order_id === orderId);
-    document.getElementById('addr-phone1').value    = o?.phone1 || '';
-    document.getElementById('addr-line1').value     = o?.addr_line1 || '';
-    document.getElementById('addr-district').value  = o?.addr_district || '';
-    document.getElementById('addr-city').value      = o?.addr_city || '';
-    document.getElementById('addr-landmark').value  = o?.addr_landmark || '';
+    document.getElementById('addr-phone1').value     = o?.phone1 || '';
+    document.getElementById('addr-phone2').value     = o?.phone2 || '';
+
+    document.getElementById('addr-line1').value      = o?.addr_line1 || '';
+    document.getElementById('addr-district').value   = o?.addr_district || '';
+    document.getElementById('addr-city').value       = o?.addr_city || '';
+    document.getElementById('addr-landmark').value   = o?.addr_landmark || '';
+
+    document.getElementById('addr-maps-link').value   = o?.maps_link || '';
+    document.getElementById('addr-maps-detail').value = o?.maps_detail || '';
+
+    const initialTab = (o?.addr_type === 'maps' || (!o?.addr_line1 && o?.maps_link)) ? 'maps' : 'manual';
+    switchUpAddrTab(initialTab);
 
     document.getElementById('addr-modal').classList.add('open');
 }
@@ -543,12 +588,36 @@ function closeAddrModal() {
 async function saveAddrEdits() {
     if (!addrEditId) return;
 
+    const phone1 = document.getElementById('addr-phone1').value.trim();
+    if (!phone1) {
+        showToast('Please enter a primary phone number', true);
+        return;
+    }
+
+    if (upActiveAddrTab === 'manual') {
+        const line1 = document.getElementById('addr-line1').value.trim();
+        if (!line1) {
+            showToast('Please enter your delivery address', true);
+            return;
+        }
+    } else {
+        const mapsLink = document.getElementById('addr-maps-link').value.trim();
+        if (!mapsLink) {
+            showToast('Please paste your Google Maps link', true);
+            return;
+        }
+    }
+
     const payload = {
-        phone1:       document.getElementById('addr-phone1').value.trim()    || undefined,
-        addrLine1:    document.getElementById('addr-line1').value.trim()     || undefined,
-        addrDistrict: document.getElementById('addr-district').value.trim()  || undefined,
-        addrCity:     document.getElementById('addr-city').value.trim()      || undefined,
-        addrLandmark: document.getElementById('addr-landmark').value.trim()  || undefined,
+        addrType:     upActiveAddrTab,
+        phone1:       phone1,
+        phone2:       document.getElementById('addr-phone2').value.trim() || '',
+        addrLine1:    upActiveAddrTab === 'manual' ? document.getElementById('addr-line1').value.trim()    : '',
+        addrDistrict: upActiveAddrTab === 'manual' ? document.getElementById('addr-district').value.trim() : '',
+        addrCity:     upActiveAddrTab === 'manual' ? document.getElementById('addr-city').value.trim()     : '',
+        addrLandmark: upActiveAddrTab === 'manual' ? document.getElementById('addr-landmark').value.trim() : '',
+        mapsLink:     upActiveAddrTab === 'maps'   ? document.getElementById('addr-maps-link').value.trim() : '',
+        mapsDetail:   upActiveAddrTab === 'maps'   ? document.getElementById('addr-maps-detail').value.trim(): ''
     };
 
     const saveBtn = document.querySelector('#addr-modal .up-btn-save');

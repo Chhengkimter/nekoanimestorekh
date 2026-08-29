@@ -122,7 +122,7 @@ Bot function
 
 ~ work on product page because review section ui is bad.
 
-fully work on coupon and quest logic. connect between customer and admin side. make sure all condition is correct and carry the discount values throught the entire order process and status and history and record. everything should be smooth and clean.
+~ fully work on coupon and quest logic. connect between customer and admin side. make sure all condition is correct and carry the discount values throught the entire order process and status and history and record. everything should be smooth and clean.
 
 ~ pending order deduce the stock until it is refund, canceled or modifying it later on calculate the stock accordingly. refund and cancel will add back the stock. make modify deduct accordingly.
 

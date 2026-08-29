@@ -814,42 +814,75 @@
 
     .up-sidebar {
         position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        border-radius: 12px;
+        flex-direction: column;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        overflow: hidden;
     }
 
     .up-avatar-block {
         flex-direction: row;
-        padding: 16px;
+        padding: 16px 20px;
         gap: 12px;
-        flex: 1;
+        width: 100%;
+        box-sizing: border-box;
+        align-items: center;
     }
 
-    .up-avatar-circle { margin-bottom: 0; width: 44px; height: 44px; font-size: 15px; }
+    .up-avatar-circle { margin-bottom: 0; width: 46px; height: 46px; font-size: 16px; }
+
+    .up-nav-label {
+        display: none !important;
+    }
 
     .up-nav {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         padding: 0;
         border-top: 1px solid #f0e8f5;
         width: 100%;
     }
 
     .up-nav-item {
-        flex: 1;
-        justify-content: center;
-        border-left: none;
-        border-top: 2px solid transparent;
-        padding: 12px 8px;
+        width: 100%;
+        justify-content: flex-start;
+        border-left: 4px solid transparent;
+        border-top: none;
+        border-bottom: 1px solid #f7f0fa;
+        padding: 14px 20px;
+        box-sizing: border-box;
+        font-size: 14px;
+        color: #555;
+    }
+
+    .up-nav-item:last-child {
+        border-bottom: none;
     }
 
     .up-nav-item.active {
-        border-left: none;
-        border-top-color: #82659D;
+        border-left-color: #82659D;
+        border-top-color: transparent;
+        background: #F5E8F2;
+        color: #82659D;
+        font-weight: 700;
     }
 
-    .up-sidebar-bottom { display: none; }
+    .up-sidebar-bottom {
+        display: block;
+        padding: 0;
+        border-top: 1px solid #f0e8f5;
+        width: 100%;
+    }
+
+    .up-logout-btn {
+        width: 100%;
+        padding: 14px 20px;
+        justify-content: flex-start;
+        box-sizing: border-box;
+        font-size: 14px;
+        color: #e05c7a;
+    }
+
     .form-row { grid-template-columns: 1fr; }
 }
 
@@ -1388,4 +1421,40 @@
     font-weight: 600;
     color: #82659D;
     margin-top: 6px;
+}
+
+/* Address Modal Location Tabs */
+.up-addr-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.up-addr-tab {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid #e0d4ec;
+    background: #faf5ff;
+    color: #888;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+}
+
+.up-addr-tab:hover {
+    border-color: #82659D;
+    color: #82659D;
+}
+
+.up-addr-tab.active {
+    background: #82659D;
+    color: #fff;
+    border-color: #82659D;
 }

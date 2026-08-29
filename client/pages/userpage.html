@@ -234,35 +234,71 @@
 
     <!-- ── ORDER EDIT ADDRESS MODAL ── -->
     <div class="up-modal-overlay" id="addr-modal" role="dialog" aria-modal="true" aria-labelledby="addr-modal-title">
-        <div class="up-modal">
+        <div class="up-modal" style="max-width: 520px; width: 90%;">
             <div class="up-modal-header">
                 <h3 class="up-modal-title" id="addr-modal-title">Update delivery info</h3>
                 <button class="up-modal-close" onclick="closeAddrModal()" aria-label="Close">&times;</button>
             </div>
             <div class="up-modal-body">
-                <p class="up-modal-sub" id="addr-modal-ordcode"></p>
-                <div class="form-group">
-                    <label>Phone number</label>
-                    <input type="text" id="addr-phone1" placeholder="+855 xx xxx xxx">
-                </div>
-                <div class="form-group">
-                    <label>Address line</label>
-                    <input type="text" id="addr-line1" placeholder="Street, house number">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>District</label>
-                        <input type="text" id="addr-district">
+                <p class="up-modal-sub" id="addr-modal-ordcode" style="font-weight:700; color:var(--up-accent); margin-bottom:12px;"></p>
+                
+                <div class="form-row" style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Primary Phone *</label>
+                        <input type="text" id="addr-phone1" placeholder="+855 xx xxx xxx">
                     </div>
-                    <div class="form-group">
-                        <label>City</label>
-                        <input type="text" id="addr-city">
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Secondary Phone <span class="form-optional">(optional)</span></label>
+                        <input type="text" id="addr-phone2" placeholder="+855 xx xxx xxx">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Landmark <span class="form-optional">(optional)</span></label>
-                    <input type="text" id="addr-landmark" placeholder="Near the blue gate…">
+
+                <div class="up-addr-tabs" style="display:flex; gap:10px; margin-bottom:16px;">
+                    <button type="button" class="up-addr-tab active" id="up-tab-btn-manual" onclick="switchUpAddrTab('manual')">
+                        <i class="fas fa-edit"></i> Manual Address
+                    </button>
+                    <button type="button" class="up-addr-tab" id="up-tab-btn-maps" onclick="switchUpAddrTab('maps')">
+                        <i class="fas fa-map-marker-alt"></i> Google Maps Link
+                    </button>
                 </div>
+
+                <div id="up-panel-manual">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Address line *</label>
+                        <input type="text" id="addr-line1" placeholder="Street number, house number, road">
+                    </div>
+                    <div class="form-row" style="display:flex; gap:10px; margin-bottom:12px;">
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">District / Khan</label>
+                            <input type="text" id="addr-district" placeholder="e.g. Chamkarmon">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">City / Province</label>
+                            <input type="text" id="addr-city" placeholder="e.g. Phnom Penh">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Landmark <span class="form-optional">(optional)</span></label>
+                        <input type="text" id="addr-landmark" placeholder="Near school, behind coffee shop…">
+                    </div>
+                </div>
+
+                <div id="up-panel-maps" style="display:none;">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Google Maps Link *</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="addr-maps-link" placeholder="Paste Google Maps URL here…" style="flex:1;">
+                            <button type="button" class="up-btn-cancel" style="padding:8px 12px; font-size:12px; white-space:nowrap;" onclick="verifyUpMapsLink()">
+                                <i class="fas fa-external-link-alt"></i> Verify
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Location Details <span class="form-optional">(optional)</span></label>
+                        <input type="text" id="addr-maps-detail" placeholder="House #, Floor, Gate color, or directions for delivery driver">
+                    </div>
+                </div>
+
             </div>
             <div class="up-modal-footer">
                 <button class="up-btn-cancel" onclick="closeAddrModal()">Cancel</button>
