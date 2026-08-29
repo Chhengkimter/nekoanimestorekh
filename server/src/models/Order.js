@@ -43,13 +43,115 @@ class Order {
     return result.rows[0] || null;
   }
 
-  // ─── Update Order Status (Customer confirming/cancelling modified order) ──
-  static async updateStatus(orderId, userId, status) {
-    const result = await db.query(
-      `UPDATE orders SET order_status = $1 WHERE order_id = $2 AND user_id = $3 RETURNING *`,
-      [status, orderId, userId]
+  // ─── Central Change Status (Handles stock return on refund/cancel & re-deduct on reactivate) ──
+  static async changeStatus(orderId, newStatus, performerId = null) {
+    const orderCheck = await db.query(
+      `SELECT order_id, order_status FROM orders WHERE order_id = $1`,
+      [orderId]
     );
-    return result.rows[0] || null;
+    if (!orderCheck.rows[0]) return null;
+
+    const oldStatus = orderCheck.rows[0].order_status;
+    if (oldStatus === newStatus) {
+      return orderCheck.rows[0];
+    }
+
+    const inactiveStatuses = ['cancelled', 'refunded'];
+    const isOldInactive = inactiveStatuses.includes(oldStatus);
+    const isNewInactive = inactiveStatuses.includes(newStatus);
+
+    const itemsResult = await db.query(
+      `SELECT product_id, selected_option, product_quantity FROM order_items WHERE order_id = $1`,
+      [orderId]
+    );
+    const items = itemsResult.rows;
+
+    // Transition: Active -> Inactive (Cancelled or Refunded) => Add back stock
+    if (!isOldInactive && isNewInactive) {
+      for (const item of items) {
+        const qty = parseInt(item.product_quantity, 10);
+        if (isNaN(qty) || qty <= 0) continue;
+
+        // Restore main product stock
+        await db.query(
+          `UPDATE products SET product_stock = product_stock + $1 WHERE product_id = $2`,
+          [qty, item.product_id]
+        );
+
+        // Restore variant stock if option exists
+        if (item.selected_option && item.selected_option !== '—') {
+          await db.query(
+            `UPDATE product_variants SET variant_stock = variant_stock + $1
+             WHERE product_id = $2 AND TRIM(variant_name) ILIKE TRIM($3)`,
+            [qty, item.product_id, item.selected_option]
+          );
+        }
+
+        const afterResult = await db.query(
+          `SELECT product_stock FROM products WHERE product_id = $1`,
+          [item.product_id]
+        );
+        const stockAfter = afterResult.rows[0]?.product_stock || 0;
+        const movementType = newStatus === 'refunded' ? 'refund' : 'return';
+
+        await db.query(
+          `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [item.product_id, movementType, qty, stockAfter, `Order #${orderId} changed to ${newStatus}`, performerId]
+        );
+      }
+    }
+
+    // Transition: Inactive -> Active => Re-deduct stock
+    if (isOldInactive && !isNewInactive) {
+      for (const item of items) {
+        const qty = parseInt(item.product_quantity, 10);
+        if (isNaN(qty) || qty <= 0) continue;
+
+        // Deduct main product stock
+        await db.query(
+          `UPDATE products SET product_stock = product_stock - $1 WHERE product_id = $2`,
+          [qty, item.product_id]
+        );
+
+        // Deduct variant stock if option exists
+        if (item.selected_option && item.selected_option !== '—') {
+          await db.query(
+            `UPDATE product_variants SET variant_stock = variant_stock - $1
+             WHERE product_id = $2 AND TRIM(variant_name) ILIKE TRIM($3)`,
+            [qty, item.product_id, item.selected_option]
+          );
+        }
+
+        const afterResult = await db.query(
+          `SELECT product_stock FROM products WHERE product_id = $1`,
+          [item.product_id]
+        );
+        const stockAfter = afterResult.rows[0]?.product_stock || 0;
+
+        await db.query(
+          `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
+           VALUES ($1, 'sale', $2, $3, $4, $5)`,
+          [item.product_id, -qty, stockAfter, `Order #${orderId} reopened to ${newStatus}`, performerId]
+        );
+      }
+    }
+
+    const updateResult = await db.query(
+      `UPDATE orders SET order_status = $1 WHERE order_id = $2 RETURNING *`,
+      [newStatus, orderId]
+    );
+
+    return updateResult.rows[0] || null;
+  }
+
+  // ─── Update Order Status (Customer or Admin) ─────────────────────
+  static async updateStatus(orderId, userId, status) {
+    if (userId) {
+      const check = await db.query(`SELECT user_id FROM orders WHERE order_id = $1`, [orderId]);
+      if (!check.rows[0] || check.rows[0].user_id !== userId) return null;
+    }
+    return await Order.changeStatus(orderId, status, userId);
   }
 
   // ─── Pay Remaining Balance ──────────────────────────────────────────
@@ -211,9 +313,6 @@ class Order {
   }
 
   // ─── Admin: replace order items entirely ──────────────────────
-  // newItems: [{ productId, selectedOption, quantity, priceAtPurchase, itemNote }]
-  // Diffs against existing items, adjusts product stock by the delta for
-  // each product, logs every movement to Inventory, recalculates subtotal/total.
   static async adminUpdateItems(orderId, newItems, adminId) {
     // 1. Get current items for this order
     const currentResult = await db.query(
@@ -223,26 +322,45 @@ class Order {
     );
     const currentItems = currentResult.rows;
 
+    const orderCheck = await db.query(
+      `SELECT order_status FROM orders WHERE order_id = $1`,
+      [orderId]
+    );
+    if (!orderCheck.rows[0]) throw new Error('Order not found');
+
+    const orderStatus = orderCheck.rows[0].order_status;
+    const isInactive = ['cancelled', 'refunded'].includes(orderStatus);
+
     // 2. Build lookup keyed by product_id + selected_option
-    const key = (productId, opt) => `${productId}::${opt || ''}`;
+    const key = (productId, opt) => `${productId}::${(opt || '').trim().toLowerCase()}`;
     const currentMap = new Map(currentItems.map(it => [key(it.product_id, it.selected_option), it]));
     const newMap     = new Map(newItems.map(it => [key(it.productId, it.selectedOption), it]));
 
-    // 3. Removed items — restore stock, delete row
+    // 3. Removed items — restore stock if order is active
     for (const [k, oldItem] of currentMap) {
       if (!newMap.has(k)) {
-        await db.query(
-          `UPDATE products SET product_stock = product_stock + $1 WHERE product_id = $2`,
-          [oldItem.product_quantity, oldItem.product_id]
-        );
-        const afterResult = await db.query(
-          `SELECT product_stock FROM products WHERE product_id = $1`, [oldItem.product_id]
-        );
-        await db.query(
-          `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
-           VALUES ($1, 'return', $2, $3, 'Removed from order by admin', $4)`,
-          [oldItem.product_id, oldItem.product_quantity, afterResult.rows[0].product_stock, adminId]
-        );
+        if (!isInactive) {
+          const qty = parseInt(oldItem.product_quantity, 10);
+          await db.query(
+            `UPDATE products SET product_stock = product_stock + $1 WHERE product_id = $2`,
+            [qty, oldItem.product_id]
+          );
+          if (oldItem.selected_option && oldItem.selected_option !== '—') {
+            await db.query(
+              `UPDATE product_variants SET variant_stock = variant_stock + $1
+               WHERE product_id = $2 AND TRIM(variant_name) ILIKE TRIM($3)`,
+              [qty, oldItem.product_id, oldItem.selected_option]
+            );
+          }
+          const afterResult = await db.query(
+            `SELECT product_stock FROM products WHERE product_id = $1`, [oldItem.product_id]
+          );
+          await db.query(
+            `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
+             VALUES ($1, 'return', $2, $3, 'Removed from order by admin', $4)`,
+            [oldItem.product_id, qty, afterResult.rows[0]?.product_stock || 0, adminId]
+          );
+        }
         await db.query(`DELETE FROM order_items WHERE order_item_id = $1`, [oldItem.order_item_id]);
       }
     }
@@ -252,43 +370,65 @@ class Order {
       const existing = currentMap.get(k);
 
       if (!existing) {
-        // brand new line item — deduct stock
-        await db.query(
-          `UPDATE products SET product_stock = product_stock - $1 WHERE product_id = $2`,
-          [item.quantity, item.productId]
-        );
-        const afterResult = await db.query(
-          `SELECT product_stock FROM products WHERE product_id = $1`, [item.productId]
-        );
-        await db.query(
-          `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
-           VALUES ($1, 'sale', $2, $3, 'Added to order by admin', $4)`,
-          [item.productId, -item.quantity, afterResult.rows[0].product_stock, adminId]
-        );
+        // brand new line item — deduct stock if order is active
+        const qty = parseInt(item.quantity, 10);
+        if (!isInactive) {
+          await db.query(
+            `UPDATE products SET product_stock = product_stock - $1 WHERE product_id = $2`,
+            [qty, item.productId]
+          );
+          if (item.selectedOption && item.selectedOption !== '—') {
+            await db.query(
+              `UPDATE product_variants SET variant_stock = variant_stock - $1
+               WHERE product_id = $2 AND TRIM(variant_name) ILIKE TRIM($3)`,
+              [qty, item.productId, item.selectedOption]
+            );
+          }
+          const afterResult = await db.query(
+            `SELECT product_stock FROM products WHERE product_id = $1`, [item.productId]
+          );
+          await db.query(
+            `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
+             VALUES ($1, 'sale', $2, $3, 'Added to order by admin', $4)`,
+            [item.productId, -qty, afterResult.rows[0]?.product_stock || 0, adminId]
+          );
+        }
         await db.query(
           `INSERT INTO order_items (order_id, product_id, selected_option, product_quantity, price_at_purchase, item_note)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [orderId, item.productId, item.selectedOption || null, item.quantity, item.priceAtPurchase, item.itemNote || null]
+          [orderId, item.productId, item.selectedOption || null, qty, item.priceAtPurchase, item.itemNote || null]
         );
-      } else if (existing.product_quantity !== item.quantity) {
-        // quantity changed — adjust stock by delta
-        const delta = item.quantity - existing.product_quantity; // +ve = more taken from stock
-        await db.query(
-          `UPDATE products SET product_stock = product_stock - $1 WHERE product_id = $2`,
-          [delta, item.productId]
-        );
-        const afterResult = await db.query(
-          `SELECT product_stock FROM products WHERE product_id = $1`, [item.productId]
-        );
-        await db.query(
-          `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
-           VALUES ($1, 'adjustment', $2, $3, 'Order quantity changed by admin', $4)`,
-          [item.productId, -delta, afterResult.rows[0].product_stock, adminId]
-        );
+      } else if (parseInt(existing.product_quantity, 10) !== parseInt(item.quantity, 10)) {
+        // quantity changed — adjust stock by delta if order is active
+        const oldQty = parseInt(existing.product_quantity, 10);
+        const newQty = parseInt(item.quantity, 10);
+        const delta = newQty - oldQty; // +ve = more taken from stock
+
+        if (!isInactive && delta !== 0) {
+          await db.query(
+            `UPDATE products SET product_stock = product_stock - $1 WHERE product_id = $2`,
+            [delta, item.productId]
+          );
+          if (item.selectedOption && item.selectedOption !== '—') {
+            await db.query(
+              `UPDATE product_variants SET variant_stock = variant_stock - $1
+               WHERE product_id = $2 AND TRIM(variant_name) ILIKE TRIM($3)`,
+              [delta, item.productId, item.selectedOption]
+            );
+          }
+          const afterResult = await db.query(
+            `SELECT product_stock FROM products WHERE product_id = $1`, [item.productId]
+          );
+          await db.query(
+            `INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
+             VALUES ($1, 'adjustment', $2, $3, 'Order quantity changed by admin', $4)`,
+            [item.productId, -delta, afterResult.rows[0]?.product_stock || 0, adminId]
+          );
+        }
         await db.query(
           `UPDATE order_items SET product_quantity = $1, item_note = COALESCE($2, item_note)
            WHERE order_item_id = $3`,
-          [item.quantity, item.itemNote, existing.order_item_id]
+          [newQty, item.itemNote, existing.order_item_id]
         );
       } else if (item.itemNote !== undefined) {
         // only note changed, no stock impact
@@ -309,7 +449,7 @@ class Order {
 
     const orderResult = await db.query(`SELECT shipping_cost FROM orders WHERE order_id = $1`, [orderId]);
     const shippingCost = orderResult.rows[0]?.shipping_cost;
-    const total = shippingCost !== null ? subtotal + parseFloat(shippingCost) : null;
+    const total = shippingCost !== null && shippingCost !== undefined ? subtotal + parseFloat(shippingCost) : subtotal;
 
     await db.query(
       `UPDATE orders SET subtotal = $1, total = $2 WHERE order_id = $3`,

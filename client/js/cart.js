@@ -39,19 +39,41 @@ async function fetchCart() {
 
         const data = await res.json();
 
-        cartItems = (data.items || []).map(item => ({
-            cartId:       item.cart_item_id,
-            productId:    item.product_id,
-            name:         item.product_name,
-            option:       item.selected_option || '—',
-            price:        parseFloat(item.price_snapshot),
-            qty:          item.quantity,
-            img:          item.image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
-            note:         item.note || '',
-            currentPrice: parseFloat(item.current_price),
-            stockStatus:  item.stock_status,
-            stockAmount:  item.product_stock
-        }));
+        let reducedItems = [];
+        const updatePromises = [];
+
+        cartItems = (data.items || []).map(item => {
+            let parsedStock = parseInt(item.product_stock, 10);
+            let qty = item.quantity;
+            let stockStatus = item.stock_status;
+
+            if (stockStatus === 'instock' && !isNaN(parsedStock) && parsedStock > 0 && qty > parsedStock) {
+                qty = parsedStock;
+                reducedItems.push(item.product_name);
+                updatePromises.push(apiUpdateQty(item.cart_item_id, qty));
+            }
+
+            return {
+                cartId:       item.cart_item_id,
+                productId:    item.product_id,
+                name:         item.product_name,
+                option:       item.selected_option || '—',
+                price:        parseFloat(item.price_snapshot),
+                qty:          qty,
+                img:          item.image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg',
+                note:         item.note || '',
+                currentPrice: parseFloat(item.current_price),
+                stockStatus:  stockStatus,
+                stockAmount:  parsedStock
+            };
+        });
+
+        if (updatePromises.length > 0) {
+            await Promise.allSettled(updatePromises);
+            setTimeout(() => {
+                showToast(`Reduced quantity for ${reducedItems.length} item(s) due to stock limits.`);
+            }, 300);
+        }
 
     } catch (err) {
         console.error('fetchCart error:', err);
@@ -154,14 +176,16 @@ function render() {
                     <span class="qty-value">${item.qty}</span>
                     <button class="qty-btn plus-btn" aria-label="Increase">+</button>
                 </div>
-                <span class="item-subtotal">$${subtotal}</span>
-                <div style="display:flex; gap:8px;">
-                    <button class="wishlist-btn" title="Add to Wishlist" style="width:32px; height:32px; border-radius:50%; border:1px solid; ${isWishlisted ? 'color:#e05c7a; border-color:#e05c7a; background:#fff0f3;' : 'color:#ccc; border-color:#e0e0e0; background:white;'} display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'" onmouseout="${isWishlisted ? `this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'` : `this.style.color='#ccc'; this.style.borderColor='#e0e0e0'`}">
-                        <i class="fas fa-heart"></i>
-                    </button>
-                    <button class="remove-btn" title="Remove item">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <span class="item-subtotal">$${subtotal}</span>
+                    <div style="display:flex; gap:8px;">
+                        <button class="wishlist-btn" title="Add to Wishlist" style="width:32px; height:32px; border-radius:50%; border:1px solid; ${isWishlisted ? 'color:#e05c7a; border-color:#e05c7a; background:#fff0f3;' : 'color:#ccc; border-color:#e0e0e0; background:white;'} display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'" onmouseout="${isWishlisted ? `this.style.color='#e05c7a'; this.style.borderColor='#e05c7a'` : `this.style.color='#ccc'; this.style.borderColor='#e0e0e0'`}">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                        <button class="remove-btn" title="Remove item">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -329,6 +353,11 @@ async function changeQty(cartId, delta) {
     const prevQty = cartItems[idx].qty;
     const newQty  = Math.max(1, prevQty + delta);
     if (newQty === prevQty) return;
+
+    if (delta > 0 && cartItems[idx].stockStatus === 'instock' && newQty > parseInt(cartItems[idx].stockAmount, 10)) {
+        showToast('Not enough stock available', true);
+        return;
+    }
 
     cartItems[idx].qty = newQty;
     

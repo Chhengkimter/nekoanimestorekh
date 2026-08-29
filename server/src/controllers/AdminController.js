@@ -93,20 +93,16 @@ class AdminController {
         });
       }
 
-      const result = await db.query(
-        `UPDATE orders SET order_status = $1
-         WHERE order_id = $2
-         RETURNING order_id, order_code, order_status`,
-        [status, req.params.id]
-      );
+      const adminId = AdminController.getAdminId(req);
+      const updated = await Order.changeStatus(req.params.id, status, adminId);
 
-      if (!result.rows[0]) {
+      if (!updated) {
         return res.status(404).json({ error: 'Order not found' });
       }
 
       res.status(200).json({
         message: 'Order status updated',
-        order:   result.rows[0]
+        order:   updated
       });
 
     } catch (err) {
@@ -121,15 +117,17 @@ class AdminController {
     try {
       const { shippingCompany, trackingNumber, shippingDate } = req.body;
       const orderId = req.params.id;
+      const adminId = AdminController.getAdminId(req);
 
       let shippingImage = null;
       if (req.file) {
         shippingImage = await ImageUploader.upload(req.file);
       }
 
+      await Order.changeStatus(orderId, 'shipped', adminId);
+
       const result = await db.query(
         `UPDATE orders SET 
-          order_status = 'shipped',
           shipping_company = $1,
           tracking_number = $2,
           shipping_date = $3,
@@ -154,15 +152,17 @@ class AdminController {
     try {
       const { refundDate } = req.body;
       const orderId = req.params.id;
+      const adminId = AdminController.getAdminId(req);
 
       let refundImage = null;
       if (req.file) {
         refundImage = await ImageUploader.upload(req.file);
       }
 
+      await Order.changeStatus(orderId, 'refunded', adminId);
+
       const result = await db.query(
         `UPDATE orders SET 
-          order_status = 'refunded',
           refund_date = $1,
           refund_image = COALESCE($2, refund_image)
          WHERE order_id = $3 RETURNING *`,

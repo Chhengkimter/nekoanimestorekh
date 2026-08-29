@@ -361,18 +361,29 @@ function initVariants() {
    QUANTITY CONTROLS
    ===================== */
 function initQuantityControls() {
+  function canIncrease() {
+    if (!currentProduct || currentProduct.stock_status !== 'instock') return true;
+    const effectiveStock = selectedVariant ? parseInt(selectedVariant.variant_stock, 10) : parseInt(currentProduct.product_stock, 10);
+    return quantity < effectiveStock;
+  }
+
+  function handlePlus() {
+    if (!canIncrease()) {
+      showToast('Not enough stock available');
+      return;
+    }
+    quantity++; syncQuantity(); updatePriceDisplay();
+  }
+
   document.getElementById('qty-minus')?.addEventListener('click', () => {
     if (quantity > 1) { quantity--; syncQuantity(); updatePriceDisplay(); }
   });
-  document.getElementById('qty-plus')?.addEventListener('click', () => {
-    quantity++; syncQuantity(); updatePriceDisplay();
-  });
+  document.getElementById('qty-plus')?.addEventListener('click', handlePlus);
+  
   document.getElementById('sticky-minus')?.addEventListener('click', () => {
     if (quantity > 1) { quantity--; syncQuantity(); updatePriceDisplay(); }
   });
-  document.getElementById('sticky-plus')?.addEventListener('click', () => {
-    quantity++; syncQuantity(); updatePriceDisplay();
-  });
+  document.getElementById('sticky-plus')?.addEventListener('click', handlePlus);
 }
 
 /* =====================

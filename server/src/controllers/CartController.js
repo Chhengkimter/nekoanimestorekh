@@ -51,6 +51,24 @@ class CartController {
         return res.status(400).json({ error: 'Product is not available' });
       }
 
+      // Check stock limits dynamically
+      if (product.stock_status === 'instock') {
+        let maxStock = parseInt(product.product_stock, 10) || 0;
+        if (selectedOption && product.variants?.length > 0) {
+          const variant = product.variants.find(v => (v.variant_name || '').trim().toLowerCase() === (selectedOption || '').trim().toLowerCase());
+          if (variant) maxStock = parseInt(variant.variant_stock, 10) || 0;
+        }
+
+        const items = await Cart.getByUser(userId);
+        const existingItem = items.find(i => String(i.product_id) === String(productId) && i.selected_option === (selectedOption || null));
+        const existingQty = existingItem ? parseInt(existingItem.quantity, 10) : 0;
+        const requestedQty = parseInt(quantity, 10) || 1;
+
+        if (existingQty + requestedQty > maxStock) {
+          return res.status(400).json({ error: 'Not enough stock available' });
+        }
+      }
+
       // 3. Use current sale price as snapshot
       const priceSnapshot = parseFloat(product.sale_price);
 
@@ -88,6 +106,25 @@ class CartController {
       
       if (!quantity || quantity < 1) {
         return res.status(400).json({ error: 'Quantity must be at least 1' });
+      }
+
+      // Fetch the cart item to check its stock
+      const items = await Cart.getByUser(userId);
+      const cartItem = items.find(i => String(i.cart_item_id) === String(cartItemId));
+      
+      if (!cartItem) {
+        return res.status(404).json({ error: 'Cart item not found' });
+      }
+
+      // Validate stock (only enforce if increasing)
+      if (cartItem.stock_status === 'instock') {
+        const maxStock = parseInt(cartItem.product_stock, 10) || 0; // product_stock is already COALESCE'd in getByUser
+        const requestedQuantity = parseInt(quantity, 10);
+        const currentQuantity = parseInt(cartItem.quantity, 10);
+        
+        if (requestedQuantity > maxStock && requestedQuantity > currentQuantity) {
+          return res.status(400).json({ error: 'Not enough stock available' });
+        }
       }
 
       const updated = await Cart.updateQuantity(cartItemId, userId, quantity);

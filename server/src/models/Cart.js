@@ -23,13 +23,15 @@ class Cart {
            WHEN p.discount_flat  THEN GREATEST(0, p.product_price - p.discount)
            ELSE GREATEST(0, p.product_price - (p.product_price * p.discount / 100))
          END             AS current_price,
-         p.product_stock,
+         COALESCE(v.variant_stock, p.product_stock) AS product_stock,
          p.stock_status
        FROM cart c
        JOIN cart_items ci ON ci.cart_id    = c.cart_id
        JOIN products p    ON p.product_id  = ci.product_id
        LEFT JOIN product_images img
               ON img.product_id = p.product_id AND img.is_primary = TRUE
+       LEFT JOIN product_variants v
+              ON v.product_id = p.product_id AND TRIM(v.variant_name) ILIKE TRIM(ci.selected_option)
        WHERE c.user_id = $1
        ORDER BY ci.added_at DESC`,
       [userId]

@@ -422,6 +422,12 @@ BEGIN
             rec.quantity, rec.priceSnapshot, rec.note
         );
 
+        IF rec.selectedOption IS NOT NULL THEN
+            UPDATE product_variants
+            SET variant_stock = variant_stock - rec.quantity
+            WHERE product_id = rec.productID AND variant_name = rec.selectedOption;
+        END IF;
+
         UPDATE Products
         SET productStock = productStock - rec.quantity
         WHERE productID = rec.productID AND stockStatus = 'instock'

@@ -35,7 +35,22 @@ async function migrate() {
       CHECK (payment_status IN ('unpaid', 'half_paid', 'full_paid'))
     `);
 
-    // 3. Recreate sp_place_order
+    // 3. Recreate sp_place_order & sp_admin_place_order
+    console.log("Dropping existing stored procedures...");
+    await db.query(`
+      DO $$
+      DECLARE
+          r RECORD;
+      BEGIN
+          FOR r IN 
+              SELECT oid::regprocedure AS proc_name
+              FROM pg_proc
+              WHERE proname IN ('sp_place_order', 'sp_admin_place_order')
+          LOOP
+              EXECUTE 'DROP PROCEDURE ' || r.proc_name || ' CASCADE';
+          END LOOP;
+      END $$;
+    `);
     console.log("Recreating sp_place_order...");
     await db.query(`
       CREATE OR REPLACE PROCEDURE public.sp_place_order(
@@ -113,6 +128,12 @@ async function migrate() {
                   rec.quantity, rec.price_snapshot, rec.note
               );
 
+              IF rec.selected_option IS NOT NULL AND rec.selected_option <> '' AND rec.selected_option <> '—' THEN
+                  UPDATE product_variants
+                  SET variant_stock = variant_stock - rec.quantity
+                  WHERE product_id = rec.product_id AND TRIM(variant_name) ILIKE TRIM(rec.selected_option);
+              END IF;
+
               UPDATE products
               SET product_stock = product_stock - rec.quantity
               WHERE product_id = rec.product_id AND stock_status = 'instock'
@@ -126,6 +147,92 @@ async function migrate() {
 
           DELETE FROM cart_items WHERE cart_id = v_cart_id;
           RAISE NOTICE 'Order % created (ID=%)', p_order_code, v_order_id;
+      END;
+      $procedure$;
+    `);
+
+    console.log("Recreating sp_admin_place_order...");
+    await db.query(`
+      CREATE OR REPLACE PROCEDURE public.sp_admin_place_order(
+          IN p_user_id integer,
+          IN p_guest_name character varying,
+          IN p_guest_email character varying,
+          IN p_order_code character varying,
+          IN p_addr_type character varying,
+          IN p_addr_line1 character varying,
+          IN p_addr_district character varying,
+          IN p_addr_city character varying,
+          IN p_addr_landmark character varying,
+          IN p_maps_link text,
+          IN p_maps_detail text,
+          IN p_phone1 character varying,
+          IN p_phone2 character varying,
+          IN p_shipping_method character varying,
+          IN p_shipping_cost numeric,
+          IN p_order_note text,
+          IN p_admin_note text,
+          IN p_items jsonb,
+          IN p_admin_id integer
+      )
+      LANGUAGE plpgsql
+      AS $procedure$
+      DECLARE
+          v_order_id INT;
+          v_subtotal NUMERIC(12,2) := 0;
+          v_total    NUMERIC(12,2);
+          item       RECORD;
+          v_after    INT;
+      BEGIN
+          SELECT COALESCE(SUM((elem->>'quantity')::INT * (elem->>'priceAtPurchase')::NUMERIC), 0)
+          INTO v_subtotal
+          FROM jsonb_array_elements(p_items) elem;
+
+          v_total := CASE WHEN p_shipping_cost IS NOT NULL THEN v_subtotal + p_shipping_cost ELSE v_subtotal END;
+
+          INSERT INTO orders (
+              order_code, user_id, guest_name, guest_email, order_status,
+              addr_type, addr_line1, addr_district, addr_city, addr_landmark,
+              maps_link, maps_detail, phone1, phone2,
+              shipping_method, shipping_cost, subtotal, total, order_note, admin_note
+          ) VALUES (
+              p_order_code, p_user_id, p_guest_name, p_guest_email, 'pending',
+              p_addr_type, p_addr_line1, p_addr_district, p_addr_city, p_addr_landmark,
+              p_maps_link, p_maps_detail, p_phone1, p_phone2,
+              p_shipping_method, p_shipping_cost, v_subtotal, v_total, p_order_note, p_admin_note
+          ) RETURNING order_id INTO v_order_id;
+
+          FOR item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(
+              "productId" INT,
+              "selectedOption" VARCHAR,
+              "quantity" INT,
+              "priceAtPurchase" NUMERIC,
+              "itemNote" TEXT
+          )
+          LOOP
+              INSERT INTO order_items (
+                  order_id, product_id, selected_option,
+                  product_quantity, price_at_purchase, item_note
+              ) VALUES (
+                  v_order_id, item."productId", item."selectedOption",
+                  item."quantity", item."priceAtPurchase", item."itemNote"
+              );
+
+              IF item."selectedOption" IS NOT NULL AND item."selectedOption" <> '' AND item."selectedOption" <> '—' THEN
+                  UPDATE product_variants
+                  SET variant_stock = variant_stock - item."quantity"
+                  WHERE product_id = item."productId" AND TRIM(variant_name) ILIKE TRIM(item."selectedOption");
+              END IF;
+
+              UPDATE products
+              SET product_stock = product_stock - item."quantity"
+              WHERE product_id = item."productId"
+              RETURNING product_stock INTO v_after;
+
+              IF FOUND THEN
+                  INSERT INTO inventory (product_id, movement_type, quantity_delta, quantity_after, note, performed_by)
+                  VALUES (item."productId", 'sale', -item."quantity", v_after, 'Admin Order ' || p_order_code, p_admin_id);
+              END IF;
+          END LOOP;
       END;
       $procedure$;
     `);
