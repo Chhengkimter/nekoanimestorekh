@@ -1,3 +1,20 @@
+/* Hide native scrollbars on all modal dialogs while keeping them scrollable */
+.up-modal,
+.up-modal-overlay,
+.up-modal-body,
+[role="dialog"] {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.up-modal::-webkit-scrollbar,
+.up-modal-overlay::-webkit-scrollbar,
+.up-modal-body::-webkit-scrollbar,
+[role="dialog"]::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 /* =====================
    LAYOUT
    ===================== */
@@ -146,13 +163,69 @@
 .up-panel.active { display: block; }
 
 .up-panel-header {
-    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+    border-bottom: 2px solid #f2e9fa;
+    position: relative;
+}
+
+.up-panel-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, #82659D, #b392d4);
+    border-radius: 2px;
 }
 
 .up-panel-title {
-    font-size: 20px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #2c2236;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+.up-panel-title i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f5e8f2 0%, #ece0f8 100%);
+    color: #82659D;
+    font-size: 17px;
+    box-shadow: 0 3px 10px rgba(130, 101, 157, 0.12);
+}
+
+.rewards-section-title,
+.setting-card-title {
+    font-size: 15px;
     font-weight: 700;
-    color: #333;
+    color: #3f3150;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-card-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 15px;
+    background: linear-gradient(180deg, #82659D, #b392d4);
+    border-radius: 2px;
 }
 
 /* =====================
@@ -632,6 +705,15 @@
     max-height: 90vh;
     overflow-y: auto;
     animation: upModalIn .22s ease;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.up-modal::-webkit-scrollbar,
+.up-modal-body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 @keyframes upModalIn {
@@ -693,19 +775,25 @@
 }
 
 /* Form elements inside modals */
+.form-row {
+    display: flex;
+    gap: 12px;
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 2px;
     margin-bottom: 14px;
 }
 
 .form-group label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .08em;
     color: #888;
+    margin-bottom: 1px;
 }
 
 .form-optional {
@@ -883,11 +971,22 @@
         color: #e05c7a;
     }
 
-    .form-row { grid-template-columns: 1fr; }
+    .form-row {
+        grid-template-columns: 1fr !important;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .up-addr-tabs {
+        flex-direction: column !important;
+        gap: 8px;
+    }
 }
 
 @media (max-width: 480px) {
     .up-main-wrap { padding: 16px 0 40px; }
+    .up-panel-title { font-size: 18px; }
+    .up-panel-title i { width: 34px; height: 34px; font-size: 14px; border-radius: 10px; }
     .status-tabs { gap: 4px; }
     .stab { padding: 5px 10px; font-size: 11px; }
     .order-actions { flex-direction: column; }

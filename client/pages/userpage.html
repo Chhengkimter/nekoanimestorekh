@@ -64,7 +64,7 @@
                     <!-- ── ORDERS PANEL ── -->
                     <div class="up-panel active" id="panel-orders">
                         <div class="up-panel-header">
-                            <h2 class="up-panel-title">My orders</h2>
+                            <h2 class="up-panel-title"><i class="fas fa-shopping-bag"></i> My Orders</h2>
                         </div>
 
                         <!-- Ship notification toggle -->
@@ -101,7 +101,7 @@
                     <!-- ── WISHLIST PANEL ── -->
                     <div class="up-panel" id="panel-wishlist">
                         <div class="up-panel-header">
-                            <h2 class="up-panel-title">My Wishlist</h2>
+                            <h2 class="up-panel-title"><i class="fas fa-heart"></i> My Wishlist</h2>
                         </div>
                         <div id="wishlist-list" class="product-grid">
                             <div class="up-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading wishlist…</div>
@@ -111,7 +111,7 @@
                     <!-- ── REWARDS & QUESTS PANEL ── -->
                     <div class="up-panel" id="panel-rewards">
                         <div class="up-panel-header">
-                            <h2 class="up-panel-title">Rewards & Quests</h2>
+                            <h2 class="up-panel-title"><i class="fas fa-gift"></i> Rewards & Quests</h2>
                         </div>
                         
                         <div class="rewards-section">
@@ -132,7 +132,7 @@
                     <!-- ── REVIEWS PANEL ── -->
                     <div class="up-panel" id="panel-reviews">
                         <div class="up-panel-header">
-                            <h2 class="up-panel-title">My Reviews</h2>
+                            <h2 class="up-panel-title"><i class="fas fa-star"></i> My Reviews</h2>
                         </div>
                         <div id="reviews-list">
                             <div class="up-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading reviews…</div>
@@ -142,7 +142,7 @@
                     <!-- ── SETTINGS PANEL ── -->
                     <div class="up-panel" id="panel-settings">
                         <div class="up-panel-header">
-                            <h2 class="up-panel-title">Settings</h2>
+                            <h2 class="up-panel-title"><i class="fas fa-cog"></i> Settings</h2>
                         </div>
 
                         <!-- Account info -->
@@ -242,18 +242,20 @@
             <div class="up-modal-body">
                 <p class="up-modal-sub" id="addr-modal-ordcode" style="font-weight:700; color:var(--up-accent); margin-bottom:12px;"></p>
                 
-                <div class="form-row" style="display:flex; gap:10px; margin-bottom:15px;">
-                    <div class="form-group" style="flex:1;">
-                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Primary Phone *</label>
+                <div class="form-row" style="margin-bottom:0;">
+                    <div class="form-group" style="flex:1; margin-bottom:10px;">
+                        <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">Primary Phone *</label>
                         <input type="text" id="addr-phone1" placeholder="+855 xx xxx xxx">
                     </div>
-                    <div class="form-group" style="flex:1;">
-                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Secondary Phone <span class="form-optional">(optional)</span></label>
+                    <div class="form-group" style="flex:1; margin-bottom:0;">
+                        <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">Secondary Phone <span class="form-optional">(optional)</span></label>
                         <input type="text" id="addr-phone2" placeholder="+855 xx xxx xxx">
                     </div>
                 </div>
 
-                <div class="up-addr-tabs" style="display:flex; gap:10px; margin-bottom:16px;">
+                <div style="border-top: 1px solid #e8d8f5; margin: 10px 0 14px 0;"></div>
+
+                <div class="up-addr-tabs" style="margin-bottom:16px;">
                     <button type="button" class="up-addr-tab active" id="up-tab-btn-manual" onclick="switchUpAddrTab('manual')">
                         <i class="fas fa-edit"></i> Manual Address
                     </button>
@@ -264,28 +266,28 @@
 
                 <div id="up-panel-manual">
                     <div class="form-group" style="margin-bottom:12px;">
-                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Address line *</label>
+                        <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">Address line *</label>
                         <input type="text" id="addr-line1" placeholder="Street number, house number, road">
                     </div>
-                    <div class="form-row" style="display:flex; gap:10px; margin-bottom:12px;">
+                    <div class="form-row" style="margin-bottom:12px;">
                         <div class="form-group" style="flex:1;">
-                            <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">District / Khan</label>
+                            <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">District / Khan</label>
                             <input type="text" id="addr-district" placeholder="e.g. Chamkarmon">
                         </div>
                         <div class="form-group" style="flex:1;">
-                            <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">City / Province</label>
+                            <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">City / Province</label>
                             <input type="text" id="addr-city" placeholder="e.g. Phnom Penh">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Landmark <span class="form-optional">(optional)</span></label>
+                        <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">Landmark <span class="form-optional">(optional)</span></label>
                         <input type="text" id="addr-landmark" placeholder="Near school, behind coffee shop…">
                     </div>
                 </div>
 
                 <div id="up-panel-maps" style="display:none;">
                     <div class="form-group" style="margin-bottom:12px;">
-                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Google Maps Link *</label>
+                        <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">Google Maps Link *</label>
                         <div style="display:flex; gap:8px;">
                             <input type="text" id="addr-maps-link" placeholder="Paste Google Maps URL here…" style="flex:1;">
                             <button type="button" class="up-btn-cancel" style="padding:8px 12px; font-size:12px; white-space:nowrap;" onclick="verifyUpMapsLink()">
@@ -294,7 +296,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label style="font-weight:600; font-size:13px; margin-bottom:4px; display:block;">Location Details <span class="form-optional">(optional)</span></label>
+                        <label style="font-weight:600; font-size:10px; margin-bottom:1px; display:block;">Location Details <span class="form-optional">(optional)</span></label>
                         <input type="text" id="addr-maps-detail" placeholder="House #, Floor, Gate color, or directions for delivery driver">
                     </div>
                 </div>
