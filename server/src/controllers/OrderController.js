@@ -13,7 +13,8 @@ class OrderController {
         phone1, phone2,
         shippingMethod, shippingCost,
         orderNote,
-        paymentMethod, isPhnomPenh
+        paymentMethod, isPhnomPenh,
+        couponCode
       } = req.body;
 
       if (!phone1) return res.status(400).json({ error: 'Phone number is required' });
@@ -32,7 +33,8 @@ class OrderController {
         phone1, phone2,
         shippingMethod, shippingCost,
         orderNote,
-        paymentMethod, isPhnomPenh
+        paymentMethod, isPhnomPenh,
+        couponCode
       });
 
       const order = await Order.findByCode(orderCode, userId);

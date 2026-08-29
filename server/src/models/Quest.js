@@ -144,7 +144,7 @@ class Quest {
       }
       case 'purchase_count': {
         const r = await db.query(
-          `SELECT COUNT(*) FROM orders WHERE user_id = $1 AND order_status NOT IN ('cancelled')`,
+          `SELECT COUNT(*) FROM orders WHERE user_id = $1 AND order_status NOT IN ('cancelled', 'refunded')`,
           [userId]
         );
         value = parseInt(r.rows[0].count);
@@ -159,12 +159,12 @@ class Quest {
         break;
       }
       case 'order_items_count': {
-        // Max items in a single order
+        // Max items in a single non-cancelled order
         const r = await db.query(
           `SELECT COALESCE(MAX(item_count), 0) AS max_items FROM (
-             SELECT order_id, SUM(quantity) AS item_count
+             SELECT order_id, SUM(product_quantity) AS item_count
              FROM order_items
-             WHERE order_id IN (SELECT order_id FROM orders WHERE user_id = $1 AND order_status NOT IN ('cancelled'))
+             WHERE order_id IN (SELECT order_id FROM orders WHERE user_id = $1 AND order_status NOT IN ('cancelled', 'refunded'))
              GROUP BY order_id
            ) sub`,
           [userId]
@@ -174,8 +174,8 @@ class Quest {
       }
       case 'spend_amount': {
         const r = await db.query(
-          `SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders
-           WHERE user_id = $1 AND order_status NOT IN ('cancelled')`,
+          `SELECT COALESCE(SUM(total), 0) AS total FROM orders
+           WHERE user_id = $1 AND order_status NOT IN ('cancelled', 'refunded')`,
           [userId]
         );
         value = Math.floor(parseFloat(r.rows[0].total));

@@ -36,6 +36,8 @@ class WishlistController {
       if (!productId) return res.status(400).json({ error: 'productId is required' });
 
       const result = await Wishlist.toggle(userId, productId);
+      const Quest = require('../models/Quest');
+      await Quest.refreshUserProgress(userId);
       res.json(result);
     } catch (err) {
       console.error('Wishlist toggle error:', err);

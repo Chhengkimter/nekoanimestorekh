@@ -304,17 +304,18 @@ async function applyCoupon() {
     if (!code) return;
     
     const cartTotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+    const categoryIds = cartItems.map(i => i.categoryId || i.category_id).filter(Boolean);
     
     try {
-        const res = await fetch('http://localhost:3000/api/coupons/validate', {
+        const res = await fetch('/api/coupons/validate', {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ code, cartTotal, categoryIds: [] })
+            body: JSON.stringify({ code, cartTotal, categoryIds })
         });
         const data = await res.json();
         
         if (!res.ok || !data.valid) {
-            showToast(data.error || 'Invalid coupon', true);
+            showToast(data.error || 'Invalid coupon');
             appliedCoupon = null;
             renderSummary();
             return;
@@ -324,7 +325,7 @@ async function applyCoupon() {
         showToast('Coupon applied!');
         renderSummary();
     } catch (err) {
-        showToast('Error applying coupon', true);
+        showToast('Error applying coupon');
     }
 }
 
@@ -466,7 +467,8 @@ document.getElementById('setup-address-btn')?.addEventListener('click', async ()
     if (appliedCoupon) {
         sessionStorage.setItem('neko_cart_coupon', JSON.stringify({
             code: appliedCoupon.code,
-            discount: appliedCoupon.discount
+            discount: appliedCoupon.discount,
+            couponId: appliedCoupon.info?.coupon_id || null
         }));
     } else {
         sessionStorage.removeItem('neko_cart_coupon');

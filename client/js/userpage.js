@@ -482,6 +482,15 @@ async function openOrderDetailModal(orderId) {
             <div class="od-section">
                 <div class="od-section-title"><i class="fas fa-shopping-bag"></i> Items</div>
                 ${itemsHtml || '<p style="font-size:13px; color:#aaa;">No items found.</p>'}
+                <div class="od-total-row" style="font-weight: normal; font-size: 14px; margin-top: 8px;">
+                    <span>Subtotal</span>
+                    <span>$${Number(o.subtotal || o.total || 0).toFixed(2)}</span>
+                </div>
+                ${Number(o.discount_amount) > 0 ? `
+                <div class="od-total-row" style="font-weight: normal; font-size: 14px; color: #38a169;">
+                    <span>Coupon ${o.coupon_code ? `(${o.coupon_code})` : ''}</span>
+                    <span>-$${Number(o.discount_amount).toFixed(2)}</span>
+                </div>` : ''}
                 <div class="od-total-row">
                     <span>Total</span>
                     <span class="od-total-amount">$${Number(o.total || 0).toFixed(2)}</span>

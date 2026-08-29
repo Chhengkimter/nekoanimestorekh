@@ -99,15 +99,37 @@ function updateTotals() {
 
   document.getElementById('mini-subtotal').textContent = `$${sub.toFixed(2)}`;
 
+  let coupon = null;
+  try {
+    const raw = sessionStorage.getItem('neko_cart_coupon');
+    if (raw) coupon = JSON.parse(raw);
+  } catch (e) {}
+
+  const discountRow  = document.getElementById('mini-discount-row');
+  const couponCodeEl = document.getElementById('mini-coupon-code');
+  const discountEl   = document.getElementById('mini-discount');
+
+  let discountAmount = 0;
+  if (coupon && coupon.discount > 0) {
+    discountAmount = parseFloat(coupon.discount);
+    if (discountRow) discountRow.style.display = 'flex';
+    if (couponCodeEl) couponCodeEl.textContent = coupon.code;
+    if (discountEl) discountEl.textContent = `-$${discountAmount.toFixed(2)}`;
+  } else {
+    if (discountRow) discountRow.style.display = 'none';
+  }
+
+  const discountedSub = Math.max(0, sub - discountAmount);
+
   const shipEl = document.getElementById('mini-shipping');
   if (ship === null) {
     shipEl.textContent   = 'TBD';
     shipEl.style.color   = '#B99CC8';
-    document.getElementById('mini-total').textContent = `$${sub.toFixed(2)} + ship`;
+    document.getElementById('mini-total').textContent = `$${discountedSub.toFixed(2)} + ship`;
   } else {
     shipEl.textContent = ship === 0 ? 'FREE' : `$${ship.toFixed(2)}`;
     shipEl.style.color = ship === 0 ? '#4caf7d' : '#333';
-    document.getElementById('mini-total').textContent = `$${(sub + ship).toFixed(2)}`;
+    document.getElementById('mini-total').textContent = `$${(discountedSub + ship).toFixed(2)}`;
   }
 }
 
@@ -331,7 +353,15 @@ document.getElementById('submit-order-btn').addEventListener('click', async () =
 
         // payment and location
         isPhnomPenh: document.querySelector('input[name="is_phnom_penh"]:checked')?.value === 'yes',
-        paymentMethod: document.querySelector('input[name="payment"]:checked')?.value || 'full'
+        paymentMethod: document.querySelector('input[name="payment"]:checked')?.value || 'full',
+
+        // coupon
+        couponCode: (() => {
+          try {
+            const raw = sessionStorage.getItem('neko_cart_coupon');
+            return raw ? JSON.parse(raw).code : null;
+          } catch(e) { return null; }
+        })()
     };
 
     const res = await fetch('/api/orders', {
@@ -355,6 +385,10 @@ document.getElementById('submit-order-btn').addEventListener('click', async () =
 
     const order = await res.json();
     
+    sessionStorage.removeItem('neko_cart_coupon');
+    sessionStorage.removeItem('neko_cart_total');
+    sessionStorage.removeItem('neko_cart_snapshot');
+
     sessionStorage.setItem('neko_pending_order', JSON.stringify({
       orderId:   order.orderCode,
       createdAt: order.order?.order_date || new Date().toISOString(),

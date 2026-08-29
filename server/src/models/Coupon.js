@@ -185,26 +185,93 @@ class Coupon {
   }
 
   // ─── Use a coupon (mark as used when order is placed) ──────
-  static async useCoupon(claimId, orderId, orderTotal, savedAmount) {
-    const result = await db.query(
-      `UPDATE coupon_claims SET
-         used_at = NOW(),
-         order_id = $2,
-         order_total = $3,
-         saved_amount = $4
-       WHERE claim_id = $1 RETURNING *`,
-      [claimId, orderId, orderTotal, savedAmount]
-    );
+  static async useCoupon(params, orderId, orderTotal, savedAmount) {
+    let couponId, userId, claimId;
 
-    // Increment times_used on the coupon
-    if (result.rows[0]) {
-      await db.query(
-        `UPDATE coupons SET times_used = times_used + 1 WHERE coupon_id = $1`,
-        [result.rows[0].coupon_id]
-      );
+    if (typeof params === 'object' && params !== null) {
+      couponId = params.couponId;
+      userId = params.userId;
+      orderId = params.orderId || orderId;
+      orderTotal = params.orderTotal || orderTotal;
+      savedAmount = params.savedAmount || savedAmount;
+      claimId = params.claimId;
+    } else {
+      claimId = params;
     }
 
-    return result.rows[0];
+    if (claimId) {
+      const result = await db.query(
+        `UPDATE coupon_claims SET
+           used_at = NOW(),
+           order_id = $2,
+           order_total = $3,
+           saved_amount = $4
+         WHERE claim_id = $1 RETURNING *`,
+        [claimId, orderId, orderTotal, savedAmount]
+      );
+      if (result.rows[0]) {
+        await db.query(
+          `UPDATE coupons SET times_used = times_used + 1 WHERE coupon_id = $1`,
+          [result.rows[0].coupon_id]
+        );
+      }
+      return result.rows[0];
+    }
+
+    if (couponId && userId) {
+      // Find an unused claim or create a new used claim record
+      const existing = await db.query(
+        `SELECT claim_id FROM coupon_claims
+         WHERE coupon_id = $1 AND user_id = $2 AND used_at IS NULL
+         ORDER BY claimed_at ASC LIMIT 1`,
+        [couponId, userId]
+      );
+
+      if (existing.rows[0]) {
+        claimId = existing.rows[0].claim_id;
+        await db.query(
+          `UPDATE coupon_claims SET
+             used_at = NOW(), order_id = $2, order_total = $3, saved_amount = $4
+           WHERE claim_id = $1`,
+          [claimId, orderId, orderTotal, savedAmount]
+        );
+      } else {
+        const newClaim = await db.query(
+          `INSERT INTO coupon_claims (coupon_id, user_id, claimed_at, used_at, order_id, order_total, saved_amount)
+           VALUES ($1, $2, NOW(), NOW(), $3, $4, $5) RETURNING claim_id`,
+          [couponId, userId, orderId, orderTotal, savedAmount]
+        );
+        claimId = newClaim.rows[0].claim_id;
+      }
+
+      await db.query(
+        `UPDATE coupons SET times_used = times_used + 1 WHERE coupon_id = $1`,
+        [couponId]
+      );
+      return { claim_id: claimId };
+    }
+
+    return null;
+  }
+
+  // ─── Restore a coupon (when order is cancelled or refunded) ──
+  static async restoreCoupon(orderId) {
+    const claims = await db.query(
+      `SELECT claim_id, coupon_id FROM coupon_claims WHERE order_id = $1 AND used_at IS NOT NULL`,
+      [orderId]
+    );
+
+    for (const row of claims.rows) {
+      await db.query(
+        `UPDATE coupon_claims SET used_at = NULL, order_id = NULL, order_total = NULL, saved_amount = NULL
+         WHERE claim_id = $1`,
+        [row.claim_id]
+      );
+      await db.query(
+        `UPDATE coupons SET times_used = GREATEST(0, times_used - 1) WHERE coupon_id = $1`,
+        [row.coupon_id]
+      );
+    }
   }
 
   // ─── Get user's claimed coupons ────────────────────────────

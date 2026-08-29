@@ -10,10 +10,37 @@ class Order {
     phone1, phone2,
     shippingMethod, shippingCost,
     orderNote,
-    paymentMethod, isPhnomPenh
+    paymentMethod, isPhnomPenh,
+    couponCode
   }) {
+    const Coupon = require('./Coupon');
+    const Quest  = require('./Quest');
+    const Cart   = require('./Cart');
+
+    let discountAmount = 0;
+    let couponId = null;
+
+    if (couponCode) {
+      const cartItems = await Cart.getByUser(userId);
+      const cartTotal = cartItems.reduce((sum, i) => sum + (parseFloat(i.price_snapshot) * i.quantity), 0);
+      
+      const catIdsRes = await db.query(
+        `SELECT DISTINCT category_id FROM product_categories WHERE product_id IN (
+           SELECT product_id FROM cart_items WHERE cart_id = (SELECT cart_id FROM cart WHERE user_id = $1)
+         )`,
+        [userId]
+      );
+      const categoryIds = catIdsRes.rows.map(r => r.category_id);
+
+      const val = await Coupon.validateCoupon(couponCode, userId, cartTotal, categoryIds);
+      if (val.valid) {
+        discountAmount = val.discount;
+        couponId = val.coupon.coupon_id;
+      }
+    }
+
     await db.query(
-      `CALL sp_place_order($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+      `CALL sp_place_order($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
       [
         userId, orderCode,
         addrType        || 'manual',
@@ -29,9 +56,29 @@ class Order {
         shippingCost    || null,
         orderNote       || null,
         paymentMethod   || 'full',
-        isPhnomPenh     || false
+        isPhnomPenh     || false,
+        couponCode      || null,
+        discountAmount  || 0,
+        couponId        || null
       ]
     );
+
+    // Record coupon usage
+    if (couponId) {
+      const orderRes = await db.query(`SELECT order_id, total FROM orders WHERE order_code = $1`, [orderCode]);
+      if (orderRes.rows[0]) {
+        await Coupon.useCoupon({
+          couponId,
+          userId,
+          orderId: orderRes.rows[0].order_id,
+          orderTotal: orderRes.rows[0].total,
+          savedAmount: discountAmount
+        });
+      }
+    }
+
+    // Refresh quest progress after placing order
+    await Quest.refreshUserProgress(userId);
   }
 
   // ─── Update Order Profit (Admin) ──────────────────────────────────
@@ -66,8 +113,13 @@ class Order {
     );
     const items = itemsResult.rows;
 
-    // Transition: Active -> Inactive (Cancelled or Refunded) => Add back stock
+    const Coupon = require('./Coupon');
+    const Quest  = require('./Quest');
+
+    // Transition: Active -> Inactive (Cancelled or Refunded) => Restore coupon claim & add back stock
     if (!isOldInactive && isNewInactive) {
+      await Coupon.restoreCoupon(orderId);
+
       for (const item of items) {
         const qty = parseInt(item.product_quantity, 10);
         if (isNaN(qty) || qty <= 0) continue;
@@ -104,6 +156,17 @@ class Order {
 
     // Transition: Inactive -> Active => Re-deduct stock
     if (isOldInactive && !isNewInactive) {
+      const orderData = await db.query(`SELECT coupon_id, user_id, total, discount_amount FROM orders WHERE order_id = $1`, [orderId]);
+      if (orderData.rows[0]?.coupon_id && orderData.rows[0]?.user_id) {
+        await Coupon.useCoupon({
+          couponId: orderData.rows[0].coupon_id,
+          userId: orderData.rows[0].user_id,
+          orderId: orderId,
+          orderTotal: orderData.rows[0].total,
+          savedAmount: orderData.rows[0].discount_amount
+        });
+      }
+
       for (const item of items) {
         const qty = parseInt(item.product_quantity, 10);
         if (isNaN(qty) || qty <= 0) continue;
@@ -141,6 +204,11 @@ class Order {
       `UPDATE orders SET order_status = $1 WHERE order_id = $2 RETURNING *`,
       [newStatus, orderId]
     );
+
+    const targetUserId = updateResult.rows[0]?.user_id;
+    if (targetUserId) {
+      await Quest.refreshUserProgress(targetUserId);
+    }
 
     return updateResult.rows[0] || null;
   }
@@ -241,6 +309,9 @@ class Order {
          o.order_code,
          o.order_status,
          o.order_date,
+         o.subtotal,
+         o.discount_amount,
+         o.coupon_code,
          o.total,
          o.shipping_method,
          o.shipping_company,
@@ -255,7 +326,7 @@ class Order {
        JOIN order_items oi ON oi.order_id = o.order_id
        WHERE o.user_id = $1
        GROUP BY o.order_id, o.order_code, o.order_status,
-                o.order_date, o.total, o.shipping_method,
+                o.order_date, o.subtotal, o.discount_amount, o.coupon_code, o.total, o.shipping_method,
                 o.shipping_company, o.tracking_number,
                 o.shipping_date, o.shipping_image,
                 o.refund_date, o.refund_image
@@ -439,7 +510,7 @@ class Order {
       }
     }
 
-    // 5. Recalculate subtotal/total
+    // 5. Recalculate subtotal/total preserving coupon discounts
     const subtotalResult = await db.query(
       `SELECT COALESCE(SUM(price_at_purchase * product_quantity), 0) AS subtotal
        FROM order_items WHERE order_id = $1`,
@@ -447,16 +518,38 @@ class Order {
     );
     const subtotal = parseFloat(subtotalResult.rows[0].subtotal);
 
-    const orderResult = await db.query(`SELECT shipping_cost FROM orders WHERE order_id = $1`, [orderId]);
-    const shippingCost = orderResult.rows[0]?.shipping_cost;
-    const total = shippingCost !== null && shippingCost !== undefined ? subtotal + parseFloat(shippingCost) : subtotal;
+    const orderResult = await db.query(
+      `SELECT shipping_cost, discount_amount, coupon_id FROM orders WHERE order_id = $1`,
+      [orderId]
+    );
+    const shippingCost = orderResult.rows[0]?.shipping_cost !== null && orderResult.rows[0]?.shipping_cost !== undefined
+      ? parseFloat(orderResult.rows[0].shipping_cost)
+      : null;
+
+    let discountAmount = parseFloat(orderResult.rows[0]?.discount_amount || 0);
+    if (orderResult.rows[0]?.coupon_id) {
+      const Coupon = require('./Coupon');
+      const coupon = await Coupon.findById(orderResult.rows[0].coupon_id);
+      if (coupon && coupon.discount_type === 'percent') {
+        let d = subtotal * (parseFloat(coupon.discount_value) / 100);
+        if (coupon.max_discount && d > parseFloat(coupon.max_discount)) {
+          d = parseFloat(coupon.max_discount);
+        }
+        discountAmount = Math.round(d * 100) / 100;
+      }
+    }
+    discountAmount = Math.min(discountAmount, subtotal);
+
+    const total = shippingCost !== null
+      ? Math.max(0, (subtotal - discountAmount) + shippingCost)
+      : Math.max(0, subtotal - discountAmount);
 
     await db.query(
-      `UPDATE orders SET subtotal = $1, total = $2 WHERE order_id = $3`,
-      [subtotal, total, orderId]
+      `UPDATE orders SET subtotal = $1, discount_amount = $2, total = $3 WHERE order_id = $4`,
+      [subtotal, discountAmount, total, orderId]
     );
 
-    return { subtotal, total };
+    return { subtotal, discountAmount, total };
   }
 
   // ─── Admin: record a payment entry ─────────────────────────────

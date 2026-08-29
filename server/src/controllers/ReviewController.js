@@ -24,6 +24,11 @@ class ReviewController {
         await Review.linkToProducts(req.params.id, linkedProductIds);
       }
       
+      if (review && review.user_id) {
+        const Quest = require('../models/Quest');
+        await Quest.refreshUserProgress(review.user_id);
+      }
+      
       res.json(review);
     } catch (err) {
       console.error('ReviewController.update:', err);

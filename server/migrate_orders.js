@@ -13,12 +13,15 @@ async function migrate() {
       CHECK (order_status IN ('pending', 'modified', 'confirmed', 'shipped', 'delivered', 'cancelled', 'refunded'))
     `);
 
-    // 2. Add new columns
+    // 2. Add new columns to orders table
     console.log("Adding new columns to orders...");
     await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20) DEFAULT 'full'`);
     await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(20) DEFAULT 'unpaid'`);
     await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_phnom_penh BOOLEAN DEFAULT false`);
-    
+    await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10,2) DEFAULT 0`);
+    await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(50) DEFAULT NULL`);
+    await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_id INT REFERENCES coupons(coupon_id) ON DELETE SET NULL DEFAULT NULL`);
+
     // Update constraint for payment_method
     await db.query(`ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_method_check`);
     await db.query(`
@@ -51,6 +54,7 @@ async function migrate() {
           END LOOP;
       END $$;
     `);
+
     console.log("Recreating sp_place_order...");
     await db.query(`
       CREATE OR REPLACE PROCEDURE public.sp_place_order(
@@ -69,7 +73,10 @@ async function migrate() {
           IN p_shipping_cost numeric DEFAULT NULL::numeric, 
           IN p_order_note text DEFAULT NULL::text,
           IN p_payment_method character varying DEFAULT 'full'::character varying,
-          IN p_is_phnom_penh boolean DEFAULT false
+          IN p_is_phnom_penh boolean DEFAULT false,
+          IN p_coupon_code character varying DEFAULT NULL::character varying,
+          IN p_discount_amount numeric DEFAULT 0,
+          IN p_coupon_id integer DEFAULT NULL
       )
       LANGUAGE plpgsql
       AS $procedure$
@@ -94,24 +101,24 @@ async function migrate() {
               END IF;
           END LOOP;
 
-          SELECT SUM(price_snapshot * quantity) INTO v_subtotal
+          SELECT COALESCE(SUM(price_snapshot * quantity), 0) INTO v_subtotal
           FROM cart_items WHERE cart_id = v_cart_id;
 
           v_total := CASE WHEN p_shipping_cost IS NOT NULL
-                          THEN v_subtotal + p_shipping_cost
+                          THEN GREATEST(0, (v_subtotal - COALESCE(p_discount_amount, 0)) + p_shipping_cost)
                           ELSE NULL END;
 
           INSERT INTO orders (
               order_code, user_id, order_status,
               addr_type, addr_line1, addr_district, addr_city, addr_landmark,
               maps_link, maps_detail, phone1, phone2,
-              shipping_method, shipping_cost, subtotal, total, order_note,
+              shipping_method, shipping_cost, subtotal, discount_amount, coupon_code, coupon_id, total, order_note,
               payment_method, is_phnom_penh, payment_status
           ) VALUES (
               p_order_code, p_user_id, 'pending',
               p_addr_type, p_addr_line1, p_addr_district, p_addr_city, p_addr_landmark,
               p_maps_link, p_maps_detail, p_phone1, p_phone2,
-              p_shipping_method, p_shipping_cost, v_subtotal, v_total, p_order_note,
+              p_shipping_method, p_shipping_cost, v_subtotal, COALESCE(p_discount_amount, 0), p_coupon_code, p_coupon_id, v_total, p_order_note,
               p_payment_method, p_is_phnom_penh, 'unpaid'
           ) RETURNING order_id INTO v_order_id;
 
@@ -172,7 +179,10 @@ async function migrate() {
           IN p_order_note text,
           IN p_admin_note text,
           IN p_items jsonb,
-          IN p_admin_id integer
+          IN p_admin_id integer,
+          IN p_coupon_code character varying DEFAULT NULL::character varying,
+          IN p_discount_amount numeric DEFAULT 0,
+          IN p_coupon_id integer DEFAULT NULL
       )
       LANGUAGE plpgsql
       AS $procedure$
@@ -187,18 +197,20 @@ async function migrate() {
           INTO v_subtotal
           FROM jsonb_array_elements(p_items) elem;
 
-          v_total := CASE WHEN p_shipping_cost IS NOT NULL THEN v_subtotal + p_shipping_cost ELSE v_subtotal END;
+          v_total := CASE WHEN p_shipping_cost IS NOT NULL
+                          THEN GREATEST(0, (v_subtotal - COALESCE(p_discount_amount, 0)) + p_shipping_cost)
+                          ELSE NULL END;
 
           INSERT INTO orders (
               order_code, user_id, guest_name, guest_email, order_status,
               addr_type, addr_line1, addr_district, addr_city, addr_landmark,
               maps_link, maps_detail, phone1, phone2,
-              shipping_method, shipping_cost, subtotal, total, order_note, admin_note
+              shipping_method, shipping_cost, subtotal, discount_amount, coupon_code, coupon_id, total, order_note, admin_note
           ) VALUES (
               p_order_code, p_user_id, p_guest_name, p_guest_email, 'pending',
               p_addr_type, p_addr_line1, p_addr_district, p_addr_city, p_addr_landmark,
               p_maps_link, p_maps_detail, p_phone1, p_phone2,
-              p_shipping_method, p_shipping_cost, v_subtotal, v_total, p_order_note, p_admin_note
+              p_shipping_method, p_shipping_cost, v_subtotal, COALESCE(p_discount_amount, 0), p_coupon_code, p_coupon_id, v_total, p_order_note, p_admin_note
           ) RETURNING order_id INTO v_order_id;
 
           FOR item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(
@@ -237,14 +249,14 @@ async function migrate() {
       $procedure$;
     `);
 
-    // Update vw_order_summary to include new columns
+    // Update vw_order_summary to include discount_amount, coupon_code, coupon_id
     console.log("Updating vw_order_summary...");
     await db.query(`DROP VIEW IF EXISTS vw_order_summary CASCADE;`);
     await db.query(`
       CREATE OR REPLACE VIEW vw_order_summary AS
       SELECT 
           o.order_id, o.order_code, o.user_id, o.order_status, o.order_date,
-          o.subtotal, o.total, o.shipping_method, o.shipping_cost,
+          o.subtotal, o.discount_amount, o.coupon_code, o.coupon_id, o.total, o.shipping_method, o.shipping_cost,
           o.addr_type, o.addr_line1, o.addr_district, o.addr_city, o.addr_landmark,
           o.maps_link, o.maps_detail, o.phone1, o.phone2, o.order_note, o.admin_note,
           COALESCE(u.first_name || ' ' || u.last_name, o.guest_name) AS customer_name,
