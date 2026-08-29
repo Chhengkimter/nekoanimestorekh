@@ -396,8 +396,8 @@ document.getElementById('submit-order-btn').addEventListener('click', async () =
         method: order.order?.shipping_method || shippingMethod,
         cost:   order.order?.shipping_cost   || shippingCost
       },
-      subtotal:  order.order?.subtotal || cartSubtotal,
-      total:     order.order?.total    || null,
+      subtotal:  order.order?.subtotal !== undefined && order.order?.subtotal !== null ? parseFloat(order.order.subtotal) : cartSubtotal,
+      total:     order.order?.total !== undefined && order.order?.total !== null ? parseFloat(order.order.total) : (shippingCost !== null ? (cartSubtotal + shippingCost) : null),
       items:     (order.order?.items || []).map(i => ({
         name:   i.product_name,
         image:  i.image,
