@@ -474,3 +474,155 @@ body {
     .form-title { font-size: 24px; }
     .left-panel { min-height: 170px; }
 }
+
+/* =====================
+   STATUS PAGES (verify, reset, forgot)
+   ===================== */
+.status-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.status-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 36px;
+}
+
+.status-icon.success {
+    background: #f0fff4;
+    color: #2e7d52;
+    animation: scaleIn 0.5s ease;
+}
+
+.status-icon.error {
+    background: #fff0f0;
+    color: #c0392b;
+    animation: scaleIn 0.5s ease;
+}
+
+.status-icon.info {
+    background: #f0f4ff;
+    color: #4a69bd;
+    animation: scaleIn 0.5s ease;
+}
+
+.status-icon.loading {
+    background: #f5f0ff;
+    color: #82659D;
+}
+
+@keyframes scaleIn {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.status-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2d2d2d;
+    margin-bottom: 10px;
+}
+
+.status-message {
+    font-size: 14px;
+    color: #888;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.status-message strong {
+    color: #555;
+}
+
+.status-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.status-actions .submit-btn {
+    max-width: 280px;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: #82659D;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s;
+    padding: 4px;
+}
+
+.link-btn:hover {
+    color: #6b4f85;
+    text-decoration: underline;
+}
+
+.expiry-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #b08ec2;
+    margin-top: 8px;
+}
+
+.expiry-note i {
+    font-size: 11px;
+}
+
+/* Verification banner on login page */
+.verify-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    background: #fff8f0;
+    border: 1px solid #f0d6a8;
+    color: #8a6d3b;
+}
+
+.verify-banner button {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #8a6d3b;
+    color: #8a6d3b;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.verify-banner button:hover {
+    background: #8a6d3b;
+    color: white;
+}
+
+/* Loading spinner for status pages */
+.status-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(130,101,157,0.2);
+    border-top-color: #82659D;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 24px;
+}

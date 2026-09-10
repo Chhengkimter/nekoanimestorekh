@@ -41,6 +41,13 @@
                     <span id="auth-error-msg">Invalid email or password.</span>
                 </div>
 
+                <!-- Verification needed banner -->
+                <div class="verify-banner" id="verify-banner" style="display:none;">
+                    <i class="fas fa-envelope-circle-check"></i>
+                    <span>Please verify your email to log in.</span>
+                    <button type="button" id="resend-verify-btn">Resend</button>
+                </div>
+
                 <form id="login-form" novalidate>
 
                     <div class="field-group">
@@ -66,7 +73,7 @@
                                 type="password"
                                 id="password"
                                 name="password"
-                                placeholder="Enter your password"
+                                placeholder=""
                                 autocomplete="current-password"
                             >
                             <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1" aria-label="Show password">
@@ -80,7 +87,7 @@
                         <label class="remember-label">
                             <input type="checkbox" id="remember"> Remember me
                         </label>
-                        <a href="#" class="forgot-link">Forgot password?</a>
+                        <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
                     </div>
 
                     <button type="submit" class="submit-btn" id="login-btn">
@@ -93,12 +100,9 @@
                 <div class="divider"><span>or continue with</span></div>
 
                 <div class="social-auth">
-                    <button class="social-btn" id="google-btn">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google"> Google
-                    </button>
-                    <button class="social-btn" id="fb-btn">
-                        <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook"> Facebook
-                    </button>
+                    <a href="https://t.me/NekoAnimeBot" target="_blank" class="social-btn" id="telegram-btn" style="text-decoration:none;">
+                        <i class="fab fa-telegram-plane" style="font-size:18px; color:#229ED9;"></i> Telegram
+                    </a>
                 </div>
 
             </div>

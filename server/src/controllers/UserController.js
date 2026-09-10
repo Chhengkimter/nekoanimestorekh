@@ -1,5 +1,8 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const User   = require('../models/User');
+const db     = require('../config/db');
+const EmailService = require('../services/EmailService');
 
 class UserController {
 
@@ -19,7 +22,7 @@ class UserController {
 
   // ─── PUT /api/users/me ────────────────────────────────────────
   // Update email OR phone number (one field at a time).
-  // Updating email requires currentPassword for safety.
+  // Updating email requires currentPassword and verification of new email.
   static async updateMe(req, res) {
     try {
       const userId = req.user.id;
@@ -27,25 +30,7 @@ class UserController {
 
       // ── Update email ──────────────────────────────────────────
       if (email !== undefined) {
-        if (!currentPassword) {
-          return res.status(400).json({ error: 'Current password is required to change email' });
-        }
-
-        // Verify password
-        const hashedPw = await User.getHashedPw(userId);
-        const valid = await bcrypt.compare(currentPassword, hashedPw);
-        if (!valid) {
-          return res.status(401).json({ error: 'Incorrect password' });
-        }
-
-        // Check email not already taken
-        const taken = await User.emailExists(email.trim().toLowerCase(), userId);
-        if (taken) {
-          return res.status(409).json({ error: 'That email is already in use' });
-        }
-
-        const updated = await User.updateEmail(userId, email.trim().toLowerCase());
-        return res.json({ message: 'Email updated', user: updated });
+        return res.status(400).json({ error: 'Email address cannot be changed once your account is created.' });
       }
 
       // ── Update phone ──────────────────────────────────────────

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email – Neko Animestore</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="auth-page">
+        <!-- LEFT PANEL -->
+        <div class="auth-panel left-panel">
+            <a href="index.html" class="panel-logo">
+                <img src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Neko Logo">
+                <span>Neko_Animestore</span>
+            </a>
+            <div class="panel-text">
+                <h2>Almost there!</h2>
+                <p>We're verifying your<br>email address.</p>
+            </div>
+            <div class="panel-decoration">
+                <div class="deco-circle c1"></div>
+                <div class="deco-circle c2"></div>
+                <div class="deco-circle c3"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="auth-panel right-panel">
+            <div class="form-card">
+                <div class="status-content" id="verify-status">
+                    <div class="status-spinner"></div>
+                    <h2 class="status-title">Verifying your email…</h2>
+                    <p class="status-message">Please wait while we confirm your email address.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const statusDiv = document.getElementById('verify-status');
+
+        if (!token) {
+            showErrorState(statusDiv, 'Invalid Link', 'No verification token provided in the URL.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/auth/verify-email?token=${token}`);
+            const data = await res.json();
+
+            if (res.ok) {
+                statusDiv.innerHTML = `
+                    <div class="status-icon success">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <h2 class="status-title">Email Verified!</h2>
+                    <p class="status-message">Your account is now active. You can log in.</p>
+                    <div class="status-actions">
+                        <a href="login.html" class="submit-btn" style="text-decoration:none;">Log In</a>
+                    </div>
+                `;
+            } else {
+                showErrorState(statusDiv, 'Verification Failed', data.error || 'The verification link is invalid or has expired.');
+            }
+        } catch (err) {
+            showErrorState(statusDiv, 'Network Error', 'Could not connect to the server. Please try again later.');
+        }
+    });
+
+    function showErrorState(container, title, message) {
+        container.innerHTML = `
+            <div class="status-icon error">
+                <i class="fas fa-times"></i>
+            </div>
+            <h2 class="status-title">${title}</h2>
+            <p class="status-message">${message}</p>
+            
+            <form id="resend-form" style="text-align:left; margin-top: 20px;">
+                <p class="form-subtitle">Need a new link? Enter your email below.</p>
+                <div class="field-group">
+                    <div class="input-wrap">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="resend-email" placeholder="you@example.com" required>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="resend-btn">
+                    <span id="resend-btn-text">Resend Email</span>
+                    <span class="spinner" id="resend-spinner" style="display:none;"></span>
+                </button>
+                <div id="resend-msg" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+            </form>
+        `;
+
+        const resendForm = document.getElementById('resend-form');
+        resendForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('resend-email').value.trim();
+            if (!email) return;
+
+            setLoading('resend-btn', 'resend-btn-text', 'resend-spinner', true);
+            const msgDiv = document.getElementById('resend-msg');
+            msgDiv.textContent = '';
+            
+            try {
+                const res = await fetch(`${API}/auth/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgDiv.style.color = '#2e7d52';
+                    msgDiv.innerHTML = '<i class="fas fa-check-circle"></i> Verification email sent! Check your inbox.';
+                    document.getElementById('resend-email').value = '';
+                } else {
+                    msgDiv.style.color = '#c0392b';
+                    msgDiv.textContent = data.error || 'Failed to send verification email.';
+                }
+            } catch (err) {
+                msgDiv.style.color = '#c0392b';
+                msgDiv.textContent = 'Network error. Try again.';
+            } finally {
+                setLoading('resend-btn', 'resend-btn-text', 'resend-spinner', false);
+            }
+        });
+    }
+    </script>
+</body>
+</html>

@@ -161,7 +161,6 @@
                                 <div class="setting-label"><i class="fas fa-envelope"></i> Email</div>
                                 <div class="setting-row-right">
                                     <span class="setting-val" id="s-email">—</span>
-                                    <button class="edit-btn" onclick="openEditModal('email')">Edit</button>
                                 </div>
                             </div>
                             <div class="setting-row">
@@ -200,12 +199,13 @@
                                     </div>
                                     <i class="fas fa-chevron-right pwd-method-arrow"></i>
                                 </button>
-                                <button class="pwd-method pwd-method-disabled" disabled>
+                                <button class="pwd-method" onclick="openEditModal('password-email')">
                                     <div class="pwd-method-icon"><i class="fas fa-envelope"></i></div>
                                     <div class="pwd-method-text">
                                         <div class="pwd-method-label">Via email</div>
-                                        <div class="pwd-method-sub">Coming soon</div>
+                                        <div class="pwd-method-sub">Receive a password reset link in your inbox</div>
                                     </div>
+                                    <i class="fas fa-chevron-right pwd-method-arrow"></i>
                                 </button>
                             </div>
                         </div>

@@ -169,6 +169,34 @@ async function handleLogin(e) {
     const data = await res.json();
 
     if (!res.ok) {
+      if (data.code === 'EMAIL_NOT_VERIFIED') {
+        // Show verification banner instead of error
+        const banner = document.getElementById('verify-banner');
+        if (banner) {
+          banner.style.display = 'flex';
+          // Setup resend button
+          const resendBtn = document.getElementById('resend-verify-btn');
+          if (resendBtn) {
+            resendBtn.onclick = async () => {
+              resendBtn.disabled = true;
+              resendBtn.textContent = 'Sending…';
+              try {
+                const r = await fetch(`${API}/auth/resend-verification`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email }),
+                });
+                resendBtn.textContent = 'Sent!';
+                setTimeout(() => { resendBtn.textContent = 'Resend'; resendBtn.disabled = false; }, 3000);
+              } catch {
+                resendBtn.textContent = 'Failed';
+                setTimeout(() => { resendBtn.textContent = 'Resend'; resendBtn.disabled = false; }, 3000);
+              }
+            };
+          }
+        }
+        return;
+      }
       showBanner('error', data.error || 'Invalid email or password.');
       setInputState('email',    'input-error');
       setInputState('password', 'input-error');
@@ -242,9 +270,9 @@ async function handleSignup(e) {
       return;
     }
 
-    saveSession(data.token, data.user, false);
-    showBanner('success', `Welcome, ${firstName}! Redirecting you now…`);
-    setTimeout(() => { window.location.href = REDIRECT.customer; }, 1200);
+    showBanner('success', `Account created! Please check your email (${email}) to verify your account.`);
+    // Disable form after successful signup
+    document.getElementById('signup-form').querySelectorAll('input, button').forEach(el => el.disabled = true);
 
   } catch (err) {
     showBanner('error', 'Network error — make sure the server is running.');

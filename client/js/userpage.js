@@ -17,7 +17,7 @@ let profile      = null;
 let orders       = [];
 let orderTab     = 'all';
 let addrEditId   = null;   // order id currently being edited in addr modal
-let editMode     = null;   // 'email' | 'phone' | 'telegram' | 'password-current' | 'password-telegram'
+let editMode     = null;   // 'email' | 'phone' | 'telegram' | 'password-current' | 'password-telegram' | 'password-email'
 
 /* ── FETCH HELPER ────────────────────────────────────────── */
 // ✅ Fix — sends JWT token from localStorage
@@ -70,7 +70,16 @@ function renderProfile() {
 
     document.getElementById('s-user-id').textContent  = `#NEKO-${String(profile.user_id).padStart(6, '0')}`;
     document.getElementById('s-username').textContent = name;
-    document.getElementById('s-email').textContent    = profile.email || '—';
+    
+    const emailEl = document.getElementById('s-email');
+    if (emailEl) {
+        if (profile.email_verified === false) {
+            emailEl.innerHTML = `${profile.email || '—'} <span style="color:#e74c3c; font-size:11px; font-weight:600; margin-left:6px; background:#fde8e8; padding:2px 6px; border-radius:4px;"><i class="fas fa-exclamation-circle"></i> Unverified</span>`;
+        } else {
+            emailEl.textContent = profile.email || '—';
+        }
+    }
+    
     document.getElementById('s-phone').textContent    = profile.phone_number || 'Not set';
 
     // Hide Telegram row until you add telegram_id column to users table
@@ -654,24 +663,13 @@ function openEditModal(mode) {
     const body   = document.getElementById('edit-modal-body');
     const footer = document.getElementById('edit-modal-footer');
     const title  = document.getElementById('edit-modal-title');
-    const saveBtn = document.getElementById('edit-modal-save-btn');
 
-    saveBtn.onclick = () => submitEditModal();
+    // Reset default footer buttons first to avoid missing element errors
+    footer.innerHTML = `
+        <button class="up-btn-cancel" onclick="closeEditModal()">Cancel</button>
+        <button class="up-btn-save" id="edit-modal-save-btn" onclick="submitEditModal()">Save</button>`;
 
     switch (mode) {
-
-        case 'email':
-            title.textContent = 'Update email';
-            body.innerHTML = `
-                <div class="form-group">
-                    <label>New email address</label>
-                    <input type="email" id="edit-email" value="${profile?.email || ''}" placeholder="you@example.com">
-                </div>
-                <div class="form-group">
-                    <label>Current password <span class="form-optional">(to confirm)</span></label>
-                    <input type="password" id="edit-email-pwd" placeholder="••••••••">
-                </div>`;
-            break;
 
         case 'phone':
             title.textContent = 'Update phone number';
@@ -682,90 +680,51 @@ function openEditModal(mode) {
                 </div>`;
             break;
 
-        case 'telegram':
-            title.textContent = profile?.telegram_id ? 'Telegram connected' : 'Connect Telegram';
-            body.innerHTML = profile?.telegram_id ? `
-                <p style="font-size:13px;color:#555;margin-bottom:14px">
-                    Your Telegram account <strong>@${profile.telegram_username || 'unknown'}</strong> is connected.
-                    Disconnecting will remove the ability to reset your password via Telegram.
-                </p>
-                <p style="font-size:12px;color:#aaa">To reconnect later, message @NekoAnimeBot on Telegram.</p>
-            ` : `
-                <p style="font-size:13px;color:#555;margin-bottom:14px">
-                    To link your Telegram account, message <strong>@NekoAnimeBot</strong> on Telegram and send the command:
-                </p>
-                <div style="background:#f0e8fa;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:13px;color:#82659D;margin-bottom:14px">
-                    /connect ${profile?.user_id || 'your-user-id'}
-                </div>
-                <p style="font-size:12px;color:#aaa">Once linked, you can use Telegram to reset your password.</p>
-            `;
-            footer.innerHTML = profile?.telegram_id
-                ? `<button class="up-btn-cancel" onclick="closeEditModal()">Close</button>
-                   <button class="up-btn-save" style="background:#e05c7a" onclick="disconnectTelegram()">Disconnect</button>`
-                : `<button class="up-btn-cancel" onclick="closeEditModal()">Close</button>`;
-            document.getElementById('edit-modal').classList.add('open');
-            return;
-
         case 'password-current':
             title.textContent = 'Change password';
             body.innerHTML = `
                 <div class="form-group">
                     <label>Current password</label>
-                    <input type="password" id="pwd-old" placeholder="••••••••">
+                    <input type="password" id="pwd-old" placeholder="">
                 </div>
                 <div class="form-group">
                     <label>New password</label>
-                    <input type="password" id="pwd-new" placeholder="At least 8 characters">
+                    <input type="password" id="pwd-new" placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Confirm new password</label>
-                    <input type="password" id="pwd-confirm" placeholder="••••••••">
+                    <input type="password" id="pwd-confirm" placeholder="">
                 </div>`;
             break;
 
         case 'password-telegram':
-            title.textContent = 'Reset via Telegram';
-            if (!profile?.telegram_id) {
-                body.innerHTML = `
-                    <p style="font-size:13px;color:#e05c7a">
-                        <i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>
-                        You haven't connected a Telegram account yet. Connect Telegram first.
-                    </p>`;
-                footer.innerHTML = `<button class="up-btn-cancel" onclick="closeEditModal()">Close</button>
-                    <button class="up-btn-save" onclick="closeEditModal();openEditModal('telegram')">Connect Telegram</button>`;
-                document.getElementById('edit-modal').classList.add('open');
-                return;
-            }
+        case 'telegram':
+            title.textContent = 'Telegram Bot';
+            body.innerHTML = `
+                <div style="background:#fff3cd; border:1px solid #ffeeba; color:#856404; padding:14px 16px; border-radius:8px; font-size:13px; line-height:1.5;">
+                    <i class="fas fa-exclamation-triangle" style="margin-right:6px; font-size:15px;"></i>
+                    <strong>Telegram Bot Unavailable</strong><br>
+                    Telegram bot integration is coming soon. Please use <strong>Via email</strong> or <strong>Current password</strong> to change your password.
+                </div>`;
+            footer.innerHTML = `<button class="up-btn-cancel" onclick="closeEditModal()">Close</button>`;
+            break;
+
+        case 'password-email':
+            title.textContent = 'Reset via email';
             body.innerHTML = `
                 <p style="font-size:13px;color:#555;margin-bottom:14px">
-                    We'll send a reset code to your linked Telegram account <strong>@${profile.telegram_username || ''}</strong>.
+                    We'll send a password reset link to your email address <strong>${profile?.email || ''}</strong>.
+                    The link will expire in <strong>20 minutes</strong>.
                 </p>
-                <div class="form-group" id="tg-code-group" style="display:none">
-                    <label>Enter the code from Telegram</label>
-                    <input type="text" id="tg-reset-code" placeholder="6-digit code" maxlength="6">
-                </div>
-                <div class="form-group" id="tg-newpwd-group" style="display:none">
-                    <label>New password</label>
-                    <input type="password" id="tg-new-pwd" placeholder="At least 8 characters">
-                </div>
-                <div class="form-group" id="tg-confirmpwd-group" style="display:none">
-                    <label>Confirm new password</label>
-                    <input type="password" id="tg-confirm-pwd" placeholder="••••••••">
-                </div>`;
+                <div id="email-reset-result" style="display:none; margin-top:14px; padding:12px 16px; border-radius:8px; font-size:13px;"></div>`;
             footer.innerHTML = `
                 <button class="up-btn-cancel" onclick="closeEditModal()">Cancel</button>
-                <button class="up-btn-save" id="tg-send-btn" onclick="sendTelegramResetCode()">Send code</button>`;
-            document.getElementById('edit-modal').classList.add('open');
-            return;
+                <button class="up-btn-save" id="email-reset-btn" onclick="sendEmailResetFromSettings()">Send reset link</button>`;
+            break;
 
         default:
             return;
     }
-
-    // Restore default footer in case it was changed by a previous modal
-    footer.innerHTML = `
-        <button class="up-btn-cancel" onclick="closeEditModal()">Cancel</button>
-        <button class="up-btn-save" id="edit-modal-save-btn" onclick="submitEditModal()">Save</button>`;
 
     document.getElementById('edit-modal').classList.add('open');
 }
@@ -791,10 +750,17 @@ async function submitEditModal() {
                     method: 'PUT',
                     body: JSON.stringify({ email, currentPassword: pwd })
                 });
-                if (!res.ok) { const e = await res.json(); showToast(e.error || 'Update failed', true); return; }
-                profile.email = email;
+                const data = await res.json();
+                if (!res.ok) { showToast(data.error || 'Update failed', true); return; }
+                if (data.user) {
+                    profile.email = data.user.email;
+                    profile.pending_email = data.user.pending_email;
+                    profile.email_verified = data.user.email_verified;
+                } else {
+                    profile.pending_email = email;
+                }
                 renderProfile();
-                showToast('Email updated ✓');
+                showToast(data.message || 'Verification link sent to your new Gmail address.', false);
                 closeEditModal();
                 break;
             }
@@ -908,6 +874,47 @@ async function disconnectTelegram() {
         closeEditModal();
     } catch {
         showToast('Could not disconnect Telegram', true);
+    }
+}
+
+/* ── EMAIL RESET PASSWORD FROM SETTINGS ─────────────────── */
+async function sendEmailResetFromSettings() {
+    const btn = document.getElementById('email-reset-btn');
+    const resultDiv = document.getElementById('email-reset-result');
+    if (!profile?.email) { showToast('No email address found', true); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+        const res = await fetch(`${API}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: profile.email })
+        });
+
+        if (res.ok) {
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#f0fff4';
+            resultDiv.style.border = '1px solid #b2dfdb';
+            resultDiv.style.color = '#2e7d52';
+            resultDiv.innerHTML = '<i class="fas fa-check-circle" style="margin-right:6px"></i> Reset link sent! Check your inbox. The link expires in <strong>20 minutes</strong>.';
+            btn.textContent = 'Sent!';
+            setTimeout(() => { btn.textContent = 'Send reset link'; btn.disabled = false; }, 5000);
+        } else {
+            const data = await res.json();
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#fff0f0';
+            resultDiv.style.border = '1px solid #f5c6c6';
+            resultDiv.style.color = '#c0392b';
+            resultDiv.textContent = data.error || 'Could not send reset email.';
+            btn.disabled = false;
+            btn.textContent = 'Send reset link';
+        }
+    } catch {
+        showToast('Network error. Please try again.', true);
+        btn.disabled = false;
+        btn.textContent = 'Send reset link';
     }
 }
 
