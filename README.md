@@ -90,7 +90,7 @@ from the customer page they will get all this info too. oh make sure there is a 
 
 ~ review section of a product. each review will undergo admin approval to make sure the review is appropriate and belong to that product. admin can also link the same review to multiple products. if approved it will be shown on the product page, if rejected it will be hidden. admin will also have the right to delete a review. since some quest is linked to completing a review, only approved review will count of completion of the quest. 
 
-create a system where when a user creates an account, an email will be sent to their email address to verify their account.  this can later be used for account password reset or if user forgot their password. 
+create a system where when a user creates an account, an email will be sent to their email address to verify their account.  this can later be used for account password reset or if user forgot their password. check the index/log in page to see the log in design/sign up and integrate it
 
 ~ admine new page: Finance. this page should have a calender for the admin to view revenue in a range of date and a bar chart showing total revenue. each order will now have a profit column where admin can manually enter how much they have earn from that single order. show profit and make a section to record spending such as ads and content ceator.
 make sure each have a filter for weekly, monthly and yearly. its like a finance corner of the store you know.
