@@ -57,11 +57,12 @@ class OrderController {
 
       const {
         serviceTier, preferredContact,
+        shippingMethod, shippingCost,
         addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
         mapsLink, mapsDetail,
         phone1, phone2,
         orderNote,
-        subtotal, shippingCost, total,
+        subtotal, total,
         items
       } = req.body;
 
@@ -74,12 +75,13 @@ class OrderController {
       const order = await Order.placeCustomService({
         userId, orderCode,
         serviceTier, preferredContact: preferredContact || 'telegram',
+        shippingMethod: shippingMethod || 'standard_pp',
+        shippingCost: shippingCost !== undefined ? shippingCost : 1.50,
         addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
         mapsLink, mapsDetail,
         phone1, phone2,
         orderNote,
         subtotal: subtotal || 0,
-        shippingCost: shippingCost || 0,
         total: total || 0,
         items
       });

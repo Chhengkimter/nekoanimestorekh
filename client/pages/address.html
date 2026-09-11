@@ -115,19 +115,19 @@
                     </div>
                 </div>
 
-                <!-- ── LOCATION FLAG ── -->
+                <!-- ── LOCATION REGION ── -->
                 <div class="form-card">
                     <div class="card-header">
-                        <i class="fas fa-map-marker-alt card-icon"></i>
-                        <h2>Delivery Location</h2>
+                        <i class="fas fa-city card-icon"></i>
+                        <h2>Delivery Location Region</h2>
                     </div>
-                    <p class="card-sub" style="margin-bottom:12px;">Is this delivery address in Phnom Penh?</p>
-                    <div class="field-group" style="display:flex; gap:16px; margin-bottom: 0;">
-                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:500;">
-                            <input type="radio" name="is_phnom_penh" value="yes" checked style="width:16px; height:16px;"> Yes
+                    <p class="card-sub" style="margin-bottom:12px;">Is this delivery address in Phnom Penh / Ta Khmao?</p>
+                    <div class="field-group" style="display:flex; gap:20px; margin-bottom: 0;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; font-size:13.5px;">
+                            <input type="radio" name="is_phnom_penh" value="yes" checked style="width:16px; height:16px;"> Yes (Phnom Penh / Ta Khmao)
                         </label>
-                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:500;">
-                            <input type="radio" name="is_phnom_penh" value="no" style="width:16px; height:16px;"> No
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; font-size:13.5px;">
+                            <input type="radio" name="is_phnom_penh" value="no" style="width:16px; height:16px;"> No (Outside Phnom Penh / Ta Khmao)
                         </label>
                     </div>
                 </div>
@@ -138,72 +138,12 @@
                         <i class="fas fa-shipping-fast card-icon"></i>
                         <h2>Shipping Method</h2>
                     </div>
+                    <p class="card-sub" id="shipping-card-sub" style="margin-bottom:14px; font-weight:600; color:#82659D;">
+                        Estimated delivery time: (1 day for in-stock, 2-3 weeks for pre-order)
+                    </p>
 
                     <div class="shipping-options" id="shipping-options">
-
-                        <label class="shipping-opt">
-                            <input type="radio" name="shipping" value="express" checked>
-                            <div class="ship-content">
-                                <div class="ship-left">
-                                    <div class="ship-name">Express Delivery</div>
-                                    <div class="ship-desc">Same-day or next-day within Phnom Penh</div>
-                                    <div class="ship-est"><i class="fas fa-clock"></i> 1 – 2 days</div>
-                                </div>
-                                <div class="ship-price">$3.00</div>
-                            </div>
-                        </label>
-
-                        <label class="shipping-opt">
-                            <input type="radio" name="shipping" value="standard">
-                            <div class="ship-content">
-                                <div class="ship-left">
-                                    <div class="ship-name">Standard Delivery</div>
-                                    <div class="ship-desc">Covers all provinces across Cambodia</div>
-                                    <div class="ship-est"><i class="fas fa-clock"></i> 3 – 5 days</div>
-                                </div>
-                                <div class="ship-price">$2.00</div>
-                            </div>
-                        </label>
-
-                        <label class="shipping-opt">
-                            <input type="radio" name="shipping" value="economy">
-                            <div class="ship-content">
-                                <div class="ship-left">
-                                    <div class="ship-name">Economy Shipping</div>
-                                    <div class="ship-desc">Budget option for non-urgent orders</div>
-                                    <div class="ship-est"><i class="fas fa-clock"></i> 5 – 10 days</div>
-                                </div>
-                                <div class="ship-price">$1.00</div>
-                            </div>
-                        </label>
-
-                        <label class="shipping-opt">
-                            <input type="radio" name="shipping" value="pickup">
-                            <div class="ship-content">
-                                <div class="ship-left">
-                                    <div class="ship-name">Store Pickup</div>
-                                    <div class="ship-desc">Pick up at our Phnom Penh location</div>
-                                    <div class="ship-est"><i class="fas fa-store"></i> Ready in 1 day</div>
-                                </div>
-                                <div class="ship-price free">FREE</div>
-                            </div>
-                        </label>
-
-                        <label class="shipping-opt undetermined-opt">
-                            <input type="radio" name="shipping" value="undetermined">
-                            <div class="ship-content">
-                                <div class="ship-left">
-                                    <div class="ship-name">
-                                        <i class="fas fa-question-circle" style="color:#B99CC8;margin-right:4px"></i>
-                                        To Be Determined
-                                    </div>
-                                    <div class="ship-desc">Our team will contact you to arrange the best shipping option</div>
-                                    <div class="ship-est"><i class="fas fa-comment-dots"></i> We'll reach out via phone / Telegram</div>
-                                </div>
-                                <div class="ship-price tbd">TBD</div>
-                            </div>
-                        </label>
-
+                        <!-- Populated dynamically by JS based on region selection -->
                     </div>
                 </div>
 
@@ -260,7 +200,7 @@
                     </div>
                     <p class="card-sub">Any special instructions for the entire order (packaging, delivery window, etc.)</p>
                     <textarea class="field-textarea" id="order-note"
-                              placeholder="e.g. Please deliver after 5 PM, wrap all items individually…"
+                              placeholder="e.g. Please deliver on weekends, ..."
                               maxlength="500"></textarea>
                     <p class="char-count" id="note-char">0 / 500</p>
                 </div>

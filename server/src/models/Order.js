@@ -234,25 +234,25 @@ class Order {
   // ─── Place Custom Order Service (Proxy Buying) ──────────────────
   static async placeCustomService({
     userId, orderCode,
-    serviceTier, preferredContact,
+    serviceTier, preferredContact, shippingMethod, shippingCost,
     addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
     mapsLink, mapsDetail,
     phone1, phone2,
     orderNote,
-    subtotal, shippingCost, total,
+    subtotal, total,
     items
   }) {
     const orderRes = await db.query(
       `INSERT INTO orders (
-         order_code, user_id, order_type, service_tier, preferred_contact,
+         order_code, user_id, order_type, service_tier, preferred_contact, shipping_method,
          addr_type, addr_line1, addr_district, addr_city, addr_landmark,
          maps_link, maps_detail, phone1, phone2,
          order_status, subtotal, shipping_cost, total, order_note,
          order_date
-       ) VALUES ($1,$2,'custom_service',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'pending',$14,$15,$16,$17,NOW())
+       ) VALUES ($1,$2,'custom_service',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pending',$15,$16,$17,$18,NOW())
        RETURNING *`,
       [
-        orderCode, userId || null, serviceTier, preferredContact,
+        orderCode, userId || null, serviceTier, preferredContact, shippingMethod || 'standard_pp',
         addrType || 'manual', addrLine1 || null, addrDistrict || null, addrCity || null, addrLandmark || null,
         mapsLink || null, mapsDetail || null, phone1, phone2 || null,
         subtotal || 0, shippingCost || 0, total || 0, orderNote || null

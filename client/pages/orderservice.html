@@ -268,11 +268,43 @@
                         </div>
                     </div>
 
-                    <!-- ── 3. CONTACT NUMBERS ── -->
+                    <!-- ── 3. LOCATION REGION ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-city card-icon"></i>
+                            <h2>3. Delivery Location Region</h2>
+                        </div>
+                        <p class="card-sub" style="margin-bottom:12px;">Is this delivery address in Phnom Penh / Ta Khmao?</p>
+                        <div class="field-group" style="display:flex; gap:20px; margin-bottom: 0;">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; font-size:13.5px;">
+                                <input type="radio" name="is_phnom_penh" value="yes" checked style="width:16px; height:16px;"> Yes (Phnom Penh / Ta Khmao)
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; font-size:13.5px;">
+                                <input type="radio" name="is_phnom_penh" value="no" style="width:16px; height:16px;"> No (Outside Phnom Penh / Ta Khmao)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ── 4. SHIPPING METHOD ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-shipping-fast card-icon"></i>
+                            <h2>4. Shipping Method</h2>
+                        </div>
+                        <p class="card-sub" id="svc-shipping-card-sub" style="margin-bottom:14px; font-weight:600; color:#82659D;">
+                            Estimated delivery time: (1 day for in-stock, 2-3 weeks for pre-order)
+                        </p>
+
+                        <div class="shipping-options" id="svc-shipping-options">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </div>
+
+                    <!-- ── 5. CONTACT NUMBERS ── -->
                     <div class="form-card">
                         <div class="card-header">
                             <i class="fas fa-phone-alt card-icon"></i>
-                            <h2>3. Contact Numbers</h2>
+                            <h2>5. Contact Numbers</h2>
                         </div>
                         <p class="card-sub">We'll use these to coordinate your custom order and delivery.</p>
 

@@ -28,6 +28,14 @@ const TIER_META = {
     }
 };
 
+const SHIPPING_PRICES = {
+    standard_pp:         1.50,
+    fragile_box:         2.00,
+    grab_express:        0.00,
+    pickup:              0.00,
+    standard_provincial: 2.00
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     loadUserProfile();
 
@@ -46,6 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (countEl) countEl.textContent = `${noteEl.value.length} / 500`;
         });
     }
+
+    renderShippingOptions();
+
+    document.querySelectorAll('input[name="is_phnom_penh"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            renderShippingOptions();
+        });
+    });
 });
 
 async function loadUserProfile() {
@@ -107,7 +123,98 @@ function openOrderPage(tier) {
     document.getElementById('svc-page-view').style.display = 'block';
     document.getElementById('svc-success-view').style.display = 'none';
 
+    renderShippingOptions();
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderShippingOptions() {
+    const isPP = document.querySelector('input[name="is_phnom_penh"]:checked')?.value === 'yes';
+    const container = document.getElementById('svc-shipping-options');
+    if (!container) return;
+
+    const cardSub = document.getElementById('svc-shipping-card-sub');
+    if (cardSub) {
+        cardSub.textContent = isPP 
+            ? 'Estimated delivery time: (1 day for in-stock, 2-3 weeks for pre-order)'
+            : 'Estimated delivery time: (1-2 days for in-stock, 2-3 weeks for pre-order)';
+    }
+
+    let html = '';
+    if (isPP) {
+        html = `
+            <label class="shipping-opt">
+                <input type="radio" name="shipping" value="standard_pp" checked>
+                <div class="ship-content">
+                    <div class="ship-left">
+                        <div class="ship-name">Standard Delivery</div>
+                        <div class="ship-desc">Covers Phnom Penh & Ta Khmao</div>
+                        <div class="ship-est"><i class="fas fa-clock"></i> 1 day (instock) • 2-3 weeks (pre order)</div>
+                    </div>
+                    <div class="ship-price">$1.50</div>
+                </div>
+            </label>
+
+            <label class="shipping-opt">
+                <input type="radio" name="shipping" value="fragile_box">
+                <div class="ship-content">
+                    <div class="ship-left">
+                        <div class="ship-name">Standard Plus (Secure Box)</div>
+                        <div class="ship-desc">Includes protective packaging box • Recommended for fragile items & figures</div>
+                        <div class="ship-est"><i class="fas fa-box"></i> 1 day (instock) • 2-3 weeks (pre order)</div>
+                    </div>
+                    <div class="ship-price">$2.00</div>
+                </div>
+            </label>
+
+            <label class="shipping-opt">
+                <input type="radio" name="shipping" value="grab_express">
+                <div class="ship-content">
+                    <div class="ship-left">
+                        <div class="ship-name">Grab Express</div>
+                        <div class="ship-desc">Pay directly to driver on delivery ($3–$5 depending on location). Recommended for super urgent orders only. Same day delivery if placed before 8pm.</div>
+                        <div class="ship-est"><i class="fas fa-bolt"></i> Same day delivery (placed before 8pm)</div>
+                    </div>
+                    <div class="ship-price free">Pay to Driver ($0)</div>
+                </div>
+            </label>
+
+            <label class="shipping-opt">
+                <input type="radio" name="shipping" value="pickup">
+                <div class="ship-content">
+                    <div class="ship-left">
+                        <div class="ship-name">Store Pickup</div>
+                        <div class="ship-desc">Borey Pihop Thmey Chamkadoung 2 (detailed info will be provided later)</div>
+                        <div class="ship-est"><i class="fas fa-store"></i> Ready upon notification</div>
+                    </div>
+                    <div class="ship-price free">FREE ($0)</div>
+                </div>
+            </label>
+        `;
+    } else {
+        html = `
+            <label class="shipping-opt">
+                <input type="radio" name="shipping" value="standard_provincial" checked>
+                <div class="ship-content">
+                    <div class="ship-left">
+                        <div class="ship-name">Standard Delivery (Provincial)</div>
+                        <div class="ship-desc">Covers all provinces outside Phnom Penh & Ta Khmao</div>
+                        <div class="ship-est"><i class="fas fa-truck"></i> 1-2 days (instock) • 2-3 weeks (pre order)</div>
+                    </div>
+                    <div class="ship-price">$2.00</div>
+                </div>
+            </label>
+        `;
+    }
+
+    html += `
+        <div style="margin-top:12px; padding:10px 14px; background:#fffbe6; border:1px solid #ffe58f; border-radius:8px; font-size:12px; color:#873800; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-exclamation-triangle" style="color:#d48806; font-size:14px; flex-shrink:0;"></i>
+            <span><strong>Oversized Item Note:</strong> For extra large items over 50cm, there may be a different shipping price. Further notice will be notified via email / chat.</span>
+        </div>
+    `;
+
+    container.innerHTML = html;
 }
 
 function showTierSelection() {
@@ -396,6 +503,11 @@ async function submitOrderService() {
         return;
     }
 
+    const shippingRadio = document.querySelector('input[name="shipping"]:checked');
+    const shippingMethod = shippingRadio ? shippingRadio.value : 'standard_pp';
+    const shippingCost = SHIPPING_PRICES[shippingMethod] !== undefined ? SHIPPING_PRICES[shippingMethod] : 1.50;
+    const isPhnomPenh = document.querySelector('input[name="is_phnom_penh"]:checked')?.value === 'yes';
+
     const fullNote = `Customer Handle: ${contactHandle}` + (orderNote ? ` | Note: ${orderNote}` : '');
 
     const submitBtn = document.getElementById('svc-submit-btn');
@@ -415,6 +527,9 @@ async function submitOrderService() {
             body: JSON.stringify({
                 serviceTier: activeTier,
                 preferredContact,
+                shippingMethod,
+                shippingCost,
+                isPhnomPenh,
                 addrType: activeLocTab,
                 addrLine1: activeLocTab === 'manual' ? addrLine1 : null,
                 addrDistrict: activeLocTab === 'manual' ? addrDistrict : null,
