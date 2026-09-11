@@ -65,6 +65,20 @@ const PARTIALS_API = 'http://localhost:3000/api';
     }
   }
 
+  function loadChatbot() {
+    if (!document.querySelector('link[href*="chatbot.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = ROOT_PREFIX + 'css/chatbot.css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[src*="chatbot.js"]')) {
+      const script = document.createElement('script');
+      script.src = ROOT_PREFIX + 'js/chatbot.js';
+      document.body.appendChild(script);
+    }
+  }
+
   async function init() {
     await Promise.all([
       injectPartial(ROOT_PREFIX + 'partials/header.html', 'header-root'),
@@ -72,6 +86,7 @@ const PARTIALS_API = 'http://localhost:3000/api';
       injectPartial(ROOT_PREFIX + 'partials/footer.html', 'footer-root')
     ]);
     loadCarousel();
+    loadChatbot();
     document.dispatchEvent(new CustomEvent('partials:loaded'));
   }
 
