@@ -201,13 +201,15 @@
       <div style="padding:28px 32px">
 
         <div class="ord-status-tabs" id="ord-status-tabs">
-          <button class="ord-tab active" data-status="all"       onclick="setOrderTab(this)">All</button>
-          <button class="ord-tab"        data-status="pending"   onclick="setOrderTab(this)">Pending</button>
-          <button class="ord-tab"        data-status="confirmed" onclick="setOrderTab(this)">Confirmed</button>
-          <button class="ord-tab"        data-status="shipped"   onclick="setOrderTab(this)">Shipped</button>
-          <button class="ord-tab"        data-status="delivered" onclick="setOrderTab(this)">Delivered</button>
-          <button class="ord-tab"        data-status="cancelled" onclick="setOrderTab(this)">Cancelled</button>
-          <button class="ord-tab"        data-status="refunded"  onclick="setOrderTab(this)">Refunded</button>
+          <button class="ord-tab active" data-status="all"            onclick="setOrderTab(this)">All</button>
+          <button class="ord-tab"        data-status="standard"       onclick="setOrderTab(this)">Standard Orders</button>
+          <button class="ord-tab"        data-status="custom_service" onclick="setOrderTab(this)">Order Service (Proxy)</button>
+          <button class="ord-tab"        data-status="pending"        onclick="setOrderTab(this)">Pending</button>
+          <button class="ord-tab"        data-status="confirmed"      onclick="setOrderTab(this)">Confirmed</button>
+          <button class="ord-tab"        data-status="shipped"        onclick="setOrderTab(this)">Shipped</button>
+          <button class="ord-tab"        data-status="delivered"      onclick="setOrderTab(this)">Delivered</button>
+          <button class="ord-tab"        data-status="cancelled"      onclick="setOrderTab(this)">Cancelled</button>
+          <button class="ord-tab"        data-status="refunded"       onclick="setOrderTab(this)">Refunded</button>
         </div>
 
         <div class="table-wrap" style="margin-top:20px">
@@ -245,15 +247,25 @@
         <div class="topbar-title">Finance Dashboard</div>
       </div>
       <div style="padding:28px 32px">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-          <div class="ord-status-tabs" id="fin-range-tabs">
-            <button class="ord-tab active" data-range="last30" onclick="setFinanceRange(this)">Last 30 Days</button>
-            <button class="ord-tab" data-range="thisMonth" onclick="setFinanceRange(this)">This Month</button>
-            <button class="ord-tab" data-range="thisYear" onclick="setFinanceRange(this)">This Year</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div class="ord-status-tabs" id="fin-range-tabs">
+              <button class="ord-tab active" data-range="last30" onclick="setFinanceRange(this)">Last 30 Days</button>
+              <button class="ord-tab" data-range="thisMonth" onclick="setFinanceRange(this)">This Month</button>
+              <button class="ord-tab" data-range="thisYear" onclick="setFinanceRange(this)">This Year</button>
+            </div>
+
+            <!-- Date Navigation Controls -->
+            <div class="fin-date-nav">
+              <button class="fin-nav-btn" onclick="shiftFinancePeriod(-1)" title="Previous Period">◀</button>
+              <span id="fin-period-label" class="fin-period-text">Current Period</span>
+              <button class="fin-nav-btn" id="fin-next-btn" onclick="shiftFinancePeriod(1)" title="Next Period">▶</button>
+            </div>
           </div>
-          <div class="form-group" style="flex-direction:row; align-items:center; gap:10px;">
-            <label style="margin:0; font-size:12px;">Group By:</label>
-            <select id="fin-group-by" onchange="loadFinanceSummary()" style="min-width:120px;">
+
+          <div class="form-group" style="flex-direction:row; align-items:center; gap:8px;">
+            <label style="margin:0; font-size:11px; font-family:var(--font); text-transform:uppercase; letter-spacing:.08em; color:var(--muted);">Group By:</label>
+            <select id="fin-group-by" onchange="loadFinanceSummary()" style="min-width:110px; padding:5px 10px; font-size:12px; height:34px;">
               <option value="day">Daily</option>
               <option value="week">Weekly</option>
               <option value="month">Monthly</option>

@@ -22,7 +22,12 @@ function renderOrders() {
   const q = (document.getElementById('ord-search')?.value || '').toLowerCase();
 
   const filtered = orders.filter(o => {
-    const matchStatus = orderTab === 'all' || o.order_status === orderTab;
+    let matchStatus = false;
+    if (orderTab === 'all') matchStatus = true;
+    else if (orderTab === 'custom_service') matchStatus = o.order_type === 'custom_service';
+    else if (orderTab === 'standard') matchStatus = (o.order_type === 'standard' || !o.order_type);
+    else matchStatus = o.order_status === orderTab;
+
     const matchQ = !q
       || (o.order_code || '').toLowerCase().includes(q)
       || (o.customer_name || '').toLowerCase().includes(q)
@@ -48,8 +53,12 @@ function renderOrders() {
     };
     const sCls = statusMap[o.order_status] || 'badge-amber';
 
+    const proxyBadge = o.order_type === 'custom_service' 
+      ? `<span class="badge badge-amber" style="font-size:9px; margin-left:4px;">PROXY</span>` 
+      : '';
+
     return `<div class="ord-row" onclick="viewOrderDetail(${o.order_id})">
-      <div class="ord-code">${o.order_code}</div>
+      <div class="ord-code">${o.order_code}${proxyBadge}</div>
       <div class="ord-customer">
         <div class="ord-customer-name">${customerName}</div>
         <div class="ord-customer-phone">${phone}</div>
@@ -230,7 +239,8 @@ function handleInlineStatusChange(orderId, newStatus, oldStatus, selectElement) 
 }
 
 async function saveOrderProfit(orderId) {
-  const val = document.getElementById('order-profit-input').value;
+  const input = document.getElementById('order-profit-input');
+  const val = input ? input.value.trim() : '';
   try {
     const res = await apiFetch(`/admin/orders/${orderId}/profit`, {
       method: 'PATCH',
@@ -238,6 +248,9 @@ async function saveOrderProfit(orderId) {
     });
     if (!res.ok) throw new Error();
     toast('Profit saved ✓');
+    if (viewingOrder) {
+      viewingOrder.profit = val === '' ? null : parseFloat(val);
+    }
     await viewOrderDetail(orderId);
   } catch (err) {
     toast('Failed to save profit', true);
@@ -460,17 +473,27 @@ function renderOrderDetailView() {
        ${o.addr_landmark ? `<div class="ord-detail-row"><span>Landmark</span><span>${o.addr_landmark}</span></div>` : ''}`;
 
   const itemsHtml = (o.items || []).map(it => {
-    const thumb = it.image
-      ? `<img class="ord-item-thumb" src="${it.image}" onerror="this.style.opacity=.3">`
+    const thumbImg = it.variation_image || it.image;
+    const thumb = thumbImg
+      ? `<img class="ord-item-thumb" src="${thumbImg}" onerror="this.style.opacity=.3">`
       : `<div class="ord-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
     const lineTotal = (Number(it.price_at_purchase) * it.product_quantity).toFixed(2);
     const variant = it.selected_option ? `<span class="ord-item-variant">${it.selected_option}</span>` : '';
     const note = it.item_note ? `<div class="ord-item-note">📝 ${it.item_note}</div>` : '';
+    const urlLink = it.item_url 
+      ? `<div style="margin-top:4px;"><a href="${it.item_url}" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;font-weight:600;text-decoration:underline;">🔗 Open Product Web Link ↗</a></div>` 
+      : '';
+
+    const nameLink = it.product_id 
+      ? `<a href="../pages/productpage.html?id=${it.product_id}" target="_blank" style="color:var(--accent);text-decoration:none;">${it.product_name}</a> <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">#${it.product_id}</span>`
+      : `<span style="font-weight:700;color:var(--text);">${it.product_name}</span>`;
+
     return `<div class="ord-item-row">
       ${thumb}
       <div style="flex:1;min-width:0">
-        <div class="ord-item-name"><a href="../pages/productpage.html?id=${it.product_id}" target="_blank" style="color:var(--accent);text-decoration:none;">${it.product_name}</a> <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">#${it.product_id}</span> ${variant}</div>
-        <div class="ord-item-meta">Qty ${it.product_quantity} × $${Number(it.price_at_purchase).toFixed(2)}</div>
+        <div class="ord-item-name">${nameLink} ${variant}</div>
+        ${urlLink}
+        <div class="ord-item-meta" style="margin-top:2px;">Qty ${it.product_quantity} × $${Number(it.price_at_purchase).toFixed(2)}</div>
         ${note}
       </div>
       <div class="ord-item-price">$${lineTotal}</div>
@@ -516,6 +539,12 @@ function renderOrderDetailView() {
         <div class="ord-detail-row"><span>Email</span><span>${o.email || '—'}</span></div>
         <div class="ord-detail-row"><span>Phone</span><span>${o.phone1 || '—'}</span></div>
         ${o.phone2 ? `<div class="ord-detail-row"><span>Phone 2</span><span>${o.phone2}</span></div>` : ''}
+        ${o.order_type === 'custom_service' ? `
+          <div class="ord-detail-row" style="margin-top:6px; background:#faf5ff; padding:6px 10px; border-radius:6px;">
+            <span>Preferred Contact</span>
+            <span style="font-weight:700; color:#82659D; text-transform:uppercase;"><i class="fas fa-comments"></i> ${o.preferred_contact || 'Telegram'}</span>
+          </div>
+        ` : ''}
       </div>
 
       <div class="receipt-card">
@@ -561,7 +590,7 @@ function renderOrderDetailView() {
           <span>Order Profit</span>
           <div style="display:flex; gap:10px; align-items:center">
             <span style="color:var(--muted)">$</span>
-            <input type="number" id="order-profit-input" step="0.01" class="profit-input" placeholder="0.00" value="${o.profit || ''}">
+            <input type="number" id="order-profit-input" step="0.01" class="profit-input" placeholder="0.00" value="${(o.profit !== null && o.profit !== undefined && o.profit !== '') ? parseFloat(o.profit).toFixed(2) : ''}">
             <button class="btn-save" style="padding:4px 10px; font-size:12px;" onclick="saveOrderProfit(${o.order_id})">Save</button>
           </div>
         </div>

@@ -23,6 +23,24 @@ function requireAuth(req, res, next) {
   }
 }
 
+/* ─── Optional JWT verification (for guest or logged in) ───── */
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : null;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+    } catch (err) {
+      // Ignored for optional auth
+    }
+  }
+  next();
+}
+
 /* ─── Admin gate (use AFTER requireAuth) ───────────────────── */
 function adminOnly(req, res, next) {
   if (req.user?.role !== 'admin') {
@@ -31,5 +49,4 @@ function adminOnly(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, adminOnly };
-
+module.exports = { requireAuth, adminOnly, optionalAuth };

@@ -13,8 +13,8 @@ class Finance {
     // Get Revenue and Order Profit
     const revenueRes = await db.query(
       `SELECT DATE_TRUNC($1, order_date) as period,
-              SUM(total) as revenue,
-              SUM(profit) as profit
+              SUM(CASE WHEN COALESCE(total, 0) > 0 THEN total ELSE COALESCE(profit, 0) END) as revenue,
+              SUM(COALESCE(profit, 0)) as profit
        FROM orders
        WHERE order_status NOT IN ('cancelled', 'refunded')
          AND order_date >= $2 AND order_date <= $3

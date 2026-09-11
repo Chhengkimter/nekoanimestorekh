@@ -12,12 +12,18 @@ class AdminController {
     try {
       const { status, limit = 50, offset = 0 } = req.query;
 
-      let query = `SELECT * FROM vw_order_summary WHERE 1=1`;
+      let query = `SELECT o.*, u.first_name, u.last_name, u.email FROM orders o LEFT JOIN users u ON u.user_id = o.user_id WHERE 1=1`;
       const params = [];
 
-      if (status) {
-        params.push(status);
-        query += ` AND order_status = $${params.length}`;
+      if (status && status !== 'all') {
+        if (status === 'custom_service') {
+          query += ` AND o.order_type = 'custom_service'`;
+        } else if (status === 'standard') {
+          query += ` AND (o.order_type = 'standard' OR o.order_type IS NULL)`;
+        } else {
+          params.push(status);
+          query += ` AND o.order_status = $${params.length}`;
+        }
       }
 
       query += ` ORDER BY order_date DESC`;
@@ -40,9 +46,11 @@ class AdminController {
   // Get one order with full items (admin can see any order)
   static async getOrder(req, res) {
     try {
+      const param = req.params.id;
+      const isNum = !isNaN(param) && !isNaN(parseInt(param));
       const orderResult = await db.query(
-        `SELECT * FROM vw_order_summary WHERE order_id = $1`,
-        [req.params.id]
+        `SELECT * FROM vw_order_summary WHERE ${isNum ? 'order_id = $1' : 'order_code = $1'}`,
+        [isNum ? parseInt(param) : param]
       );
 
       if (!orderResult.rows[0]) {
@@ -55,15 +63,17 @@ class AdminController {
         `SELECT
            oi.order_item_id,
            oi.product_id,
-           p.product_name,
+           COALESCE(p.product_name, oi.custom_product_name, 'Custom Item') AS product_name,
            p.product_code,
            oi.selected_option,
            oi.product_quantity,
            oi.price_at_purchase,
            oi.item_note,
-           img.image_url AS image
+           oi.item_url,
+           oi.variation_image,
+           COALESCE(img.image_url, oi.variation_image) AS image
          FROM order_items oi
-         JOIN products p ON p.product_id = oi.product_id
+         LEFT JOIN products p ON p.product_id = oi.product_id
          LEFT JOIN product_images img
                 ON img.product_id = p.product_id AND img.is_primary = TRUE
          WHERE oi.order_id = $1`,
@@ -220,7 +230,7 @@ class AdminController {
 
         // Total revenue from delivered orders
         db.query(
-          `SELECT COALESCE(SUM(total), 0) AS total_revenue
+          `SELECT COALESCE(SUM(CASE WHEN COALESCE(total, 0) > 0 THEN total ELSE COALESCE(profit, 0) END), 0) AS total_revenue
            FROM orders WHERE order_status = 'delivered'`
         ),
 

@@ -3,7 +3,16 @@ const { DB_URL } = require('./env');
 
 const pool = new Pool({
   connectionString: DB_URL,
-  ssl: { rejectUnauthorized: false } // required for Supabase
+  ssl: { rejectUnauthorized: false }, // required for Supabase
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  keepAlive: true
+});
+
+// Handle unexpected errors on idle pool clients to prevent crash
+pool.on('error', (err, client) => {
+  console.error('Unexpected database pool client error:', err.message);
 });
 
 // Test connection on startup

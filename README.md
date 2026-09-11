@@ -127,3 +127,5 @@ Bot function
 ~ pending order deduce the stock until it is refund, canceled or modifying it later on calculate the stock accordingly. refund and cancel will add back the stock. make modify deduct accordingly.
 
 ~ cart variant stock is not counting correctly.
+
+~ the finance chart should have arrow going backward into the past and forward back to current because currently we can filter but cant move the date view

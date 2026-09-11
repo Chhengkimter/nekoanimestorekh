@@ -231,13 +231,65 @@ class Order {
     return result.rows[0] || null;
   }
 
+  // ─── Place Custom Order Service (Proxy Buying) ──────────────────
+  static async placeCustomService({
+    userId, orderCode,
+    serviceTier, preferredContact,
+    addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
+    mapsLink, mapsDetail,
+    phone1, phone2,
+    orderNote,
+    subtotal, shippingCost, total,
+    items
+  }) {
+    const orderRes = await db.query(
+      `INSERT INTO orders (
+         order_code, user_id, order_type, service_tier, preferred_contact,
+         addr_type, addr_line1, addr_district, addr_city, addr_landmark,
+         maps_link, maps_detail, phone1, phone2,
+         order_status, subtotal, shipping_cost, total, order_note,
+         order_date
+       ) VALUES ($1,$2,'custom_service',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'pending',$14,$15,$16,$17,NOW())
+       RETURNING *`,
+      [
+        orderCode, userId || null, serviceTier, preferredContact,
+        addrType || 'manual', addrLine1 || null, addrDistrict || null, addrCity || null, addrLandmark || null,
+        mapsLink || null, mapsDetail || null, phone1, phone2 || null,
+        subtotal || 0, shippingCost || 0, total || 0, orderNote || null
+      ]
+    );
+
+    const orderId = orderRes.rows[0].order_id;
+
+    for (const item of items) {
+      await db.query(
+        `INSERT INTO order_items (
+           order_id, custom_product_name, item_url, variation_image,
+           selected_option, product_quantity, price_at_purchase, item_note
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          orderId,
+          item.productName || 'Custom Requested Product',
+          item.itemUrl || null,
+          item.variationImage || null,
+          item.selectedOption || null,
+          item.productQuantity || 1,
+          item.priceAtPurchase || 0,
+          item.itemNote || null
+        ]
+      );
+    }
+
+    return orderRes.rows[0];
+  }
+
   // ─── Get one order by code (confirmation page) ────────────────
   static async findByCode(orderCode, userId) {
     // Order summary
     const orderResult = await db.query(
-      `SELECT * FROM vw_order_summary
-       WHERE order_code = $1 AND user_id = $2`,
-      [orderCode, userId]
+      `SELECT * FROM orders
+       WHERE order_code = $1 ${userId ? 'AND user_id = $2' : ''}`,
+      userId ? [orderCode, userId] : [orderCode]
     );
     if (!orderResult.rows[0]) return null;
 
@@ -248,15 +300,17 @@ class Order {
       `SELECT
          oi.order_item_id,
          oi.product_id,
-         p.product_name,
+         COALESCE(p.product_name, oi.custom_product_name, 'Custom Item') AS product_name,
          p.product_code,
          oi.selected_option,
          oi.product_quantity,
          oi.price_at_purchase,
          oi.item_note,
-         img.image_url AS image
+         oi.item_url,
+         oi.variation_image,
+         COALESCE(img.image_url, oi.variation_image) AS image
        FROM order_items oi
-       JOIN products p ON p.product_id = oi.product_id
+       LEFT JOIN products p ON p.product_id = oi.product_id
        LEFT JOIN product_images img
               ON img.product_id = p.product_id AND img.is_primary = TRUE
        WHERE oi.order_id = $1`,
@@ -270,9 +324,9 @@ class Order {
   // ─── Get one order by ID ──────────────────────────────────────
   static async findById(orderId, userId) {
     const orderResult = await db.query(
-      `SELECT * FROM vw_order_summary
-       WHERE order_id = $1 AND user_id = $2`,
-      [orderId, userId]
+      `SELECT * FROM orders
+       WHERE order_id = $1 ${userId ? 'AND user_id = $2' : ''}`,
+      userId ? [orderId, userId] : [orderId]
     );
     if (!orderResult.rows[0]) return null;
 
@@ -282,15 +336,17 @@ class Order {
       `SELECT
          oi.order_item_id,
          oi.product_id,
-         p.product_name,
+         COALESCE(p.product_name, oi.custom_product_name, 'Custom Item') AS product_name,
          p.product_code,
          oi.selected_option,
          oi.product_quantity,
          oi.price_at_purchase,
          oi.item_note,
-         img.image_url AS image
+         oi.item_url,
+         oi.variation_image,
+         COALESCE(img.image_url, oi.variation_image) AS image
        FROM order_items oi
-       JOIN products p ON p.product_id = oi.product_id
+       LEFT JOIN products p ON p.product_id = oi.product_id
        LEFT JOIN product_images img
               ON img.product_id = p.product_id AND img.is_primary = TRUE
        WHERE oi.order_id = $1`,

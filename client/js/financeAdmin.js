@@ -2,31 +2,58 @@
 
 let financeChartInstance = null;
 let currentFinanceRange = 'last30';
+let financeOffset = 0; // 0 = current, negative = past, positive = future
+
+function formatDateIso(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 function getFinanceDateRange() {
-  const d = new Date();
-  let end = new Date();
-  let start = new Date();
-  
+  const now = new Date();
+  let startObj, endObj, label;
+
   if (currentFinanceRange === 'last30') {
-    start.setDate(end.getDate() - 30);
+    const endDaysAgo = -financeOffset * 30;
+    endObj = new Date(now.getFullYear(), now.getMonth(), now.getDate() - endDaysAgo);
+    startObj = new Date(endObj.getFullYear(), endObj.getMonth(), endObj.getDate() - 30);
+
+    const sStr = startObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const eStr = endObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    label = `${sStr} – ${eStr}`;
   } else if (currentFinanceRange === 'thisMonth') {
-    start = new Date(end.getFullYear(), end.getMonth(), 1);
+    const targetMonth = new Date(now.getFullYear(), now.getMonth() + financeOffset, 1);
+    startObj = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+    endObj = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
+
+    label = targetMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   } else if (currentFinanceRange === 'thisYear') {
-    start = new Date(end.getFullYear(), 0, 1);
+    const targetYear = now.getFullYear() + financeOffset;
+    startObj = new Date(targetYear, 0, 1);
+    endObj = new Date(targetYear, 11, 31);
+
+    label = `${targetYear}`;
   }
 
-  // Format to YYYY-MM-DD
   return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0]
+    start: formatDateIso(startObj),
+    end: formatDateIso(endObj),
+    label
   };
+}
+
+function shiftFinancePeriod(dir) {
+  financeOffset += dir;
+  loadFinanceSummary();
 }
 
 function setFinanceRange(btn) {
   document.querySelectorAll('#fin-range-tabs .ord-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentFinanceRange = btn.dataset.range;
+  financeOffset = 0; // Reset to current period on tab switch
   
   // Auto-adjust group by based on range
   const groupBySelect = document.getElementById('fin-group-by');
@@ -40,8 +67,17 @@ function setFinanceRange(btn) {
 }
 
 async function loadFinanceSummary() {
-  const { start, end } = getFinanceDateRange();
-  const groupBy = document.getElementById('fin-group-by').value;
+  const { start, end, label } = getFinanceDateRange();
+  const periodLabelEl = document.getElementById('fin-period-label');
+  if (periodLabelEl) periodLabelEl.textContent = label;
+
+  const nextBtn = document.getElementById('fin-next-btn');
+  if (nextBtn) {
+    nextBtn.style.opacity = financeOffset >= 0 ? '0.4' : '1';
+  }
+
+  const groupBySelect = document.getElementById('fin-group-by');
+  const groupBy = groupBySelect ? groupBySelect.value : 'day';
   
   try {
     const res = await apiFetch(`/admin/finance/summary?start=${start}&end=${end}&groupBy=${groupBy}`);

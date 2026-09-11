@@ -1,0 +1,652 @@
+/* ── ORDER SERVICE PAGE STYLES ── */
+
+.svc-main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px 60px;
+    font-family: Arial, sans-serif;
+}
+
+.svc-hero {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, rgba(130, 101, 157, 0.08) 0%, rgba(200, 192, 240, 0.15) 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(130, 101, 157, 0.15);
+}
+
+.svc-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #82659D;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.svc-hero-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #2c2c2c;
+    margin-bottom: 12px;
+}
+
+.svc-hero-subtitle {
+    font-size: 15px;
+    color: #666;
+    max-width: 760px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* 3 Cards Grid */
+.svc-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 50px;
+}
+
+.svc-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    position: relative;
+}
+
+.svc-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(130, 101, 157, 0.12);
+    border-color: #82659D;
+}
+
+.svc-card-featured {
+    border: 2px solid #82659D;
+    background: linear-gradient(180deg, #ffffff 0%, #fcfbfe 100%);
+}
+
+.svc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.svc-flag {
+    font-size: 26px;
+}
+
+.svc-tier-badge {
+    font-size: 11px;
+    font-weight: 700;
+    background: #e8e1f2;
+    color: #82659D;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+
+.svc-badge-gold {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.svc-card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.svc-card-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex-grow: 0;
+}
+
+.svc-pricing-box {
+    background: #f8f6fc;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px dashed rgba(130, 101, 157, 0.25);
+}
+
+.svc-price-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.svc-price-line:last-child {
+    margin-bottom: 0;
+}
+
+.svc-price-tag {
+    font-size: 22px;
+    font-weight: 800;
+    color: #82659D;
+}
+
+.svc-price-label {
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+}
+
+.svc-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px 0;
+    flex-grow: 1;
+}
+
+.svc-features li {
+    font-size: 13px;
+    color: #444;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.svc-features li i {
+    color: #27ae60;
+    font-size: 12px;
+}
+
+.svc-order-btn {
+    width: 100%;
+    padding: 12px 18px;
+    background: #82659D;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.svc-order-btn:hover {
+    background: #6f5387;
+    transform: scale(1.02);
+}
+
+/* Steps Section */
+.svc-steps-section {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.svc-section-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.svc-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.svc-step-card {
+    background: #fdfdfd;
+    border: 1px solid #eaeaea;
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+}
+
+.svc-step-num {
+    width: 36px;
+    height: 36px;
+    background: #82659D;
+    color: #fff;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    margin-bottom: 14px;
+}
+
+.svc-step-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 8px;
+}
+
+.svc-step-card p {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* ── MODAL OVERLAY & CONTAINER ── */
+.svc-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.svc-modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.svc-modal {
+    background: #ffffff;
+    border-radius: 18px;
+    width: 90%;
+    max-width: 680px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: svcModalSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes svcModalSlide {
+    from { transform: translateY(20px) scale(0.97); }
+    to { transform: translateY(0) scale(1); }
+}
+
+.svc-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #eeeeee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #faf9fc;
+}
+
+.svc-modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #333;
+}
+
+.svc-modal-subtitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #82659D;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.svc-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.svc-modal-close:hover { color: #e05c7a; }
+
+.svc-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.svc-alert-info {
+    background: #eef4ff;
+    border: 1px solid #d0e1fd;
+    color: #1e40af;
+    font-size: 12.5px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+/* Link Group Block */
+.svc-link-group {
+    background: #fdfcff;
+    border: 1px solid #e2d9eb;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.svc-link-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.svc-link-group-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #82659D;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.svc-del-btn {
+    background: none;
+    border: none;
+    color: #e05c7a;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.svc-del-btn:hover { text-decoration: underline; }
+
+.svc-input-with-btn {
+    display: flex;
+    gap: 8px;
+}
+
+.svc-input-with-btn input {
+    flex: 1;
+    min-width: 0;
+}
+
+.svc-paste-btn {
+    background: #f0e8fa;
+    color: #82659D;
+    border: 1px solid #d8c9ea;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.svc-paste-btn:hover {
+    background: #e4d5f5;
+}
+
+/* Item Card inside Link Group */
+.svc-prod-card {
+    background: #ffffff;
+    border: 1px solid #e9e9e9;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.svc-form-group {
+    margin-bottom: 14px;
+}
+
+.svc-form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+    margin-bottom: 6px;
+}
+
+.svc-required { color: #e05c7a; }
+.svc-optional { color: #888; font-weight: normal; font-size: 11px; }
+
+.svc-modal input[type="text"],
+.svc-modal input[type="url"],
+.svc-modal input[type="number"],
+.svc-modal textarea,
+.svc-modal select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.svc-modal input:focus,
+.svc-modal textarea:focus {
+    border-color: #82659D;
+}
+
+.svc-img-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.see-example-link {
+    font-size: 11px;
+    color: #82659D;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.svc-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.svc-add-variant-wrap {
+    margin-top: 12px;
+    text-align: right;
+}
+
+.svc-btn-sub-variant {
+    background: #f4effa;
+    border: 1px dashed #b99cc8;
+    color: #82659D;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.svc-btn-sub-variant:hover {
+    background: #e9deef;
+}
+
+.svc-btn-outline {
+    background: #ffffff;
+    border: 1px solid #82659D;
+    color: #82659D;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.svc-btn-outline:hover {
+    background: #f8f4fc;
+}
+
+/* Contact Cards Grid */
+.svc-contact-desc {
+    font-size: 12.5px;
+    color: #666;
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+
+.svc-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.svc-contact-card input[type="radio"] {
+    display: none;
+}
+
+.svc-contact-card-inner {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.svc-contact-card input[type="radio"]:checked + .svc-contact-card-inner {
+    border-color: #82659D;
+    background: #f7f3fb;
+    box-shadow: 0 4px 12px rgba(130, 101, 157, 0.15);
+}
+
+.svc-contact-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+}
+
+.tg-color { background: #0088cc; }
+.fb-color { background: #0084ff; }
+.ig-color { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+
+.svc-contact-name { font-size: 13px; font-weight: 700; color: #333; }
+.svc-contact-sub { font-size: 11px; color: #777; }
+
+.svc-form-section-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.svc-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
+
+.svc-btn-cancel {
+    background: #e0e0e0;
+    color: #444;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.svc-btn-primary, .svc-btn-save {
+    background: #82659D;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.svc-btn-primary:hover, .svc-btn-save:hover {
+    background: #6f5387;
+}
+
+/* Success Redirect Box */
+.svc-success-icon {
+    font-size: 54px;
+    color: #27ae60;
+    margin-bottom: 12px;
+}
+
+.svc-redirect-box {
+    background: #faf8fd;
+    border: 1px border #e0d5ec;
+    border-radius: 14px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.svc-redirect-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #27ae60;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 14px;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    transition: transform 0.2s, background 0.2s;
+}
+
+.svc-redirect-action-btn:hover {
+    background: #219150;
+    transform: scale(1.03);
+}
+
+.svc-step-back {
+    margin-bottom: 14px;
+}
+
+.svc-btn-text {
+    background: none;
+    border: none;
+    color: #82659D;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}

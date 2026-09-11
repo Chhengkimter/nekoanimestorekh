@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Order Service — Neko Animestore</title>
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="../css/address.css">
+    <link rel="stylesheet" href="../css/orderservice.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="header-root"></div>
+    <div id="carousel-root"></div>
+
+    <main class="svc-main-container">
+
+        <!-- ── VIEW 1: LANDING VIEW (TIER CARDS & INFO) ── -->
+        <div id="svc-landing-view">
+            <!-- Banner Header -->
+            <section class="svc-hero">
+                <div class="svc-hero-badge"><i class="fas fa-plane-arrival"></i> Global Sourcing & Proxy Buying</div>
+                <h1 class="svc-hero-title">Custom Order Service</h1>
+                <p class="svc-hero-subtitle">
+                    Can't find your desired figure or anime item in our store? Paste product links from overseas stores (Taobao, Amazon, AmiAmi, Surugaya, etc.), and we will buy, pay, and deliver directly to your doorstep in Cambodia!
+                </p>
+            </section>
+
+            <!-- 3 Service Options Cards Grid -->
+            <section class="svc-cards-grid">
+
+                <!-- Option 1: Taobao / Xianyu -->
+                <div class="svc-card">
+                    <div class="svc-card-header">
+                        <span class="svc-flag">🇨🇳</span>
+                        <span class="svc-tier-badge">Popular</span>
+                    </div>
+                    <h3 class="svc-card-title">Taobao & Xianyu Direct</h3>
+                    <p class="svc-card-desc">Sourcing from official Taobao stores, Xianyu second-hand market, Tmall, and Chinese anime platforms.</p>
+                    <div class="svc-pricing-box">
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">$2</span>
+                            <span class="svc-price-label">per product under $20</span>
+                        </div>
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">10%</span>
+                            <span class="svc-price-label">for products over $20</span>
+                        </div>
+                    </div>
+                    <ul class="svc-features">
+                        <li><i class="fas fa-check"></i> Direct RMB to USD conversion</li>
+                        <li><i class="fas fa-check"></i> Xianyu condition inspection</li>
+                        <li><i class="fas fa-check"></i> Combined shipping to Cambodia</li>
+                    </ul>
+                    <button class="svc-order-btn" onclick="openOrderPage('taobao')">
+                        <i class="fas fa-shopping-cart"></i> Order Now
+                    </button>
+                </div>
+
+                <!-- Option 2: Popular Japanese & US Stores -->
+                <div class="svc-card svc-card-featured">
+                    <div class="svc-card-header">
+                        <span class="svc-flag">🇯🇵 🇺🇸</span>
+                        <span class="svc-tier-badge svc-badge-gold">Most Requested</span>
+                    </div>
+                    <h3 class="svc-card-title">Popular Stores (Amazon, AmiAmi, Mercari)</h3>
+                    <p class="svc-card-desc">Buy from AmiAmi, Amazon JP/US, Mercari, Animate, Surugaya, GoodSmile Store, and Mandarake.</p>
+                    <div class="svc-pricing-box">
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">$3</span>
+                            <span class="svc-price-label">extra base cost per order</span>
+                        </div>
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">+ 10%</span>
+                            <span class="svc-price-label">per product price</span>
+                        </div>
+                    </div>
+                    <ul class="svc-features">
+                        <li><i class="fas fa-check"></i> Pre-orders & exclusive releases</li>
+                        <li><i class="fas fa-check"></i> Safe proxy payment handling</li>
+                        <li><i class="fas fa-check"></i> Express air transport</li>
+                    </ul>
+                    <button class="svc-order-btn" onclick="openOrderPage('popular_sites')">
+                        <i class="fas fa-shopping-cart"></i> Order Now
+                    </button>
+                </div>
+
+                <!-- Option 3: Global / Any Website -->
+                <div class="svc-card">
+                    <div class="svc-card-header">
+                        <span class="svc-flag">🌐</span>
+                        <span class="svc-tier-badge">Global</span>
+                    </div>
+                    <h3 class="svc-card-title">Any International Website</h3>
+                    <p class="svc-card-desc">Order using any link from any website worldwide that supports international shipping or store checkout.</p>
+                    <div class="svc-pricing-box">
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">$5</span>
+                            <span class="svc-price-label">extra base cost per order</span>
+                        </div>
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">+ 10%</span>
+                            <span class="svc-price-label">per product price</span>
+                        </div>
+                    </div>
+                    <ul class="svc-features">
+                        <li><i class="fas fa-check"></i> Worldwide store support</li>
+                        <li><i class="fas fa-check"></i> Custom import clearance</li>
+                        <li><i class="fas fa-check"></i> Door-to-door delivery</li>
+                    </ul>
+                    <button class="svc-order-btn" onclick="openOrderPage('global_shipping')">
+                        <i class="fas fa-shopping-cart"></i> Order Now
+                    </button>
+                </div>
+
+            </section>
+
+            <!-- How It Works Section -->
+            <section class="svc-steps-section">
+                <h2 class="svc-section-title">How Order Service Works</h2>
+                <div class="svc-steps-grid">
+                    <div class="svc-step-card">
+                        <div class="svc-step-num">1</div>
+                        <h4>Paste Links & Option Image</h4>
+                        <p>Paste the website URL of your item, attach a variant image screenshot, and submit your request.</p>
+                    </div>
+                    <div class="svc-step-card">
+                        <div class="svc-step-num">2</div>
+                        <h4>Choose Contact Channel</h4>
+                        <p>Select Telegram, Facebook, or Instagram to receive your final quote & payment details.</p>
+                    </div>
+                    <div class="svc-step-card">
+                        <div class="svc-step-num">3</div>
+                        <h4>We Purchase & Deliver</h4>
+                        <p>Once confirmed, our team orders your item overseas and delivers it safely to your doorstep!</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ── VIEW 2: FULL PAGE ORDER FORM (EXACT SAME LAYOUT AS ADDRESS.HTML) ── -->
+        <div id="svc-page-view" style="display:none;">
+
+            <a href="#" onclick="showTierSelection(); return false;" class="back-btn">
+                <i class="fas fa-chevron-left"></i> Change Service Option
+            </a>
+
+            <!-- PROGRESS STEPS -->
+            <div class="progress-steps">
+                <div class="step done">
+                    <div class="step-circle"><i class="fas fa-check"></i></div>
+                    <span>Service Option</span>
+                </div>
+                <div class="step-line done-line"></div>
+                <div class="step active">
+                    <div class="step-circle">2</div>
+                    <span>Links & Address</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    <span>Submit Request</span>
+                </div>
+            </div>
+
+            <!-- ADDRESS LAYOUT GRID -->
+            <div class="address-layout">
+
+                <!-- LEFT COLUMN: FORM CARDS -->
+                <div class="form-col">
+
+                    <!-- ── SELECTED TIER CARD ── -->
+                    <div class="form-card" style="background:#faf6fd; border:1px solid #d8c4e8;">
+                        <div class="card-header" style="margin-bottom:8px;">
+                            <i class="fas fa-plane-arrival card-icon"></i>
+                            <div>
+                                <h2 style="font-size:16px; font-weight:700;">Selected Service Tier</h2>
+                                <span id="svc-selected-tier-label" style="font-size:13px; font-weight:600; color:#82659D;">Taobao & Xianyu Direct</span>
+                            </div>
+                        </div>
+                        <p style="font-size:12px; color:#666; margin:0;">Pricing: <span id="svc-tier-fee-desc">$2 fee per product under $20, 10% fee over $20</span></p>
+                    </div>
+
+                    <!-- ── 1. PRODUCT LINKS & VARIANTS ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-link card-icon"></i>
+                            <h2>1. Product Links & Variations</h2>
+                        </div>
+                        <p class="card-sub">Paste the website link of the item you want to order. Add images or notes for specific character/color variants.</p>
+
+                        <!-- Dynamic Link Groups Container -->
+                        <div id="svc-links-container"></div>
+
+                        <div style="margin-top:14px;">
+                            <button type="button" class="svc-btn-outline" onclick="addLinkGroup()">
+                                <i class="fas fa-plus-circle"></i> Add another website link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ── 2. DELIVERY LOCATION ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-map-marker-alt card-icon"></i>
+                            <h2>2. Delivery Location</h2>
+                        </div>
+
+                        <!-- Tab switch -->
+                        <div class="loc-tabs">
+                            <button type="button" class="loc-tab active" data-tab="manual" onclick="switchLocTab('manual')">
+                                <i class="fas fa-pencil-alt"></i> Type Address
+                            </button>
+                            <button type="button" class="loc-tab" data-tab="maps" onclick="switchLocTab('maps')">
+                                <i class="fas fa-map"></i> Google Maps Link
+                            </button>
+                        </div>
+
+                        <!-- Manual address tab -->
+                        <div class="loc-panel" id="tab-manual">
+                            <div class="field-group">
+                                <label class="field-label">Full Address <span class="req">*</span></label>
+                                <input type="text" class="field-input" id="addr-line1" placeholder="House No, Street, Village / Sangkat">
+                            </div>
+                            <div class="field-row-2">
+                                <div class="field-group">
+                                    <label class="field-label">District / Khan</label>
+                                    <input type="text" class="field-input" id="addr-district" placeholder="e.g. Chamkarmon">
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">City / Province</label>
+                                    <input type="text" class="field-input" id="addr-city" placeholder="e.g. Phnom Penh">
+                                </div>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Landmark / Nearby Reference <span class="optional">(optional)</span></label>
+                                <input type="text" class="field-input" id="addr-landmark" placeholder="Near Aeon Mall, opposite of the temple…">
+                            </div>
+                        </div>
+
+                        <!-- Google Maps tab -->
+                        <div class="loc-panel hidden" id="tab-maps">
+                            <div class="maps-info">
+                                <div class="maps-steps">
+                                    <p class="maps-title"><i class="fas fa-info-circle"></i> How to get your Google Maps link:</p>
+                                    <ol>
+                                        <li>Open <strong>Google Maps</strong> on your phone or computer.</li>
+                                        <li>Drop a pin on your delivery location (long press on map).</li>
+                                        <li>Tap the pin, then tap <strong>Share</strong> → <strong>Copy link</strong>.</li>
+                                        <li>Paste the link below.</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="field-group" style="margin-top:14px">
+                                <label class="field-label">Paste Google Maps Link <span class="req">*</span></label>
+                                <div class="maps-input-wrap">
+                                    <i class="fas fa-link maps-link-icon"></i>
+                                    <input type="url" class="field-input maps-input" id="addr-maps-link" placeholder="https://maps.google.com/…">
+                                    <button class="verify-maps-btn" id="verify-maps-btn" type="button" onclick="verifyMapsLink()">
+                                        Verify <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Additional Notes for Driver <span class="optional">(optional)</span></label>
+                                <input type="text" class="field-input" id="addr-maps-detail" placeholder="3rd floor, blue gate, ring bell twice…">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── 3. CONTACT NUMBERS ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-phone-alt card-icon"></i>
+                            <h2>3. Contact Numbers</h2>
+                        </div>
+                        <p class="card-sub">We'll use these to coordinate your custom order and delivery.</p>
+
+                        <div class="field-group">
+                            <label class="field-label">Phone Number 1 <span class="req">*</span></label>
+                            <div class="phone-wrap">
+                                <span class="phone-prefix">+855</span>
+                                <input type="tel" class="field-input phone-input" id="phone1" placeholder="12 345 678" maxlength="15">
+                            </div>
+                        </div>
+
+                        <div class="field-group" style="margin-top:14px">
+                            <label class="field-label">Phone Number 2 <span class="optional">(optional)</span></label>
+                            <div class="phone-wrap">
+                                <span class="phone-prefix">+855</span>
+                                <input type="tel" class="field-input phone-input" id="phone2" placeholder="16 755 194" maxlength="15">
+                            </div>
+                            <p class="field-hint">Useful if primary number is unavailable.</p>
+                        </div>
+                    </div>
+
+                    <!-- ── 4. PRIMARY CONTACT CHANNEL ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-comments card-icon"></i>
+                            <h2>4. Primary Contact Channel <span class="req">*</span></h2>
+                        </div>
+                        <p class="card-sub">Price quotes & final payment confirmation are handled via direct chat. Select where we should contact you:</p>
+
+                        <div class="svc-contact-grid">
+                            <label class="svc-contact-card">
+                                <input type="radio" name="svc-preferred-contact" value="telegram" checked>
+                                <div class="svc-contact-card-inner">
+                                    <div class="svc-contact-icon tg-color"><i class="fab fa-telegram-plane"></i></div>
+                                    <div>
+                                        <div class="svc-contact-name">Telegram</div>
+                                        <div class="svc-contact-sub">Store: @rizeisok</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="svc-contact-card">
+                                <input type="radio" name="svc-preferred-contact" value="facebook">
+                                <div class="svc-contact-card-inner">
+                                    <div class="svc-contact-icon fb-color"><i class="fab fa-facebook-messenger"></i></div>
+                                    <div>
+                                        <div class="svc-contact-name">Facebook</div>
+                                        <div class="svc-contact-sub">Nekoanimestore.kh</div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="svc-contact-card">
+                                <input type="radio" name="svc-preferred-contact" value="instagram">
+                                <div class="svc-contact-card-inner">
+                                    <div class="svc-contact-icon ig-color"><i class="fab fa-instagram"></i></div>
+                                    <div>
+                                        <div class="svc-contact-name">Instagram</div>
+                                        <div class="svc-contact-sub">@nekoanimestore.kh</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="field-group" style="margin-top:16px;">
+                            <label class="field-label">Your Username / Profile Link <span class="req">*</span></label>
+                            <input type="text" class="field-input" id="svc-contact-handle" placeholder="e.g. @yourusername or profile link">
+                        </div>
+                    </div>
+
+                    <!-- ── 6. ORDER NOTE ── -->
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-comment-alt card-icon"></i>
+                            <h2>5. Special Instructions <span class="optional">(optional)</span></h2>
+                        </div>
+                        <p class="card-sub">Any special notes (e.g., keep original box, gift packaging, urgent delivery date)</p>
+                        <textarea class="field-textarea" id="order-note" placeholder="Type your special instructions here..." maxlength="500"></textarea>
+                        <p class="char-count" id="note-char">0 / 500</p>
+                    </div>
+
+                </div><!-- end form-col -->
+
+                <!-- RIGHT COLUMN: SIDEBAR SUMMARY -->
+                <div class="side-col">
+                    <div class="summary-card">
+                        <h2 class="summary-title">Proxy Order Summary</h2>
+
+                        <div id="order-service-mini-summary" style="margin-bottom:12px;">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+
+                        <div class="summary-divider"></div>
+                        
+                        <div class="summary-row">
+                            <span>Service Tier</span>
+                            <span id="mini-tier-name" style="font-weight:600; color:#82659D;">Taobao Direct</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Base Proxy Fee</span>
+                            <span id="mini-service-fee" style="font-weight:600;">$2.00 / 10%</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Total Items</span>
+                            <span id="mini-item-count" style="font-weight:700;">1 item</span>
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-row total-row">
+                            <span>Final Price Quote</span>
+                            <span style="font-size:14px; color:#82659D;">Via Direct Chat</span>
+                        </div>
+
+                        <button class="submit-order-btn" id="svc-submit-btn" type="button" onclick="submitOrderService()">
+                            <i class="fas fa-paper-plane"></i> Submit Proxy Request
+                        </button>
+
+                        <p class="submit-note">By submitting you agree to our <a href="#">Order Terms & Conditions</a>.</p>
+                    </div>
+                </div>
+
+            </div><!-- end address-layout -->
+
+        </div><!-- end svc-page-view -->
+
+        <!-- ── VIEW 3: SUCCESS CONFIRMATION & DIRECT REDIRECT ── -->
+        <div id="svc-success-view" style="display:none;">
+            <div class="form-card" style="max-width:650px; margin:40px auto; text-align:center; padding:40px 30px;">
+                <div class="svc-success-icon"><i class="fas fa-check-circle"></i></div>
+                <h2 style="font-size:24px; font-weight:800; color:#222; margin-bottom:10px;">Proxy Request Submitted!</h2>
+                <p style="font-size:15px; color:#555; margin-bottom:18px;">
+                    Your request code is <strong id="svc-success-code" style="color:#82659D; font-family:monospace; font-size:18px;">#NEKO-SVC-0000</strong>.
+                </p>
+
+                <div class="svc-redirect-box">
+                    <p style="font-size:14px; color:#444; margin-bottom:16px; line-height:1.5;">
+                        Click below to open our store chat directly on your chosen platform and send your order code for immediate pricing confirmation:
+                    </p>
+                    <a id="svc-direct-redirect-link" href="#" target="_blank" class="svc-redirect-action-btn">
+                        <i class="fas fa-external-link-alt"></i> Open Store Chat & Send Code →
+                    </a>
+                </div>
+
+                <div style="margin-top:24px; display:flex; gap:12px; justify-content:center;">
+                    <button type="button" class="svc-btn-outline" style="width:auto; padding:10px 24px;" onclick="window.location.href='userpage.html'">
+                        View My Orders
+                    </button>
+                    <button type="button" class="svc-btn-primary" style="padding:10px 24px;" onclick="showTierSelection()">
+                        Create Another Request
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── SEE EXAMPLE MODAL ── -->
+    <div class="svc-modal-overlay" id="example-modal-overlay">
+        <div class="svc-modal" style="max-width: 460px;">
+            <div class="svc-modal-header">
+                <h3 class="svc-modal-title">Product Variant Image Example</h3>
+                <button class="svc-modal-close" onclick="closeExampleModal()">&times;</button>
+            </div>
+            <div class="svc-modal-body" style="text-align:center; padding:15px;">
+                <img id="example-img-placeholder" src="https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg" alt="Variant Example" style="max-width:100%; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                <p style="font-size:12px; color:#777; margin-top:12px; line-height:1.4;">
+                    <strong>Tip:</strong> Upload or paste an image link highlighting the exact character, color, or option variant you want us to order.
+                </p>
+                <div style="margin-top:15px;">
+                    <button type="button" class="svc-btn-primary" onclick="closeExampleModal()">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-root"></div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/partials.js"></script>
+    <script src="../js/orderservice.js"></script>
+    <script src="../js/cart-badge.js"></script>
+</body>
+</html>
