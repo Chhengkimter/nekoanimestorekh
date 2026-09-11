@@ -1557,3 +1557,301 @@
     color: #fff;
     border-color: #82659D;
 }
+
+/* =======================================================================
+   AFTER-SALE SERVICE CARD FOR DELIVERED ORDERS
+   ======================================================================= */
+.after-sale-block {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: #fdf8ff;
+    border: 1.5px solid #ebd6f7;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(130, 101, 157, 0.06);
+}
+
+.after-sale-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #33243d;
+    margin-bottom: 6px;
+}
+
+.after-sale-desc {
+    font-size: 12px;
+    color: #665673;
+    line-height: 1.45;
+    margin-bottom: 10px;
+}
+
+.order-code-copy-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid #dcc6ec;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+}
+
+.order-code-text {
+    font-family: monospace;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #82659D;
+}
+
+.order-code-copy-btn {
+    background: linear-gradient(135deg, #82659D, #694b83);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.order-code-copy-btn:hover {
+    background: #5b3e75;
+    transform: translateY(-1px);
+}
+
+/* Modern Clean After-Sale Support Modal Layout */
+.after-sale-container {
+    padding: 4px 0 10px;
+    color: #2D2836;
+}
+
+.after-sale-intro {
+    font-size: 13px;
+    color: #645C72;
+    margin-bottom: 18px;
+    line-height: 1.45;
+}
+
+.after-sale-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    align-items: start;
+}
+
+@media (max-width: 680px) {
+    .after-sale-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+.as-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4A3E59;
+    margin-bottom: 8px;
+}
+
+.as-pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.as-pill {
+    padding: 7px 13px;
+    border-radius: 20px;
+    border: 1px solid #E4DCED;
+    background: #F9F8FC;
+    color: #584A6A;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+}
+
+.as-pill:hover {
+    border-color: #82659D;
+    background: #F3EDF8;
+    color: #82659D;
+}
+
+.as-pill.active {
+    background: #82659D;
+    color: #FFFFFF;
+    border-color: #82659D;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(130, 101, 157, 0.2);
+}
+
+.as-input-clean {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #E4DCED;
+    border-radius: 10px;
+    font-size: 13px;
+    background: #FFFFFF;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.as-input-clean:focus {
+    border-color: #82659D;
+    box-shadow: 0 0 0 3px rgba(130, 101, 157, 0.12);
+}
+
+/* Right Column Card */
+.as-card-box {
+    background: #F9F8FC;
+    border: 1px solid #ECE5F3;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.as-card-header {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #4A3E59;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.as-textarea-clean {
+    width: 100%;
+    height: 125px;
+    padding: 10px 12px;
+    border: 1px solid #E2D9EC;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    background: #FFFFFF;
+    color: #2D2836;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+
+.as-copy-btn-primary {
+    width: 100%;
+    padding: 11px;
+    background: #82659D;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.as-copy-btn-primary:hover {
+    background: #6F5289;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(130, 101, 157, 0.25);
+}
+
+.as-proof-notice {
+    background: #FFF5F5;
+    border: 1px solid #FED7D7;
+    color: #C53030;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* Social Channels Section */
+.as-social-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #F0EAFA;
+}
+
+.as-social-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4A3E59;
+    margin-bottom: 10px;
+}
+
+.as-social-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 580px) {
+    .as-social-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.as-social-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.as-social-card.tg {
+    background: #EBF8FF;
+    color: #2B6CB0;
+    border: 1px solid #BEE3F8;
+}
+
+.as-social-card.tg:hover {
+    background: #3182CE;
+    color: #FFFFFF;
+    border-color: #3182CE;
+}
+
+.as-social-card.fb {
+    background: #EBF4FF;
+    color: #2C5282;
+    border: 1px solid #C3DAFE;
+}
+
+.as-social-card.fb:hover {
+    background: #3182CE;
+    color: #FFFFFF;
+    border-color: #3182CE;
+}
+
+.as-social-card.ig {
+    background: #FFF5F7;
+    color: #B83280;
+    border: 1px solid #FED7E2;
+}
+
+.as-social-card.ig:hover {
+    background: #D53F8C;
+    color: #FFFFFF;
+    border-color: #D53F8C;
+}

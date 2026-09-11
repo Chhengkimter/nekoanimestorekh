@@ -198,11 +198,18 @@ function renderOrderCard(o) {
             actionButtonsHtml = `
             <div class="od-actions" onclick="event.stopPropagation()">
                 <button class="od-btn od-btn-success" onclick="event.stopPropagation(); markOrderReceived(${o.order_id})">
-                    <i class="fas fa-box-open"></i> Package Received
+                    <i class="fas fa-box-open"></i> I Have Received The Package 
                 </button>
-                <a href="https://t.me/NekoAnimeBot" target="_blank" onclick="event.stopPropagation();" class="od-btn od-btn-telegram">
+                <a href="https://t.me/rizeisok" target="_blank" onclick="event.stopPropagation();" class="od-btn od-btn-telegram">
                     <i class="fab fa-telegram-plane"></i> Contact Store
                 </a>
+            </div>`;
+        } else if (o.order_status === 'delivered') {
+            actionButtonsHtml = `
+            <div class="od-actions" onclick="event.stopPropagation()">
+                <button type="button" class="od-btn od-btn-outline" style="border-color:#82659D; color:#82659D; font-weight:700; width:100%; justify-content:center;" onclick="event.stopPropagation(); openAfterSaleModal(${o.order_id}, '${o.order_code}')">
+                    <i class="fas fa-headset"></i> After-Sale Service
+                </button>
             </div>`;
         }
 
@@ -321,6 +328,156 @@ async function markOrderReceived(orderId) {
         showToast('Failed to mark received', true);
     }
 }
+
+window.openAfterSaleModal = function(orderId, orderCode) {
+    const modal = document.getElementById('after-sale-modal');
+    const body = document.getElementById('after-sale-modal-body');
+    if (!modal || !body) return;
+
+    body.innerHTML = renderAfterSaleBlock(orderId, orderCode);
+    modal.classList.add('open');
+};
+
+window.closeAfterSaleModal = function() {
+    const modal = document.getElementById('after-sale-modal');
+    if (modal) modal.classList.remove('open');
+};
+
+const asFormState = {};
+
+function renderAfterSaleBlock(orderId, orderCode) {
+    if (!asFormState[orderId]) {
+        asFormState[orderId] = {
+            type: 'Return & Refund',
+            reason: 'Wrong Item Received',
+            note: ''
+        };
+    }
+    const st = asFormState[orderId];
+
+    const initialText = `Hi Neko Animestore Support!
+
+I need After-Sale Assistance for my delivered order:
+• Order Code: ${orderCode}
+• Request Type: ${st.type}
+• Issue / Reason: ${st.reason}
+
+Please help me process this request. Thank you!`;
+
+    setTimeout(() => {
+        const box = document.getElementById(`as-msg-box-${orderId}`);
+        if (box && !box.value) box.value = initialText;
+    }, 50);
+
+    return `
+    <div class="after-sale-container" onclick="event.stopPropagation()">
+        <p class="after-sale-intro">Fill out the quick options below to generate a pre-formatted message for our support team:</p>
+        
+        <div class="after-sale-grid">
+            <!-- LEFT COLUMN: FORM CONTROLS -->
+            <div class="as-col-left">
+                <!-- Request Type -->
+                <div class="as-group-title">Request Type</div>
+                <div class="as-pill-group" id="as-type-group-${orderId}">
+                    <button type="button" class="as-pill ${st.type === 'Return & Refund' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'type', 'Return & Refund', '${orderCode}', this)">🔄 Return & Refund</button>
+                    <button type="button" class="as-pill ${st.type === 'Missing Item' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'type', 'Missing Item', '${orderCode}', this)">❌ Missing Item</button>
+                    <button type="button" class="as-pill ${st.type === 'Phone Case Exchange' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'type', 'Phone Case Exchange', '${orderCode}', this)">📱 Phone Case Swap</button>
+                    <button type="button" class="as-pill ${st.type === 'General Inquiry' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'type', 'General Inquiry', '${orderCode}', this)">❓ General Inquiry</button>
+                </div>
+
+                <!-- Specific Reason -->
+                <div class="as-group-title" style="margin-top: 14px;">Specific Reason</div>
+                <div class="as-pill-group" id="as-reason-group-${orderId}">
+                    <button type="button" class="as-pill ${st.reason === 'Wrong Item Received' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'reason', 'Wrong Item Received', '${orderCode}', this)">Wrong Item Received</button>
+                    <button type="button" class="as-pill ${st.reason === 'Damaged / Defective' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'reason', 'Damaged / Defective', '${orderCode}', this)">Damaged / Defective</button>
+                    <button type="button" class="as-pill ${st.reason === 'Incorrect Phone Case Model' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'reason', 'Incorrect Phone Case Model', '${orderCode}', this)">Incorrect Phone Case Model</button>
+                    <button type="button" class="as-pill ${st.reason === 'Missing Item in Package' ? 'active' : ''}" onclick="event.stopPropagation(); setAsField(${orderId}, 'reason', 'Missing Item in Package', '${orderCode}', this)">Missing Item in Package</button>
+                </div>
+
+                <!-- Additional Details -->
+                <div class="as-group-title" style="margin-top: 14px;">Additional Details <span style="font-weight:400; font-size:11px; color:#888;">(Optional)</span></div>
+                <input type="text" class="as-input-clean" id="as-note-${orderId}" oninput="updateAsMessage(${orderId}, '${orderCode}')" onclick="event.stopPropagation()">
+            </div>
+
+            <!-- RIGHT COLUMN: GENERATED MESSAGE CARD -->
+            <div class="as-col-right">
+                <div class="as-card-box">
+                    <div class="as-card-header">
+                        <i class="fas fa-file-alt" style="color:#82659D;"></i> Generated Message
+                    </div>
+                    <textarea id="as-msg-box-${orderId}" readonly class="as-textarea-clean" onclick="event.stopPropagation(); this.select();">${initialText}</textarea>
+                    
+                    <button type="button" class="as-copy-btn-primary" onclick="event.stopPropagation(); copyAsMessage(${orderId})">
+                        <i class="fas fa-copy"></i> Copy Support Message
+                    </button>
+
+                    <div class="as-proof-notice">
+                        <i class="fas fa-camera" style="font-size: 13px; flex-shrink: 0; margin-top: 1px;"></i>
+                        <span><strong>Notice:</strong> Please attach photo or video proof when contacting our support team.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOCIAL CHANNELS FOOTER -->
+        <div class="as-social-section">
+            <div class="as-social-label">Send Message To Our Support:</div>
+            <div class="as-social-grid">
+                <a href="https://t.me/rizeisok" target="_blank" onclick="event.stopPropagation();" class="as-social-card tg">
+                    <i class="fab fa-telegram-plane"></i> Telegram (@rizeisok)
+                </a>
+                <a href="https://m.me/Nekoanimestore.kh" target="_blank" onclick="event.stopPropagation();" class="as-social-card fb">
+                    <i class="fab fa-facebook-messenger"></i> Facebook Messenger
+                </a>
+                <a href="https://ig.me/m/nekoanimestore.kh" target="_blank" onclick="event.stopPropagation();" class="as-social-card ig">
+                    <i class="fab fa-instagram"></i> Instagram DM
+                </a>
+            </div>
+        </div>
+    </div>`;
+}
+
+window.setAsField = function(orderId, field, value, orderCode, btnEl) {
+    if (!asFormState[orderId]) {
+        asFormState[orderId] = { type: 'Return & Refund', reason: 'Wrong Item Received', note: '' };
+    }
+    asFormState[orderId][field] = value;
+
+    if (btnEl && btnEl.parentElement) {
+        btnEl.parentElement.querySelectorAll('.as-pill, .as-chip').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+    }
+
+    updateAsMessage(orderId, orderCode);
+};
+
+window.updateAsMessage = function(orderId, orderCode) {
+    const st = asFormState[orderId] || { type: 'Return & Refund', reason: 'Wrong Item Received', note: '' };
+    const noteVal = document.getElementById(`as-note-${orderId}`)?.value.trim() || '';
+
+    const text = `Hi Neko Animestore Support!
+
+I need After-Sale Assistance for my delivered order:
+• Order Code: ${orderCode}
+• Request Type: ${st.type}
+• Issue / Reason: ${st.reason}${noteVal ? `\n• Details: ${noteVal}` : ''}
+
+Please help me process this request. Thank you!`;
+
+    const box = document.getElementById(`as-msg-box-${orderId}`);
+    if (box) box.value = text;
+};
+
+window.copyAsMessage = function(orderId) {
+    const box = document.getElementById(`as-msg-box-${orderId}`);
+    if (!box || !box.value) return;
+
+    navigator.clipboard.writeText(box.value).then(() => {
+        showToast('Support message copied to clipboard! Click a channel below to send ✓');
+    }).catch(() => {
+        showToast('Message box selected — please press Ctrl+C to copy', true);
+    });
+};
 
 // ── ORDER DETAIL MODAL ────────────────────────────────────
 function closeOrderDetailModal() {
@@ -455,21 +612,21 @@ async function openOrderDetailModal(orderId) {
                 <button class="od-btn od-btn-success" onclick="markOrderReceived(${o.order_id})">
                     <i class="fas fa-box-open"></i> Package Received
                 </button>
-                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                <a href="https://t.me/rizeisok" target="_blank" class="od-btn od-btn-telegram">
                     <i class="fab fa-telegram-plane"></i> Contact Store
                 </a>
             </div>`;
         } else if (o.order_status === 'delivered') {
             actionsHtml = `
             <div class="od-actions">
-                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
-                    <i class="fab fa-telegram-plane"></i> Contact Store
-                </a>
+                <button type="button" class="od-btn od-btn-outline" style="border-color:#82659D; color:#82659D; font-weight:700; width:100%; justify-content:center;" onclick="openAfterSaleModal(${o.order_id}, '${o.order_code}')">
+                    <i class="fas fa-headset"></i> After-Sale Service
+                </button>
             </div>`;
         } else if (o.order_status === 'refunded') {
             actionsHtml = `
             <div class="od-actions">
-                <a href="https://t.me/NekoAnimeBot" target="_blank" class="od-btn od-btn-telegram">
+                <a href="https://t.me/rizeisok" target="_blank" class="od-btn od-btn-telegram">
                     <i class="fab fa-telegram-plane"></i> Contact Store
                 </a>
             </div>`;
