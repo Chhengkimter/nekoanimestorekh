@@ -317,8 +317,13 @@ async function handleAdminLogin(e) {
     saveSession(data.token, adminUser, true);
 
     // Show the admin app
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display          = 'flex';
+    const loginScreen = document.getElementById('login-screen');
+    const app = document.getElementById('app');
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (app) {
+      app.style.display = 'flex';
+      app.classList.add('show');
+    }
     const loggedAs = document.getElementById('logged-as');
     if (loggedAs) loggedAs.textContent = `@${adminUser?.firstName || adminUser?.email || 'admin'}`;
     if (typeof initApp === 'function') initApp();
@@ -338,6 +343,7 @@ function logout() {
   if (loginScreen && app) {
     loginScreen.style.display = 'flex';
     app.style.display         = 'none';
+    app.classList.remove('show');
   } else {
     window.location.href = '/pages/login.html';
   }
@@ -349,19 +355,31 @@ function logout() {
    ===================== */
 async function apiFetch(path, options = {}) {
   const token = getToken();
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  let res;
+  try {
+    res = await fetch(`${API}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (err) {
+    console.error(`API Fetch Error [${path}]:`, err);
+    return { ok: false, status: 0, json: async () => ({ error: 'Network error' }) };
+  }
 
-  if (res.status === 401) {
+  if (res && res.status === 401) {
     clearSession();
-    window.location.href = '/client/admin/admin.html';
-    return;
+    const loginScreen = document.getElementById('login-screen');
+    const app = document.getElementById('app');
+    if (loginScreen && app) {
+      loginScreen.style.display = 'flex';
+      app.style.display = 'none';
+      app.classList.remove('show');
+    }
+    return res;
   }
 
   return res;
@@ -388,15 +406,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Admin page ──
   if (isAdminPage) {
     if (isLoggedIn() && getRole() === 'admin') {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display          = 'flex';
+      const loginScreen = document.getElementById('login-screen');
+      const app = document.getElementById('app');
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (app) {
+        app.style.display = 'flex';
+        app.classList.add('show');
+      }
       const user     = getUser();
       const loggedAs = document.getElementById('logged-as');
       if (loggedAs && user) loggedAs.textContent = `@${user.firstName || user.email}`;
       if (typeof initApp === 'function') initApp();
       return;
     }
-    document.getElementById('login-form').addEventListener('submit', handleAdminLogin);
+    document.getElementById('login-form')?.addEventListener('submit', handleAdminLogin);
     return;
   }
 

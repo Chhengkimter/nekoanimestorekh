@@ -519,16 +519,21 @@ async function loadReviews(productId) {
 
   try {
     const res = await fetch(`${PRODUCT_API}/reviews/${productId}`);
-    if (!res.ok) throw new Error();
+    if (!res || !res.ok) {
+      renderReviews([]);
+      return;
+    }
     const reviews = await res.json();
-    renderReviews(reviews);
+    renderReviews(Array.isArray(reviews) ? reviews : []);
   } catch (err) {
-    list.innerHTML = '<div class="reviews-loading">Failed to load reviews.</div>';
+    renderReviews([]);
   }
 }
 
 function renderReviews(reviews) {
   const list = document.getElementById('reviews-list');
+  if (!list) return;
+
   if (!reviews || reviews.length === 0) {
     list.innerHTML = '<div class="reviews-loading">No reviews yet. Be the first to review!</div>';
     return;
@@ -553,7 +558,7 @@ function renderReviews(reviews) {
     }
 
     return `
-      <div class="review-card">
+      <div class="review-card" id="review-${r.review_id}">
         <div class="review-header">
           <span class="review-author">${name}</span>
           <span class="review-date">${date}</span>
@@ -565,6 +570,21 @@ function renderReviews(reviews) {
       </div>
     `;
   }).join('');
+
+  // Handle hash scrolling and review highlighting
+  if (window.location.hash) {
+    setTimeout(() => {
+      const targetEl = document.querySelector(window.location.hash);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (window.location.hash.startsWith('#review-')) {
+          targetEl.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+          targetEl.style.borderColor = '#7a5c3e';
+          targetEl.style.boxShadow = '0 0 0 3px rgba(122, 92, 62, 0.35)';
+        }
+      }
+    }, 250);
+  }
 }
 
 async function openReviewModal() {

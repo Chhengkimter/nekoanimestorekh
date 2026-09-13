@@ -7,10 +7,10 @@ class Review {
     const result = await db.query(`
       SELECT r.*,
              u.first_name, u.last_name, u.email,
-             p.product_name, p.primary_image
+             p.product_name, p.product_code
       FROM reviews r
-      JOIN users u ON u.user_id = r.user_id
-      JOIN vw_product_catalogue p ON p.product_id = r.product_id
+      LEFT JOIN users u ON u.user_id = r.user_id
+      LEFT JOIN products p ON p.product_id = r.product_id
       ORDER BY r.created_at DESC
     `);
     
@@ -18,12 +18,17 @@ class Review {
     const reviews = result.rows;
     if (reviews.length > 0) {
       const reviewIds = reviews.map(r => r.review_id);
-      const linkedRes = await db.query(`
-        SELECT rp.review_id, rp.product_id, p.product_name
-        FROM review_products rp
-        JOIN vw_product_catalogue p ON p.product_id = rp.product_id
-        WHERE rp.review_id = ANY($1)
-      `, [reviewIds]);
+      let linkedRes = { rows: [] };
+      try {
+        linkedRes = await db.query(`
+          SELECT rp.review_id, rp.product_id, p.product_name
+          FROM review_products rp
+          LEFT JOIN products p ON p.product_id = rp.product_id
+          WHERE rp.review_id = ANY($1)
+        `, [reviewIds]);
+      } catch (e) {
+        console.warn('review_products table query fallback:', e.message);
+      }
       
       const linkedMap = {};
       linkedRes.rows.forEach(row => {
@@ -41,18 +46,30 @@ class Review {
 
   // ─── Get reviews for a specific product (public) ─────────────
   static async getForProduct(productId) {
-    // We want reviews where the product is the original target OR it's linked
-    const result = await db.query(
-      `SELECT r.review_id, r.rating, r.review_text, r.image_url, r.created_at, r.admin_note,
-              u.first_name, u.last_name
-       FROM reviews r
-       JOIN users u ON u.user_id = r.user_id
-       WHERE (r.product_id = $1 OR r.review_id IN (SELECT review_id FROM review_products WHERE product_id = $1))
-         AND r.status = 'approved'
-       ORDER BY r.created_at DESC`,
-      [productId]
-    );
-    return result.rows;
+    try {
+      const result = await db.query(
+        `SELECT r.review_id, r.rating, r.review_text, r.image_url, r.created_at, r.admin_note,
+                u.first_name, u.last_name
+         FROM reviews r
+         LEFT JOIN users u ON u.user_id = r.user_id
+         WHERE (r.product_id = $1 OR r.review_id IN (SELECT review_id FROM review_products WHERE product_id = $1))
+           AND r.status = 'approved'
+         ORDER BY r.created_at DESC`,
+        [productId]
+      );
+      return result.rows;
+    } catch (e) {
+      const fallback = await db.query(
+        `SELECT r.review_id, r.rating, r.review_text, r.image_url, r.created_at, r.admin_note,
+                u.first_name, u.last_name
+         FROM reviews r
+         LEFT JOIN users u ON u.user_id = r.user_id
+         WHERE r.product_id = $1 AND r.status = 'approved'
+         ORDER BY r.created_at DESC`,
+        [productId]
+      );
+      return fallback.rows;
+    }
   }
 
   // ─── Get review by user and product ──────────────────────────

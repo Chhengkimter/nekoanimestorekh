@@ -6,32 +6,46 @@ let editReviewId = null;
 let currentReviewLinkedProducts = [];
 
 async function loadReviews() {
+  const container = document.getElementById('review-table-body');
+  if (container) container.innerHTML = '<div class="ord-loading">Loading reviews…</div>';
   try {
     const res = await apiFetch('/admin/reviews?_=' + Date.now());
-    if (!res.ok) throw new Error();
-    allReviews = await res.json();
+    if (!res || !res.ok) {
+      allReviews = [];
+      renderReviews();
+      return;
+    }
+    const data = await res.json();
+    allReviews = Array.isArray(data) ? data : [];
     renderReviews();
   } catch (err) {
-    document.getElementById('review-table-body').innerHTML = '<div class="ord-loading">Failed to load reviews.</div>';
+    console.error('loadReviews error:', err);
+    allReviews = [];
+    renderReviews();
   }
 }
 
 function setReviewTab(btn) {
   document.querySelectorAll('#rev-status-tabs .ord-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  currentReviewTab = btn.dataset.status;
+  currentReviewTab = btn.dataset.status || 'all';
   renderReviews();
 }
 
 function renderReviews() {
   const container = document.getElementById('review-table-body');
+  if (!container) return;
   
+  if (!Array.isArray(allReviews)) {
+    allReviews = [];
+  }
+
   const filtered = currentReviewTab === 'all' 
     ? allReviews 
-    : allReviews.filter(r => r.status === currentReviewTab);
+    : allReviews.filter(r => r && (r.status || 'pending').toLowerCase() === currentReviewTab.toLowerCase());
   
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="ord-loading">No reviews found.</div>';
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:40px 20px"><div class="es-icon">⭐</div><p>No reviews found</p></div>';
     return;
   }
 
@@ -51,43 +65,58 @@ function renderReviews() {
   `;
 
   filtered.forEach(r => {
-    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-    const date = new Date(r.created_at).toLocaleDateString();
+    const ratingVal = parseInt(r.rating) || 5;
+    const clampedRating = Math.max(1, Math.min(5, ratingVal));
+    const stars = '★'.repeat(clampedRating) + '☆'.repeat(5 - clampedRating);
+    const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '—';
+    const status = (r.status || 'pending').toLowerCase();
     
     // Check if it is linked to multiple products
     let linkedText = '';
-    if (r.linked_products && r.linked_products.length > 0) {
+    if (r.linked_products && Array.isArray(r.linked_products) && r.linked_products.length > 0) {
       linkedText = `<div style="font-size:11px;color:var(--muted)">Linked to ${r.linked_products.length} others</div>`;
     }
+
+    const reviewText = (r.review_text || '').replace(/"/g, '&quot;');
+    const userName = `${r.first_name || 'Anonymous'} ${r.last_name || ''}`.trim();
+    const productName = r.product_name || 'Product';
+    const productUrl = r.product_id ? `../pages/productpage.html?id=${r.product_id}#review-${r.review_id}` : '#';
 
     html += `
       <tr>
         <td>
-          <div style="font-weight:600">${r.first_name || 'Anonymous'} ${r.last_name || ''}</div>
-          <div style="font-size:12px;color:var(--muted)">${r.email}</div>
+          <div style="font-weight:600">${userName}</div>
+          <div style="font-size:12px;color:var(--muted)">${r.email || ''}</div>
         </td>
         <td>
-          <div style="font-weight:600">${r.product_name}</div>
+          <div style="font-weight:600">
+            ${r.product_id ? `<a href="${productUrl}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">${productName} ↗</a>` : productName}
+          </div>
           ${linkedText}
         </td>
         <td style="color:#ffd700;font-size:14px">${stars}</td>
         <td>
-          <div style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${r.review_text}">
-            ${r.review_text}
+          <div style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${reviewText}">
+            ${reviewText || '<i style="color:var(--muted)">No text</i>'}
           </div>
+          ${r.product_id ? `<div style="margin-top:4px;">
+            <a href="${productUrl}" target="_blank" rel="noopener" style="color:var(--accent); font-size:11px; font-weight:600; text-decoration:underline;">
+              🔗 View on Store Page ↗
+            </a>
+          </div>` : ''}
           ${r.image_url ? `<div style="margin-top:5px; display:flex; gap:10px; flex-wrap:wrap;">
-            ${r.image_url.split(',').map((url, i) => `<a href="${url}" target="_blank" style="color:var(--accent);font-size:11px;"><i class="fa fa-image"></i> Image ${i + 1}</a>`).join('')}
+            ${r.image_url.split(',').map((url, i) => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;"><i class="fa fa-image"></i> Image ${i + 1}</a>`).join('')}
           </div>` : ''}
           ${r.admin_note ? `<div style="font-size:11px;color:var(--accent)">Note: ${r.admin_note}</div>` : ''}
         </td>
         <td>${date}</td>
         <td style="text-align:right">
-          <div class="action-btns" style="justify-content:flex-end; align-items:center;">
-            ${r.status === 'pending' ? `
+          <div class="action-btns" style="justify-content:flex-end; align-items:center; gap:6px;">
+            ${status === 'pending' ? `
               <button class="action-btn" onclick="updateReviewStatus(${r.review_id}, 'approved')" style="color:green;border-color:green">Approve</button>
               <button class="action-btn del" onclick="updateReviewStatus(${r.review_id}, 'rejected')">Reject</button>
             ` : `
-              <span style="font-weight:600; font-size:13px; color:${r.status === 'approved' ? 'green' : '#d94343'}; margin-right:10px;">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span>
+              <span class="badge ${status === 'approved' ? 'badge-green' : 'badge-red'}" style="margin-right:6px;">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
             `}
             <button class="action-btn" onclick="openReviewActionModal(${r.review_id})">More</button>
           </div>

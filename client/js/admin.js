@@ -11,37 +11,70 @@ let invFilter = 'All';
 let allCategoryObjects = []; // stores { category_id, category_name }
 
 async function initApp() {
-  await Promise.all([loadProducts(), loadCategories(), loadOrders()]);
+  try {
+    await Promise.all([loadProducts(), loadCategories(), loadOrders()]);
+  } catch (err) {
+    console.error('Error during initApp:', err);
+  }
   renderAll();
 }
 
 async function loadProducts() {
-  const res = await apiFetch('/products');
-  const data = await res.json();
-  products = data.map(p => ({
-    id:           p.product_code || p.product_id,
-    dbId:         p.product_id,
-    name:         p.product_name,
-    categories:   p.categories ? p.categories.split(', ') : [],
-    price:        parseFloat(p.product_price),
-    discount:     parseFloat(p.discount)     || 0,
-    discountFlat: p.discount_flat            || false,
-    inventory:    p.product_stock,
-    stockStatus:  p.stock_status,
-    description:  p.product_description      || '',
-    images:       p.primary_image ? [p.primary_image] : [],
-    promotion:    p.promotion                || null
-  }));
+  try {
+    const res = await apiFetch('/products');
+    if (!res || !res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+    products = data.map(p => ({
+      id:           p.product_code || p.product_id,
+      dbId:         p.product_id,
+      name:         p.product_name,
+      categories:   p.categories ? p.categories.split(', ') : [],
+      price:        parseFloat(p.product_price),
+      discount:     parseFloat(p.discount)     || 0,
+      discountFlat: p.discount_flat            || false,
+      inventory:    p.product_stock,
+      stockStatus:  p.stock_status,
+      description:  p.product_description      || '',
+      images:       p.primary_image ? [p.primary_image] : [],
+      promotion:    p.promotion                || null
+    }));
+  } catch (err) {
+    console.error('Failed to load products:', err);
+  }
 }
 
 async function loadCategories() {
-  const res = await apiFetch('/admin/categories');
-  allCategoryObjects = await res.json();
-  categories = allCategoryObjects.map(c => c.category_name);
+  try {
+    const res = await apiFetch('/admin/categories');
+    if (!res || !res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+    allCategoryObjects = data;
+    categories = allCategoryObjects.map(c => c.category_name);
+  } catch (err) {
+    console.error('Failed to load categories:', err);
+  }
+}
+
+// ── MOBILE SIDEBAR DRAWER TOGGLE ──
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('show');
+}
+
+function closeMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('show');
 }
 
 // ── NAVIGATION ──
 function switchSection(name) {
+  closeMobileSidebar();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('sec-' + name).classList.add('active');
@@ -58,6 +91,7 @@ function switchSection(name) {
   if (name === 'reviews') { loadReviews(); }
   if (name === 'finance') { loadFinanceSummary(); }
 }
+
 
 // ── RENDER ALL ──
 function renderAll() { renderStats(); renderProducts(); buildFilters(); renderOrders(); }

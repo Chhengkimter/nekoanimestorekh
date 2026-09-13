@@ -58,19 +58,23 @@ function renderOrders() {
       : '';
 
     return `<div class="ord-row" onclick="viewOrderDetail(${o.order_id})">
-      <div class="ord-code">${o.order_code}${proxyBadge}</div>
+      <div class="ord-row-header">
+        <div class="ord-code">${o.order_code}${proxyBadge}</div>
+        <div class="ord-total">${total}</div>
+      </div>
       <div class="ord-customer">
         <div class="ord-customer-name">${customerName}</div>
         <div class="ord-customer-phone">${phone}</div>
       </div>
-      <div class="ord-date">${date}</div>
-      <div class="ord-total">${total}</div>
-      <div class="ord-status-col" onclick="event.stopPropagation()">
-        <select class="ord-status-select-inline ${sCls}" onchange="handleInlineStatusChange(${o.order_id}, this.value, '${o.order_status}', this)">
-          ${['pending','confirmed','shipped','delivered','cancelled','refunded'].map(s => 
-            `<option value="${s}" ${o.order_status === s ? 'selected' : ''} style="background:#fff;color:#333">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
-          ).join('')}
-        </select>
+      <div class="ord-row-footer">
+        <div class="ord-date">${date}</div>
+        <div class="ord-status-col" onclick="event.stopPropagation()">
+          <select class="ord-status-select-inline ${sCls}" onchange="handleInlineStatusChange(${o.order_id}, this.value, '${o.order_status}', this)">
+            ${['pending','confirmed','shipped','delivered','cancelled','refunded'].map(s => 
+              `<option value="${s}" ${o.order_status === s ? 'selected' : ''} style="background:#fff;color:#333">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+            ).join('')}
+          </select>
+        </div>
       </div>
     </div>`;
   }).join('');
