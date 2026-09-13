@@ -87,6 +87,7 @@ const PARTIALS_API = 'http://localhost:3000/api';
     ]);
     loadCarousel();
     loadChatbot();
+    initHeaderSearch();
     document.dispatchEvent(new CustomEvent('partials:loaded'));
   }
 
@@ -96,6 +97,128 @@ const PARTIALS_API = 'http://localhost:3000/api';
     init();
   }
 })();
+
+/* =======================================================================
+   GLOBAL HEADER SEARCH INTEGRATION
+   ======================================================================= */
+window.handleHeaderSearch = function (event, mode) {
+  if (event) event.preventDefault();
+  const input = document.getElementById(`header-search-${mode}`) || document.querySelector('.header-search-input');
+  const query = input ? input.value.trim() : '';
+  
+  if (query) {
+    window.location.href = `collection.html?search=${encodeURIComponent(query)}`;
+  }
+  return false;
+};
+
+function initHeaderSearch() {
+  const desktopInput = document.getElementById('header-search-desktop');
+  const mobileInput = document.getElementById('header-search-mobile');
+  const desktopDropdown = document.getElementById('search-dropdown-desktop');
+  const mobileDropdown = document.getElementById('search-dropdown-mobile');
+
+  const inputs = [desktopInput, mobileInput].filter(Boolean);
+  if (inputs.length === 0) return;
+
+  // Pre-fill input if currently viewing search results in collection.html
+  const urlQuery = new URLSearchParams(window.location.search).get('search');
+  if (urlQuery) {
+    inputs.forEach(inp => inp.value = urlQuery);
+  }
+
+  let debounceTimer = null;
+
+  async function performLiveSearch(inputEl, dropdownEl) {
+    const q = inputEl.value.trim();
+    
+    // Sync other input value
+    inputs.forEach(other => {
+      if (other !== inputEl) other.value = inputEl.value;
+    });
+
+    if (!q || q.length < 2) {
+      if (dropdownEl) dropdownEl.classList.remove('open');
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/products?search=${encodeURIComponent(q)}&limit=6`);
+      if (!res.ok) return;
+      const products = await res.json();
+
+      if (!dropdownEl) return;
+
+      if (!products || products.length === 0) {
+        dropdownEl.innerHTML = `
+          <div class="search-dropdown-empty">
+            <i class="fas fa-search" style="font-size:18px; margin-bottom:4px; display:block; color:#ccc;"></i>
+            No products found for "${q}"
+          </div>`;
+      } else {
+        const itemsHtml = products.slice(0, 5).map(p => {
+          const img = p.primary_image || 'https://i.pinimg.com/736x/d1/44/68/d14468697401a86272d2b631e6f62069.jpg';
+          const price = parseFloat(p.sale_price || p.product_price).toFixed(2);
+          const stockClass = p.stock_status === 'preorder' ? 'preorder' : 'instock';
+          const stockText = p.stock_status === 'preorder' ? 'Pre-Order' : 'In Stock';
+
+          return `
+            <a href="productpage.html?id=${p.product_id}" class="search-dropdown-item">
+              <img src="${img}" alt="${p.product_name}" class="search-dropdown-img">
+              <div class="search-dropdown-info">
+                <div class="search-dropdown-name">${p.product_name}</div>
+                <div class="search-dropdown-meta">
+                  <span>$${price}</span>
+                  <span class="search-dropdown-stock ${stockClass}">${stockText}</span>
+                </div>
+              </div>
+            </a>`;
+        }).join('');
+
+        const footerHtml = `
+          <a href="collection.html?search=${encodeURIComponent(q)}" class="search-dropdown-footer">
+            See all results for "${q}" →
+          </a>`;
+
+        dropdownEl.innerHTML = itemsHtml + footerHtml;
+      }
+
+      dropdownEl.classList.add('open');
+    } catch (err) {
+      console.error('Live search error:', err);
+    }
+  }
+
+  inputs.forEach(inp => {
+    const isDesktop = inp.id.includes('desktop');
+    const dropdown = isDesktop ? desktopDropdown : mobileDropdown;
+
+    inp.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => performLiveSearch(inp, dropdown), 180);
+    });
+
+    inp.addEventListener('focus', () => {
+      if (inp.value.trim().length >= 2) performLiveSearch(inp, dropdown);
+    });
+
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = inp.value.trim();
+        if (q) window.location.href = `collection.html?search=${encodeURIComponent(q)}`;
+      }
+    });
+  });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.header-search-form')) {
+      if (desktopDropdown) desktopDropdown.classList.remove('open');
+      if (mobileDropdown) mobileDropdown.classList.remove('open');
+    }
+  });
+}
 
 /* =======================================================================
    WISHLIST HELPERS — shared across all pages

@@ -54,7 +54,13 @@
                     <div class="right-section">
                         <!-- Search Bar -->
                         <div class="search-box">
-                            <input type="text" placeholder="Search by character name or title of show/game...">
+                            <form class="header-search-form" onsubmit="return handleHeaderSearch(event, 'desktop')">
+                                <div class="search-input-wrapper">
+                                    <input type="text" id="header-search-desktop" class="header-search-input" placeholder="Search by character name or title of show/game..." autocomplete="off">
+                                    <button type="submit" class="search-btn" title="Search"><i class="fas fa-search"></i></button>
+                                </div>
+                                <div class="header-search-dropdown" id="search-dropdown-desktop"></div>
+                            </form>
                         </div>
 
                         <!-- Cart & User (RIGHT) -->
@@ -82,7 +88,13 @@
 
                     <!-- Search Bar (MIDDLE) -->
                     <div class="search-box-mobile">
-                        <input type="text" placeholder="Search by character name or title of show/game...">
+                        <form class="header-search-form" onsubmit="return handleHeaderSearch(event, 'mobile')">
+                            <div class="search-input-wrapper">
+                                <input type="text" id="header-search-mobile" class="header-search-input" placeholder="Search by character name or title of show/game..." autocomplete="off">
+                                <button type="submit" class="search-btn" title="Search"><i class="fas fa-search"></i></button>
+                            </div>
+                            <div class="header-search-dropdown" id="search-dropdown-mobile"></div>
+                        </form>
                     </div>
 
                     <!-- Cart (LEFT) & User (RIGHT) -->

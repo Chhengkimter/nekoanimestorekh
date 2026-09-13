@@ -61,7 +61,21 @@ async function loadProducts() {
   const params = new URLSearchParams();
   if (filter.promotion)  params.append('promotion', filter.promotion);
   if (filter.categoryId) params.append('category',  filter.categoryId);
-  if (filter.search)     params.append('search',    filter.search);
+  if (filter.search) {
+    params.append('search', filter.search);
+    const bannerTitle = document.getElementById('collection-banner-title');
+    const bannerWrap  = document.getElementById('collection-banner');
+    const bannerImg   = document.getElementById('collection-banner-img');
+    if (bannerImg) bannerImg.style.display = 'none';
+    if (bannerTitle) bannerTitle.textContent = `Search Results for "${filter.search}"`;
+    if (bannerWrap) {
+      bannerWrap.style.display = 'block';
+      bannerWrap.style.background = 'linear-gradient(135deg, #82659D, #593D75)';
+      bannerWrap.style.padding = '24px 32px';
+      bannerWrap.style.borderRadius = '12px';
+    }
+    document.title = `Search: ${filter.search} — Neko Animestore`;
+  }
 
   const res      = await fetch(`${PRODUCTLIST_API}/products?${params}`);
   const products = await res.json();

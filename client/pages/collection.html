@@ -73,10 +73,14 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- Set PAGE_FILTER from URL slug BEFORE productlist.js loads -->
+<!-- Set PAGE_FILTER from URL slug/search BEFORE productlist.js loads -->
 <script>
-  const _slug = new URLSearchParams(window.location.search).get('slug');
-  if (_slug) window.PAGE_FILTER = { slug: _slug };
+  const _params = new URLSearchParams(window.location.search);
+  const _slug = _params.get('slug');
+  const _search = _params.get('search');
+  window.PAGE_FILTER = {};
+  if (_slug) window.PAGE_FILTER.slug = _slug;
+  if (_search) window.PAGE_FILTER.search = _search;
 </script>
 
 <script src="../js/auth.js"></script>
