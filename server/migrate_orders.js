@@ -38,6 +38,16 @@ async function migrate() {
       CHECK (payment_status IN ('unpaid', 'half_paid', 'full_paid'))
     `);
 
+    // Update constraint for shipping_method
+    console.log("Updating shipping_method constraint...");
+    await db.query(`ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_shipping_method_check`);
+    await db.query(`ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_shippingmethod_check`);
+    await db.query(`
+      ALTER TABLE orders 
+      ADD CONSTRAINT orders_shipping_method_check 
+      CHECK (shipping_method IN ('standard_pp', 'fragile_box', 'grab_express', 'pickup', 'standard_provincial', 'express', 'standard', 'economy', 'undetermined'))
+    `);
+
     // 3. Recreate sp_place_order & sp_admin_place_order
     console.log("Dropping existing stored procedures...");
     await db.query(`
@@ -104,9 +114,7 @@ async function migrate() {
           SELECT COALESCE(SUM(price_snapshot * quantity), 0) INTO v_subtotal
           FROM cart_items WHERE cart_id = v_cart_id;
 
-          v_total := CASE WHEN p_shipping_cost IS NOT NULL
-                          THEN GREATEST(0, (v_subtotal - COALESCE(p_discount_amount, 0)) + p_shipping_cost)
-                          ELSE NULL END;
+          v_total := GREATEST(0, (v_subtotal - COALESCE(p_discount_amount, 0)) + COALESCE(p_shipping_cost, 0));
 
           INSERT INTO orders (
               order_code, user_id, order_status,
@@ -197,9 +205,7 @@ async function migrate() {
           INTO v_subtotal
           FROM jsonb_array_elements(p_items) elem;
 
-          v_total := CASE WHEN p_shipping_cost IS NOT NULL
-                          THEN GREATEST(0, (v_subtotal - COALESCE(p_discount_amount, 0)) + p_shipping_cost)
-                          ELSE NULL END;
+          v_total := GREATEST(0, (v_subtotal - COALESCE(p_discount_amount, 0)) + COALESCE(p_shipping_cost, 0));
 
           INSERT INTO orders (
               order_code, user_id, guest_name, guest_email, order_status,

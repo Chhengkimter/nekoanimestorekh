@@ -52,8 +52,8 @@ class Order {
         mapsDetail      || null,
         phone1,
         phone2          || null,
-        shippingMethod  || 'express',
-        shippingCost    || null,
+        shippingMethod  || 'standard_pp',
+        (shippingCost !== undefined && shippingCost !== null) ? parseFloat(shippingCost) : 0,
         orderNote       || null,
         paymentMethod   || 'full',
         isPhnomPenh     || false,
@@ -668,7 +668,7 @@ class Order {
         userId || null, guestName || null, guestEmail || null, orderCode,
         addrType || 'manual', addrLine1 || null, addrDistrict || null, addrCity || null, addrLandmark || null,
         mapsLink || null, mapsDetail || null, phone1, phone2 || null,
-        shippingMethod || 'express', shippingCost ?? null, orderNote || null, adminNote || null,
+        shippingMethod || 'standard_pp', shippingCost ?? 0, orderNote || null, adminNote || null,
         JSON.stringify(items), adminId
       ]
     );
