@@ -479,14 +479,22 @@ function renderOrderDetailView() {
   const itemsHtml = (o.items || []).map(it => {
     const thumbImg = it.variation_image || it.image;
     const thumb = thumbImg
-      ? `<img class="ord-item-thumb" src="${thumbImg}" onerror="this.style.opacity=.3">`
+      ? `<img class="ord-item-thumb" src="${thumbImg}" onerror="this.style.opacity=.3" onclick="window.open('${thumbImg}', '_blank')" style="cursor:pointer;" title="Click to open full photo">`
       : `<div class="ord-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
     const lineTotal = (Number(it.price_at_purchase) * it.product_quantity).toFixed(2);
     const variant = it.selected_option ? `<span class="ord-item-variant">${it.selected_option}</span>` : '';
     const note = it.item_note ? `<div class="ord-item-note">📝 ${it.item_note}</div>` : '';
-    const urlLink = it.item_url 
-      ? `<div style="margin-top:4px;"><a href="${it.item_url}" target="_blank" rel="noopener" style="color:var(--accent);font-size:11px;font-weight:600;text-decoration:underline;">🔗 Open Product Web Link ↗</a></div>` 
-      : '';
+    
+    let linksHtml = '';
+    if (it.item_url) {
+      linksHtml += `<a href="${it.item_url}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:5px; color:#0088cc; background:#eef8ff; border:1px solid #bce2ff; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; text-decoration:none;"><i class="fas fa-external-link-alt"></i> Open Product Link ↗</a> `;
+    }
+    if (thumbImg) {
+      linksHtml += `<a href="${thumbImg}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:5px; color:#82659D; background:#f4effa; border:1px solid #d8c9ea; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; text-decoration:none;"><i class="fas fa-image"></i> View Uploaded Photo ↗</a>`;
+    }
+    if (linksHtml) {
+      linksHtml = `<div style="display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 4px 0;">${linksHtml}</div>`;
+    }
 
     const nameLink = it.product_id 
       ? `<a href="../pages/productpage.html?id=${it.product_id}" target="_blank" style="color:var(--accent);text-decoration:none;">${it.product_name}</a> <span style="font-size:11px;color:var(--muted);font-family:var(--mono);">#${it.product_id}</span>`
@@ -496,7 +504,7 @@ function renderOrderDetailView() {
       ${thumb}
       <div style="flex:1;min-width:0">
         <div class="ord-item-name">${nameLink} ${variant}</div>
-        ${urlLink}
+        ${linksHtml}
         <div class="ord-item-meta" style="margin-top:2px;">Qty ${it.product_quantity} × $${Number(it.price_at_purchase).toFixed(2)}</div>
         ${note}
       </div>

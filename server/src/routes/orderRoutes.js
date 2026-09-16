@@ -4,9 +4,19 @@ const OrderController = require('../controllers/OrderController');
 const UserController  = require('../controllers/UserController');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 
+const multer          = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  }
+});
+
 // Allow guest & logged-in orders
 router.post('/',        optionalAuth, OrderController.placeOrder);        // POST /api/orders
-router.post('/service',  optionalAuth, OrderController.placeOrderService); // POST /api/orders/service
+router.post('/service',  optionalAuth, upload.any(), OrderController.placeOrderService); // POST /api/orders/service
 
 // Require authentication for user account actions
 router.use(requireAuth);

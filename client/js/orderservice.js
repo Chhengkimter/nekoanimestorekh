@@ -258,20 +258,57 @@ function renderLinkGroups() {
     if (!container) return;
 
     container.innerHTML = linkGroups.map((g, gIdx) => {
-        const itemsHtml = g.items.map((it, iIdx) => `
-            <div class="svc-prod-card" id="prod-card-${gIdx}-${iIdx}">
+        const itemsHtml = g.items.map((it, iIdx) => {
+            const hasPhoto = !!(it.file || it.previewUrl || it.image);
+            const photoDisplay = it.previewUrl || it.image;
+
+            let photoUploadHtml = '';
+            if (hasPhoto) {
+                photoUploadHtml = `
+                    <div class="svc-photo-preview-wrap" style="display:flex; align-items:center; gap:12px; margin-top:6px; padding:10px 14px; background:#faf7fc; border:1.5px solid #d8c4e8; border-radius:10px;">
+                        <img src="${escapeAttr(photoDisplay)}" alt="Uploaded Photo" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #ccc; flex-shrink:0;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:12.5px; font-weight:700; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                ${it.file ? escapeAttr(it.file.name) : 'Uploaded Product Photo'}
+                            </div>
+                            <div style="font-size:11px; color:#27ae60; font-weight:700; margin-top:2px;"><i class="fas fa-check-circle"></i> Photo Uploaded & Ready</div>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-shrink:0;">
+                            <button type="button" class="svc-btn-sub-variant" style="padding:6px 12px; font-size:11px;" onclick="triggerFileInput(${gIdx}, ${iIdx})">
+                                <i class="fas fa-sync"></i> Change
+                            </button>
+                            <button type="button" class="svc-del-btn" style="padding:6px 10px;" onclick="clearItemPhoto(${gIdx}, ${iIdx})">
+                                <i class="fas fa-trash-alt"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                photoUploadHtml = `
+                    <div class="svc-photo-dropzone" onclick="triggerFileInput(${gIdx}, ${iIdx})" style="border:2px dashed #b99cc8; background:#fbf9fd; border-radius:12px; padding:18px 14px; text-align:center; cursor:pointer; margin-top:6px; transition:all 0.2s ease;">
+                        <i class="fas fa-camera" style="font-size:26px; color:#82659D; margin-bottom:6px;"></i>
+                        <div style="font-size:13px; font-weight:700; color:#333;">Click to Upload Screenshot / Product Photo <span class="req">*</span></div>
+                        <div style="font-size:11px; color:#777; margin-top:3px;">Select photo from gallery or camera (PNG, JPG, WEBP)</div>
+                    </div>
+                `;
+            }
+
+            return `
+            <div class="svc-prod-card" id="prod-card-${gIdx}-${iIdx}" style="background:#ffffff; border:1px solid #e2d9eb; border-radius:12px; padding:14px; margin-top:12px;">
                 <div class="svc-img-label-row" style="margin-bottom:6px;">
-                    <label style="font-size:12px; font-weight:700; color:#333;">Product #${iIdx + 1} Variant Screenshot Image Link <span class="req">*</span></label>
+                    <label style="font-size:12.5px; font-weight:700; color:#333;">Product #${iIdx + 1} Variant Photo / Screenshot <span class="req">*</span></label>
                     <div style="display:flex; gap:8px; align-items:center;">
                         <a href="#" class="see-example-link" onclick="openExampleModal(event)">See example</a>
-                        ${iIdx > 0 ? `<button type="button" class="svc-del-btn" onclick="removeVariantItem(${gIdx}, ${iIdx})"><i class="fas fa-trash-alt"></i> Remove variant</button>` : ''}
+                        ${iIdx > 0 ? `<button type="button" class="svc-del-btn" onclick="removeVariantItem(${gIdx}, ${iIdx})"><i class="fas fa-trash-alt"></i> Remove item</button>` : ''}
                     </div>
                 </div>
+
                 <div class="svc-form-group">
-                    <input type="url" class="field-input" value="${escapeAttr(it.image)}" placeholder="Paste screenshot image URL (https://...)" oninput="updateItemField(${gIdx}, ${iIdx}, 'image', this.value)">
+                    ${photoUploadHtml}
+                    <input type="file" id="svc-file-input-${gIdx}-${iIdx}" accept="image/*" style="display:none;" onchange="handleItemFileSelect(event, ${gIdx}, ${iIdx})">
                 </div>
 
-                <div class="svc-grid-2">
+                <div class="svc-grid-2" style="margin-top:12px;">
                     <div class="svc-form-group">
                         <label style="font-size:12px; font-weight:600; color:#555;">Quantity <span class="req">*</span></label>
                         <input type="number" class="field-input" min="1" value="${it.qty || 1}" onchange="updateItemField(${gIdx}, ${iIdx}, 'qty', this.value)">
@@ -282,7 +319,8 @@ function renderLinkGroups() {
                     </div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         return `
             <div class="svc-link-group" id="link-group-${gIdx}" style="background:#fff; border:1.5px solid #d9c4e8; border-radius:12px; padding:18px; margin-bottom:16px;">
@@ -317,6 +355,40 @@ function renderLinkGroups() {
     }).join('');
 
     updateMiniSummary();
+}
+
+function triggerFileInput(gIdx, iIdx) {
+    const input = document.getElementById(`svc-file-input-${gIdx}-${iIdx}`);
+    if (input) input.click();
+}
+
+function handleItemFileSelect(e, gIdx, iIdx) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+        alert('File size exceeds 10MB limit. Please select a smaller photo.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        if (linkGroups[gIdx] && linkGroups[gIdx].items[iIdx]) {
+            linkGroups[gIdx].items[iIdx].file = file;
+            linkGroups[gIdx].items[iIdx].previewUrl = evt.target.result;
+            renderLinkGroups();
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearItemPhoto(gIdx, iIdx) {
+    if (linkGroups[gIdx] && linkGroups[gIdx].items[iIdx]) {
+        linkGroups[gIdx].items[iIdx].file = null;
+        linkGroups[gIdx].items[iIdx].previewUrl = '';
+        linkGroups[gIdx].items[iIdx].image = '';
+        renderLinkGroups();
+    }
 }
 
 function escapeAttr(str) {
@@ -420,6 +492,17 @@ function closeExampleModal() {
     if (modal) modal.classList.remove('open');
 }
 
+function openDirectDmModal(e) {
+    if (e) e.preventDefault();
+    const modal = document.getElementById('direct-dm-modal-overlay');
+    if (modal) modal.classList.add('open');
+}
+
+function closeDirectDmModal() {
+    const modal = document.getElementById('direct-dm-modal-overlay');
+    if (modal) modal.classList.remove('open');
+}
+
 async function submitOrderService() {
     // 1. Gather delivery details
     const phoneInput1 = document.getElementById('phone1');
@@ -471,6 +554,8 @@ async function submitOrderService() {
 
     // 2. Flatten & validate items from all link groups
     const flatItems = [];
+    const formData = new FormData();
+
     for (let gIdx = 0; gIdx < linkGroups.length; gIdx++) {
         const g = linkGroups[gIdx];
         const url = g.url.trim();
@@ -481,20 +566,27 @@ async function submitOrderService() {
         }
         for (let iIdx = 0; iIdx < g.items.length; iIdx++) {
             const it = g.items[iIdx];
-            const img = it.image ? it.image.trim() : '';
-            if (!img) {
-                alert(`Please paste the variant screenshot image link for Product #${iIdx + 1} under Link #${gIdx + 1}.`);
+            const hasPhoto = !!(it.file || it.previewUrl || it.image);
+            if (!hasPhoto) {
+                alert(`Please upload a product photo or screenshot for Product #${iIdx + 1} under Link #${gIdx + 1}.`);
                 return;
             }
+            
             flatItems.push({
+                gIdx,
+                iIdx,
                 productName: it.note?.trim() || `Proxy Product #${gIdx + 1}.${iIdx + 1}`,
                 itemUrl: url,
-                variationImage: img,
+                variationImage: (!it.file && it.image) ? it.image : null,
                 selectedOption: it.note?.trim() || null,
                 productQuantity: parseInt(it.qty) || 1,
                 priceAtPurchase: 0,
                 itemNote: it.note?.trim() || null
             });
+
+            if (it.file) {
+                formData.append(`itemImage_${gIdx}_${iIdx}`, it.file);
+            }
         }
     }
 
@@ -510,38 +602,38 @@ async function submitOrderService() {
 
     const fullNote = `Customer Handle: ${contactHandle}` + (orderNote ? ` | Note: ${orderNote}` : '');
 
+    formData.append('serviceTier', activeTier);
+    formData.append('preferredContact', preferredContact);
+    formData.append('shippingMethod', shippingMethod);
+    formData.append('shippingCost', shippingCost);
+    formData.append('isPhnomPenh', isPhnomPenh);
+    formData.append('addrType', activeLocTab);
+    formData.append('addrLine1', activeLocTab === 'manual' ? addrLine1 : '');
+    formData.append('addrDistrict', activeLocTab === 'manual' ? addrDistrict : '');
+    formData.append('addrCity', activeLocTab === 'manual' ? addrCity : '');
+    formData.append('addrLandmark', activeLocTab === 'manual' ? addrLandmark : '');
+    formData.append('mapsLink', activeLocTab === 'maps' ? mapsLink : '');
+    formData.append('mapsDetail', activeLocTab === 'maps' ? mapsDetail : '');
+    formData.append('phone1', phone1.startsWith('+855') ? phone1 : `+855 ${phone1}`);
+    formData.append('phone2', phone2 ? (phone2.startsWith('+855') ? phone2 : `+855 ${phone2}`) : '');
+    formData.append('orderNote', fullNote);
+    formData.append('items', JSON.stringify(flatItems));
+
     const submitBtn = document.getElementById('svc-submit-btn');
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting Request...';
     }
 
     try {
         const token = localStorage.getItem('neko_token');
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         const res = await fetch(`${API_BASE}/orders/service`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({
-                serviceTier: activeTier,
-                preferredContact,
-                shippingMethod,
-                shippingCost,
-                isPhnomPenh,
-                addrType: activeLocTab,
-                addrLine1: activeLocTab === 'manual' ? addrLine1 : null,
-                addrDistrict: activeLocTab === 'manual' ? addrDistrict : null,
-                addrCity: activeLocTab === 'manual' ? addrCity : null,
-                addrLandmark: activeLocTab === 'manual' ? addrLandmark : null,
-                mapsLink: activeLocTab === 'maps' ? mapsLink : null,
-                mapsDetail: activeLocTab === 'maps' ? mapsDetail : null,
-                phone1: phone1.startsWith('+855') ? phone1 : `+855 ${phone1}`,
-                phone2: phone2 ? (phone2.startsWith('+855') ? phone2 : `+855 ${phone2}`) : null,
-                orderNote: fullNote,
-                items: flatItems
-            })
+            body: formData
         });
 
         const data = await res.json();

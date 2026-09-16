@@ -55,20 +55,50 @@ class OrderController {
     try {
       const userId = req.user?.id || null;
 
+      let bodyData = req.body || {};
+      let items = bodyData.items;
+      if (typeof items === 'string') {
+        try { items = JSON.parse(items); } catch (e) { items = []; }
+      }
+      if (!Array.isArray(items)) items = [];
+
       const {
         serviceTier, preferredContact,
         shippingMethod, shippingCost,
         addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
         mapsLink, mapsDetail,
         phone1, phone2,
-        orderNote,
-        subtotal, total,
-        items
-      } = req.body;
+        orderNote, subtotal, total
+      } = bodyData;
 
       if (!phone1) return res.status(400).json({ error: 'Phone number is required' });
       if (!serviceTier) return res.status(400).json({ error: 'Service tier is required' });
-      if (!items || !items.length) return res.status(400).json({ error: 'At least one item link is required' });
+      if (!items || !items.length) return res.status(400).json({ error: 'At least one product request is required' });
+
+      // Handle uploaded files for item images
+      if (req.files && req.files.length > 0) {
+        const ImageUploader = require('../services/ImageUploader');
+        for (const file of req.files) {
+          const matchGrid = file.fieldname.match(/itemImage_(\d+)_(\d+)/);
+          const matchFlat = file.fieldname.match(/itemImage_(\d+)/);
+
+          if (matchGrid) {
+            const gIdx = parseInt(matchGrid[1]);
+            const iIdx = parseInt(matchGrid[2]);
+            const targetItem = items.find(it => (it.gIdx === gIdx && it.iIdx === iIdx) || (it._gIdx === gIdx && it._iIdx === iIdx));
+            if (targetItem) {
+              const url = await ImageUploader.upload(file);
+              targetItem.variationImage = url;
+            }
+          } else if (matchFlat) {
+            const itemIdx = parseInt(matchFlat[1]);
+            if (items[itemIdx]) {
+              const url = await ImageUploader.upload(file);
+              items[itemIdx].variationImage = url;
+            }
+          }
+        }
+      }
 
       const orderCode = 'NK-SVC-' + Order.generateOrderCode().replace('NK-', '');
 
@@ -76,13 +106,13 @@ class OrderController {
         userId, orderCode,
         serviceTier, preferredContact: preferredContact || 'telegram',
         shippingMethod: shippingMethod || 'standard_pp',
-        shippingCost: shippingCost !== undefined ? shippingCost : 1.50,
+        shippingCost: shippingCost !== undefined ? parseFloat(shippingCost) : 1.50,
         addrType, addrLine1, addrDistrict, addrCity, addrLandmark,
         mapsLink, mapsDetail,
         phone1, phone2,
         orderNote,
-        subtotal: subtotal || 0,
-        total: total || 0,
+        subtotal: subtotal ? parseFloat(subtotal) : 0,
+        total: total ? parseFloat(total) : 0,
         items
       });
 

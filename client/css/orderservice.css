@@ -49,9 +49,15 @@
 /* 3 Cards Grid */
 .svc-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
     margin-bottom: 50px;
+}
+
+@media (min-width: 1080px) {
+    .svc-cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 .svc-card {
@@ -649,4 +655,102 @@
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+}
+
+/* ── 4th CARD & DIRECT DM MODAL STYLES ── */
+.svc-card-dm {
+    border: 2px dashed #82659D;
+    background: linear-gradient(180deg, #ffffff 0%, #faf6fd 100%);
+}
+
+.svc-card-dm:hover {
+    border-style: solid;
+    border-color: #82659D;
+}
+
+.svc-badge-purple {
+    background: #82659D;
+    color: #ffffff;
+}
+
+.svc-btn-dm {
+    background: linear-gradient(135deg, #82659D 0%, #6f5387 100%);
+    box-shadow: 0 4px 14px rgba(130, 101, 157, 0.25);
+}
+
+.svc-btn-dm:hover {
+    background: linear-gradient(135deg, #6f5387 0%, #5d4374 100%);
+}
+
+.svc-dm-channels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.svc-dm-channel-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1.5px solid #e2d9eb;
+    border-radius: 14px;
+    background: #ffffff;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.svc-dm-channel-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(130, 101, 157, 0.15);
+    border-color: #82659D;
+    background: #faf6fd;
+}
+
+.svc-dm-channel-info {
+    flex: 1;
+}
+
+.svc-dm-channel-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+}
+
+.svc-dm-channel-handle {
+    font-size: 12px;
+    color: #777;
+    margin-top: 2px;
+}
+
+.svc-dm-action-btn {
+    font-size: 12px;
+    font-weight: 700;
+    color: #82659D;
+    background: #f0e8fa;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.svc-dm-channel-card:hover .svc-dm-action-btn {
+    background: #82659D;
+    color: #ffffff;
+}
+
+.svc-dm-tip-box {
+    padding: 12px 14px;
+    background: #fffbe6;
+    border: 1px solid #ffe58f;
+    border-radius: 10px;
+    font-size: 12px;
+    color: #873800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }

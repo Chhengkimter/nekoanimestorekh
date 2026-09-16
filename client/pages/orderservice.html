@@ -113,6 +113,34 @@
                     </button>
                 </div>
 
+                <!-- Option 4: Direct DM Photo Sourcing -->
+                <div class="svc-card svc-card-dm">
+                    <div class="svc-card-header">
+                        <span class="svc-flag">📸</span>
+                        <span class="svc-tier-badge svc-badge-purple">Direct DM</span>
+                    </div>
+                    <h3 class="svc-card-title">Can't Find Your Item? Send Us a Picture!</h3>
+                    <p class="svc-card-desc">Saw something online but don't know where or how to buy it? Simply send us a photo or screenshot in DM, and we will find the product & best price for you!</p>
+                    <div class="svc-pricing-box">
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">Free Quote</span>
+                            <span class="svc-price-label">No product link required</span>
+                        </div>
+                        <div class="svc-price-line">
+                            <span class="svc-price-tag">Best Price</span>
+                            <span class="svc-price-label">We source & compare for you</span>
+                        </div>
+                    </div>
+                    <ul class="svc-features">
+                        <li><i class="fas fa-check"></i> Send item photo/screenshot directly</li>
+                        <li><i class="fas fa-check"></i> We search suppliers & check availability</li>
+                        <li><i class="fas fa-check"></i> Fast assistance via Telegram, IG, or FB</li>
+                    </ul>
+                    <button class="svc-order-btn svc-btn-dm" onclick="openDirectDmModal()">
+                        <i class="fas fa-comments"></i> Send Picture via DM
+                    </button>
+                </div>
+
             </section>
 
             <!-- How It Works Section -->
@@ -476,6 +504,62 @@
                 </p>
                 <div style="margin-top:15px;">
                     <button type="button" class="svc-btn-primary" onclick="closeExampleModal()">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DIRECT DM CONTACT SELECTION MODAL ── -->
+    <div class="svc-modal-overlay" id="direct-dm-modal-overlay">
+        <div class="svc-modal" style="max-width: 500px;">
+            <div class="svc-modal-header">
+                <div>
+                    <h3 class="svc-modal-title"><i class="fas fa-comments" style="color:#82659D;"></i> Send Picture to Our DM</h3>
+                    <span class="svc-modal-subtitle">Direct Chat Product Sourcing & Price Quote</span>
+                </div>
+                <button class="svc-modal-close" onclick="closeDirectDmModal()">&times;</button>
+            </div>
+            <div class="svc-modal-body" style="padding: 24px;">
+                <div class="svc-alert-info" style="display:flex; gap:12px; align-items:flex-start; background:#f4effa; border-color:#d8c9ea; color:#4a3266; margin-bottom: 20px;">
+                    <i class="fas fa-camera-retro" style="font-size:22px; color:#82659D; flex-shrink:0; margin-top:2px;"></i>
+                    <div style="font-size:13px; line-height:1.5;">
+                        <strong>Got a photo of an item you want?</strong><br>
+                        Choose your preferred messaging channel below, send your product picture straight to our DM, and our team will find the item & best price for you!
+                    </div>
+                </div>
+
+                <div class="svc-dm-channels-list">
+                    <a href="https://t.me/rizeisok" target="_blank" rel="noopener noreferrer" class="svc-dm-channel-card tg-card">
+                        <div class="svc-contact-icon tg-color"><i class="fab fa-telegram-plane"></i></div>
+                        <div class="svc-dm-channel-info">
+                            <div class="svc-dm-channel-name">Telegram DM</div>
+                            <div class="svc-dm-channel-handle">@rizeisok</div>
+                        </div>
+                        <span class="svc-dm-action-btn">Chat & Send <i class="fas fa-arrow-right"></i></span>
+                    </a>
+
+                    <a href="https://instagram.com/nekoanimestore.kh" target="_blank" rel="noopener noreferrer" class="svc-dm-channel-card ig-card">
+                        <div class="svc-contact-icon ig-color"><i class="fab fa-instagram"></i></div>
+                        <div class="svc-dm-channel-info">
+                            <div class="svc-dm-channel-name">Instagram DM</div>
+                            <div class="svc-dm-channel-handle">@nekoanimestore.kh</div>
+                        </div>
+                        <span class="svc-dm-action-btn">Chat & Send <i class="fas fa-arrow-right"></i></span>
+                    </a>
+
+                    <a href="https://m.me/Nekoanimestore.kh" target="_blank" rel="noopener noreferrer" class="svc-dm-channel-card fb-card">
+                        <div class="svc-contact-icon fb-color"><i class="fab fa-facebook-messenger"></i></div>
+                        <div class="svc-dm-channel-info">
+                            <div class="svc-dm-channel-name">Facebook Messenger</div>
+                            <div class="svc-dm-channel-handle">Nekoanimestore.kh</div>
+                        </div>
+                        <span class="svc-dm-action-btn">Chat & Send <i class="fas fa-arrow-right"></i></span>
+                    </a>
+                </div>
+
+                <div class="svc-dm-tip-box">
+                    <i class="fas fa-lightbulb" style="color:#d48806; font-size:16px; flex-shrink:0;"></i>
+                    <span><strong>Quick Tip:</strong> Send your product picture and mention any preferred figure scale, character option, or target budget!</span>
                 </div>
             </div>
         </div>
